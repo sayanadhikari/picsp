@@ -5,8 +5,6 @@
 ##
 
 CC		= g++
-COPT	= -g -O3
-DOPT 	= -O0
 
 CLOCAL = 	-Ilib/iniparser/src\
 			-lm
@@ -16,61 +14,38 @@ LLOCAL =	-Ilib/iniparser/src\
 			-lm
 LLOCALSA =      -I /opt/local/include\
                         
--include local.mk
 
 EXEC	= picsp
-CADD	= # Additional CFLAGS accessible from CLI
-CFLAGS	= -std=c11 -Wall $(CLOCAL) $(CLOCALSA) $(COPT) $(CADD) # Flags for compiling
+#CADD	= # Additional CFLAGS accessible from CLI
+CFLAGS	= -std=c++11 -Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
 
-LFLAGS	= -std=c11 -Wall $(LLOCAL) $(LLOCALSA) $(COPT) $(CADD) # Flags for linking
+LFLAGS	= -std=c++11 -Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
-HDIR	= src
+#HDIR	= src
 LDIR	= lib
-
-
-HEAD_	=
-SRC_	=
-
-OBJ_	= $(SRC_:.c=.o)
-
-
-HEAD	= $(patsubst %,$(HDIR)/%,$(HEAD_))
-SRC		= $(patsubst %,$(SDIR)/%,$(SRC_))
-OBJ		= $(patsubst %,$(ODIR)/%,$(OBJ_))
-
-
 
 
 LIBOBJ_	= iniparser/libiniparser.a
 LIBHEAD_= iniparser/src/iniparser.h
+OBJ_	= $(SRC_:.c=.o)
 
+OBJ		= $(patsubst %,$(ODIR)/%,$(OBJ_))
 LIBOBJ = $(patsubst %,$(LDIR)/%,$(LIBOBJ_))
 LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 
 all: version $(EXEC)
 
-local: version $(EXEC).local
 
-
-$(EXEC).local: $(ODIR)/main.local.o $(OBJ) $(LIBOBJ)
-	@echo "Linking PICSP (using main.local.c)"
-	@$(CC) $^ -o $(EXEC) $(LFLAGS)
-	@echo "PICSP is built"
-
-$(EXEC): $(ODIR)/main.o $(OBJ) $(LIBOBJ)
-	@echo "Linking PICSP"
-	@$(CC) $^ -o $@ $(LFLAGS)
-	@echo "PICSP is built"
-
-$(ODIR)/%.o: $(SDIR)/%.c $(HEAD)
+$(ODIR)/%.o: $(SDIR)/%.c
 	@echo "Compiling $<"
-	@echo $(HEAD) | xargs -n1 ./aux/check.sh
-	@mkdir -p $(ODIR)
-	@./aux/check.sh $<
 	@$(CC) -c $< -o $@ $(CFLAGS)
 
+$(EXEC): $(OBJ) $(LIBOBJ)
+	@echo "Linking PICSP"
+	@$(CC) $^ -o $@ $(LFLAGS) -nostartfiles
+	@echo "PICSP is built"
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
 	@echo "Building iniparser"
