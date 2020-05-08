@@ -7,19 +7,19 @@
 CC		= g++
 
 CLOCAL = 	-Ilib/iniparser/src\
-			-lm
+			#-lm
 CLOCALSA = 	-I /opt/local/include\
 			
 LLOCAL =	-Ilib/iniparser/src\
-			-lm
-LLOCALSA =      -I /opt/local/include\
+			#-lm
+LLOCALSA =   -I /opt/local/include\
                         
 
 EXEC	= picsp
 #CADD	= # Additional CFLAGS accessible from CLI
-CFLAGS	= -std=c++11 #-Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
+CFLAGS	= -std=c++11 -Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
 
-LFLAGS	= -std=c++11 #-Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
+LFLAGS	= -std=c++11 -Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
