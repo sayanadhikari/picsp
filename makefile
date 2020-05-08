@@ -44,7 +44,7 @@ $(ODIR)/%.o: $(SDIR)/%.c
 
 $(EXEC): $(OBJ) $(LIBOBJ)
 	@echo "Linking PICSP"
-	@$(CC) $^ -o $@ $(LFLAGS) #-nostartfiles
+	@$(CC) $^ -o $@ $(LFLAGS) -nostartfiles
 	@echo "PICSP is built"
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
@@ -58,7 +58,7 @@ version:
 
 clean:
 	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
-	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o 
+	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
 
 veryclean: clean
 	@echo "Cleaning executable and iniparser"
