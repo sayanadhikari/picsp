@@ -56,6 +56,10 @@ version:
 	@echo "Embedding git version"
 	@echo "#define VERSION \"$(shell git describe --abbrev=4 --dirty --always --tags)\"" > $(SDIR)/version.h
 
+clean:
+	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
+	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o 
+
 veryclean: clean
 	@echo "Cleaning executable and iniparser"
 	@rm -f $(EXEC)
