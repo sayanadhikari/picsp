@@ -17,9 +17,9 @@ LLOCALSA =      -I /opt/local/include\
 
 EXEC	= picsp
 #CADD	= # Additional CFLAGS accessible from CLI
-CFLAGS	= -std=c++11 -Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
+CFLAGS	= -std=c++11 #-Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
 
-LFLAGS	= -std=c++11 -Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
+LFLAGS	= -std=c++11 #-Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -44,7 +44,7 @@ $(ODIR)/%.o: $(SDIR)/%.c
 
 $(EXEC): $(OBJ) $(LIBOBJ)
 	@echo "Linking PICSP"
-	@$(CC) $^ -o $@ $(LFLAGS) -nostartfiles
+	@$(CC) $^ -o $@ $(LFLAGS) #-nostartfiles
 	@echo "PICSP is built"
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
