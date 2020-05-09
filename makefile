@@ -20,31 +20,21 @@ ODIR	= src/obj
 #HDIR	= src
 LDIR	= lib
 
+OBJ     = picsp.o
 
-LIBOBJ_	= iniparser/libiniparser.a
-LIBHEAD_= iniparser/src/iniparser.h
-OBJ_	= $(SRC_:.c=.o)
+all: iniparse version $(EXEC)
 
-OBJ		= $(patsubst %,$(ODIR)/%,$(OBJ_))
-LIBOBJ = $(patsubst %,$(LDIR)/%,$(LIBOBJ_))
-LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
+$(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
+	$(CC) $(ARG) -c -o $@ $< $(CFLAGS) $(LFLAGS)
 
-all: version $(EXEC)
-
-
-$(ODIR)/%.o: $(SDIR)/%.c
-	@echo "Compiling $<"
-	@$(CC) $(ARG) -c $< -o $@ $(CFLAGS)
-
-$(EXEC): $(OBJ) $(LIBOBJ)
-	@echo "Linking PICSP"
-	@$(CC) $(ARG) $^ -o $@ $(LFLAGS)
+$(EXEC): $(OBJ)
+	@echo "Compiling & Linking PICSP"
+	@$(CC) $(ARG) -o $@ $^ $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
-
-$(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
+iniparse:
 	@echo "Building iniparser"
-	@cd $(LDIR)/iniparser && $(MAKE) libiniparser.a > /dev/null 2>&1
-	
+    @cd $(LDIR)/iniparser && $(MAKE)
+
 .phony: version
 version:
 	@echo "Embedding git version"
