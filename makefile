@@ -11,9 +11,9 @@ CC		= g++ -std=c++11 -Wall
 
 EXEC	= picsp
 
-CFLAGS	=  -I..lib/iniparser/src   # Flags for compiling
+CFLAGS	=  -I../lib/iniparser/src   # Flags for compiling
 
-LFLAGS	=  -L..lib/iniparser -liniparser # Flags for linking
+LFLAGS	=  -L../lib/iniparser -liniparser # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
