@@ -19,13 +19,27 @@ Authors:
 
 Installation
 ------------
-# Prerequisites
+#### Prerequisites
 1. gcc compiler for C++ (g++)
 2. make buildsystem
 3. git
 
+#### Procedure
 First make a clone of the master branch using the following command
-```git
+```shell
 git clone https://github.com/sayanadhikari207/picsp.git
 ```
+Then enter inside the *PICSP* directory and verify the contents. 
+```shell
+cd picsp
+ls
+```
+Then built the  *iniparser*
+```shell
+cd lib/iniparser
+make clean
+make
+cd ..
+```
+
 *PICSP* contains a setup file 
