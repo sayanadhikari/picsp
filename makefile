@@ -19,7 +19,7 @@ SDIR	= src
 ODIR	= src/obj
 #HDIR	= src
 LDIR	= lib
-
+OUTDIR  = output
 
 OBJ = picsp
 
@@ -42,5 +42,6 @@ version:
 clean:
 	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
+	@rm -f $(OUTDIR)/*
 
 
