@@ -37,7 +37,7 @@
 using namespace std;
 
 /*Iniparser function*/
-extern "C" int  parse_ini_file(char * ini_name);
+int  parse_ini_file(char * ini_name);
 
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
@@ -186,7 +186,7 @@ bool SolvePotentialDirect(double *phi, double *rho);
 
 /*Parsing Input file*/
 
-extern "C" int parse_ini_file(char * ini_name)
+int parse_ini_file(char * ini_name)
 {
     dictionary  *   ini ;
 
