@@ -187,7 +187,7 @@ void PushSpecies(Species *species, double *ef);
 void RewindSpecies(Species *species, double *ef);
 void Write_ts(int ts, Species *ions, Species *electrons);
 void Write_Particle(FILE *file, int ts, Species *species);
-void Write_VDF(FILE *file, int ts, double VDF_LOC1, double VDF_LOC2, Species *species);
+void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species);
 void WriteKE(double Time, Species *ions, Species *electrons);
 void Write_Single_Particle(Species *species);
 void AddSources(Species *species);
@@ -214,23 +214,14 @@ int main()
     
     /* STORING DATA FROM VECTOR TO VARIABLE */
     
-    nTimeSteps = std::stoi(var[1]);         /* Modify the final time using input file*/
     int nTimeSteps = iniGetInt(ini,"time:nTimeSteps");
-
-    double mass_ion = std::stod(var[3])*AMU;
-    double mass_ion =  iniparser_getdouble(ini,"population:massI")
-    
-    /*  VDF LOCATION */
-    double VDF_LOC1 = std::stod(var[5]); //0.001;
-    double VDF_LOC2 = std::stod(var[7]); //0.0012;
-    
+    double mass_ion =  iniparser_getdouble(ini,"population:massI");
     /* NUM OF COM PARTICLE */
-    nParticlesI = std::stoi(var[9]);
-    nParticlesE = std::stoi(var[11]);
-    
-    /* GRAPHICS CONFIG*/
-    bool GRAPHICS = std::stoi(var[13]);
-    
+    int nParticlesI = iniGetInt(ini,"population:nParticlesI");
+    int nParticlesE = iniGetInt(ini,"population:nParticlesE");
+    /* VDF */
+    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart");
+    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd");
     
     /*Construct the domain parameters*/
     domain.ni = NC+1;
@@ -390,19 +381,7 @@ int main()
             
             Write_Single_Particle(&electrons);
             
-            Write_VDF(f3,ts,VDF_LOC1,VDF_LOC2, &ions);  //Added by SAYAN 14/08/2019
-            
-            // For live graphics
-            
-            if (GRAPHICS==true) {
-                
-                fprintf(gnuplotPipe1, "plot 'output/i%d.dat' using 1:2 title 'Ion  Phase Space' with dots\n",ts);
-                fflush(gnuplotPipe1);
-                
-                fprintf(gnuplotPipe2, "plot 'vdf_output/i%d.dat' using 1:(1) smooth kdensity bandwidth 100. title 'VDF Ion'\n",ts);
-                fflush(gnuplotPipe2);
-                
-            }
+            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);  //Added by SAYAN 14/08/2019
             
         }
         
@@ -728,11 +707,11 @@ void Write_Particle(FILE *file, int ts, Species *species)
 }
 
 /******* ADDED BY SAYAN 14/08/2019  *******/
-void Write_VDF(FILE *file, int ts, double VDF_LOC1, double VDF_LOC2, Species *species)
+void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species)
 {
     for(auto& p: species->part_list)
     {
-        if (p.pos >= VDF_LOC1 && p.pos <= VDF_LOC2)
+        if (p.pos >= vdfLocStart && p.pos <= vdfLocEnd)
         {
         fprintf(file,"%g\n",p.vel);
         }
