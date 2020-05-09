@@ -27,7 +27,7 @@ all: version $(EXEC)
 
 OBJ = main.o
 
-$(EXEC): $(ODIR)/$(OBJ)
+$(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(ODIR)/$(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
