@@ -68,23 +68,23 @@ void getItems(vector<string>& var, string path)
 /* Define universal constants */
 const double EPS = 8.85418782E-12;    // Vacuum permittivity
 const double K = 1.38065E-23;        // Boltzmann Constant
-const double ME = 9.10938215E-31;   // electron mass
-const double QE = 1.602176565E-19; // Charge of an electron
+const double massE = 9.10938215E-31;   // electron mass
+const double chargeE = 1.602176565E-19; // Charge of an electron
 const double AMU = 1.660538921E-27;
 const double EV_TO_K = 11604.52;
 const double pi = 3.14159265359;
 
-/* Define Simulation Parameters*/
-const double PLASMA_DEN = 1E16; // Plasma Density
-const double DX = 1E-5;         // Cell Spacing
-const double DT = 5E-12;        // Time steps
+/* Default Simulation Parameters*/
+const double density = 1E16; // Plasma Density
+const double stepSize = 1E-5;         // Cell Spacing
+const double timeStep = 5E-12;        // Time steps
 
-const double ELECTRON_TEMP = 1; // electron temperature in eV
-const double ION_TEMP = 0.026;  // ion temperature in eV
+const double thermalVelocityE = 1; // electron temperature in eV
+const double thermalVelocityI = 0.026;  // ion temperature in eV
 
 /* CHANGED TYPE FROM CONST TO VAR FOR INPUT DATA CONTROL  */
-int NUM_IONS = 50000;      // Number of simulation ions
-int NUM_ELECTRONS = 50000; // Number of simulation electrons
+int nParticlesI = 50000;      // Number of simulation ions
+int nParticlesE = 50000; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
 int nTimeSteps = 1000;          // Total time steps (default)
@@ -216,18 +216,17 @@ int main()
     
     nTimeSteps = std::stoi(var[1]);         /* Modify the final time using input file*/
     int nTimeSteps = iniGetInt(ini,"time:nTimeSteps");
-    
-    iniparser_getdouble()
 
     double mass_ion = std::stod(var[3])*AMU;
+    double mass_ion =  iniparser_getdouble(ini,"population:massI")
     
     /*  VDF LOCATION */
     double VDF_LOC1 = std::stod(var[5]); //0.001;
     double VDF_LOC2 = std::stod(var[7]); //0.0012;
     
     /* NUM OF COM PARTICLE */
-    NUM_IONS = std::stoi(var[9]);
-    NUM_ELECTRONS = std::stoi(var[11]);
+    nParticlesI = std::stoi(var[9]);
+    nParticlesE = std::stoi(var[11]);
     
     /* GRAPHICS CONFIG*/
     bool GRAPHICS = std::stoi(var[13]);
@@ -235,7 +234,7 @@ int main()
     
     /*Construct the domain parameters*/
     domain.ni = NC+1;
-    domain.dx = DX;
+    domain.dx = stepSize;
     domain.x0 = 0;
     domain.xl = (domain.ni-1)*domain.dx;
     domain.xmax = domain.x0 + domain.xl;
@@ -271,14 +270,14 @@ int main()
     //double mass_2 = 4*AMU; // mass of the lighter particle
     
     /*Calculate the specific weights of the ions and electrons*/
-    double ion_spwt = (PLASMA_DEN*domain.xl)/(NUM_IONS);
-    double electron_spwt = (PLASMA_DEN*domain.xl)/(NUM_ELECTRONS);
+    double ion_spwt = (density*domain.xl)/(nParticlesI);
+    double electron_spwt = (density*domain.xl)/(nParticlesE);
     
     /* Add singly charged Ar+ ions and electrons */
     /*********************************************/
     /* Create the species lists*/
-    species_list.emplace_back("Ion",mass_ion,QE,ion_spwt, NUM_IONS, ION_TEMP);
-    species_list.emplace_back("Electrons",ME,-QE,electron_spwt, NUM_ELECTRONS, ELECTRON_TEMP);
+    species_list.emplace_back("Ion",mass_ion,chargeE,ion_spwt, nParticlesI, thermalVelocityI);
+    species_list.emplace_back("Electrons",massE,-chargeE,electron_spwt, nParticlesE, thermalVelocityE);
     
     /*Assign the species list as ions and electrons*/
     Species &ions = species_list[0];
@@ -328,7 +327,7 @@ int main()
     /*create a seperate directory for VDF data*/
     system("mkdir vdf_output");      // ADDED By SAYAN 14/08/2019
     
-    char NAME[50];
+    char NAmassE[50];
     
     file_res = fopen("results.dat","w");
     file_ke = fopen("ke.dat","w");
@@ -361,15 +360,15 @@ int main()
         //Write diagnostics
         if(ts%50 == 0)
         {
-            sprintf(NAME,"output/i%d.dat",ts);
-            f1 = fopen(NAME,"w");
+            sprintf(NAmassE,"output/i%d.dat",ts);
+            f1 = fopen(NAmassE,"w");
             
-            sprintf(NAME,"output/e%d.dat",ts);
-            f2 = fopen(NAME,"w");
+            sprintf(NAmassE,"output/e%d.dat",ts);
+            f2 = fopen(NAmassE,"w");
             
             //Added by SAYAN 14/08/2019 for VDF data
-            sprintf(NAME,"vdf_output/i%d.dat",ts);
-            f3 = fopen(NAME,"w");
+            sprintf(NAmassE,"vdf_output/i%d.dat",ts);
+            f3 = fopen(NAmassE,"w");
             
             ///////////////////////////////////////
             double max_phi = phi[0];
@@ -407,7 +406,7 @@ int main()
             
         }
         
-        Time += DT;
+        Time += timeStep;
     }
     
     /*free up memory*/
@@ -553,10 +552,10 @@ void PushSpecies(Species *species, double *ef)
         double part_ef = gather(lc,ef);
         
         // advance velocity
-        part.vel += DT*qm*part_ef;
+        part.vel += timeStep*qm*part_ef;
         
         // Advance particle position
-        part.pos += DT*part.vel;
+        part.pos += timeStep*part.vel;
         
         // Remove the particles leaving the domain
         if(part.pos < domain.x0 || part.pos >= domain.xmax)
@@ -579,7 +578,7 @@ void PushSpecies(Species *species, double *ef)
     }
 }
 //*********************************************************
-/*Rewind particle velocities by -0.5*DT */
+/*Rewind particle velocities by -0.5*timeStep */
 void RewindSpecies(Species *species, double *ef)
 {
     // compute charge to mass ratio
@@ -591,7 +590,7 @@ void RewindSpecies(Species *species, double *ef)
         // gather electric field onto the particle position
         double part_ef = gather(lc,ef);
         //advance velocity
-        p.vel -= 0.5*DT*qm*part_ef;
+        p.vel -= 0.5*timeStep*qm*part_ef;
     }
 }
 
@@ -607,7 +606,7 @@ void ComputeRho(Species *ions, Species *electrons)
     /*Reduce numerical noise by setting the densities to zero when less than 1e8/m^3*/
     if(false){
         for(int i=0; i<domain.ni; i++)
-            if(fabs(rho[i])<1e8*QE) rho[i]=0;
+            if(fabs(rho[i])<1e8*chargeE) rho[i]=0;
     }
 }
 
@@ -714,7 +713,7 @@ void Write_ts(int ts, Species *ions, Species *electrons)
         fprintf(file_res,"%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g\n", i*domain.dx, ions->den[i], electrons->den[i], ions->vel[i], electrons->vel[i], domain.rho[i], domain.phi[i], domain.ef[i]);
         
     }
-    //fprintf(file_res,"%g \t %g \t %g\n",ts*DT, gamma_i[domain.ni-1], gamma_e[domain.ni-1]);
+    //fprintf(file_res,"%g \t %g \t %g\n",ts*timeStep, gamma_i[domain.ni-1], gamma_e[domain.ni-1]);
     fflush(file_res);
 }
 
@@ -773,7 +772,7 @@ double ComputeKE(Species *species)
     ke += 0.5*(species->spwt*species->mass);
     
     /*Convert the kinetic energy in eV units*/
-    ke /= QE;
+    ke /= chargeE;
     return ke;
 }
 
