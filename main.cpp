@@ -34,8 +34,10 @@
 # include <fstream>
 #include "lib/iniparser/src/iniparser.h"
 
-
 using namespace std;
+
+/*Iniparser function*/
+int  parse_ini_file(char * ini_name);
 
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
@@ -178,25 +180,45 @@ double SampleVel(double T, double mass);
 bool SolvePotential(double *phi, double *rho);
 bool SolvePotentialDirect(double *phi, double *rho);
 
+
+
+/*Parsing Input file*/
+
+int parse_ini_file(char * ini_name)
+{
+    dictionary  *   ini ;
+
+    ini = iniparser_load(ini_name);
+    if (ini==NULL) {
+        fprintf(stderr, "cannot parse file: %s\n", ini_name);
+        return -1 ;
+    }
+    iniparser_dump(ini, stderr);
+    
+    /*Get Simulation Parameters */
+    int nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
+    double mass_ion =  iniparser_getdouble(ini,"population:massI",-1.0);
+    /* NUM OF COM PARTICLE */
+    int nParticlesI = iniGetInt(ini,"population:nParticlesI",-1);
+    int nParticlesE = iniGetInt(ini,"population:nParticlesE",-1);
+    /* VDF */
+    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
+    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
+    
+    iniparser_freedict(ini);
+    return 0 ;
+}
+
+
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /********************* MAIN FUNCTION ***************************/
-int main()
+int main(int argc, char *argv[])
 {
     //iniparser_load(*ini);
-    dictionary *ini = iniparser_load(const char* input.ini);	
+    parse_ini_file(argv[1]);
+
+	
     double Time = 0;
-    
-    
-    /* STORING DATA FROM VECTOR TO VARIABLE */
-    
-    int nTimeSteps = iniparser_getint(ini,"time:nTimeSteps");
-    double mass_ion =  iniparser_getdouble(ini,"population:massI");
-    /* NUM OF COM PARTICLE */
-    int nParticlesI = iniGetInt(ini,"population:nParticlesI");
-    int nParticlesE = iniGetInt(ini,"population:nParticlesE");
-    /* VDF */
-    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart");
-    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd");
     
     /*Construct the domain parameters*/
     domain.ni = NC+1;
