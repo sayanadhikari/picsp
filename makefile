@@ -22,12 +22,14 @@ ODIR	= src/obj
 LDIR	= lib
 OUTDIR  = output
 
-OBJ = picsp.o
 
 all: version $(EXEC)
 
+OBJ = picsp.o
+picsp.o: main.cpp
+	@$(CXX) $(CXXFLAGS) -c main.cpp $(CFLAGS) $(LFLAGS)
+
 $(EXEC): $(OBJ)
-	@echo "Compiling & Linking PICSP"
 	@$(CXX) $(CXXFLAGS) -c main.cpp -o $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
