@@ -12,9 +12,9 @@ CXX		= g++
 EXEC	= picsp
 
 CXXFLAGS = -std=c++11 -Wall
-CFLAGS	=  -I../lib/iniparser/src   # Flags for compiling
+CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
 
-LFLAGS	=  -L../lib/iniparser -liniparser # Flags for linking
+LFLAGS	=  -Llib/iniparser -liniparser # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -29,11 +29,11 @@ OBJ = main.o
 
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
-	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(ODIR)/$(OBJ) $(CFLAGS) $(LFLAGS)
+	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
-$(ODIR)/$(OBJ): $(SDIR)/main.cpp
-	@$(CXX) $(CXXFLAGS) -c  $(SDIR)/main.cpp $(CFLAGS) $(LFLAGS)
+$(OBJ): main.cpp
+	@$(CXX) $(CXXFLAGS) -c main.cpp $(CFLAGS) $(LFLAGS)
 
 .phony: version
 version:
