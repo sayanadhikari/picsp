@@ -11,6 +11,7 @@ parsedump.txt
 gmon.out
 **local.ini
 src/main.local.c
+output
 ut
 tags
 **.vtk
@@ -26,4 +27,4 @@ local.mk
 src/version.h
 **.swp
 .DS_Store
-*.sh
+**.sh
