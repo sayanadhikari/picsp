@@ -9,10 +9,10 @@ Contributors
 
 Authors:
 
-- `Sayan Adhikari`: architecture and data structures, pushers, weighting schemes, overall maintainance
+- `Sayan Adhikari`_: architecture and data structures, pushers, weighting schemes, overall maintainance
 - Rakesh Moulick (see separate branch): architecture and data structures, poisson solver, Collision module
 - Gunjan Sharma (see separate branch): Physics Study
 - Rupali Paul (see separate branch): Physics Study
 - Kishor Deka (see separate branches): Physics Study
 
-..`Sayan Adhikari`: mailto:sayan.adhikari@fys.uio.no
+.. _`Sayan Adhikari`: mailto:sayan.adhikari@fys.uio.no
