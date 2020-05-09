@@ -54,7 +54,6 @@ double rnd()
 /* Define universal constants */
 const double EPS = 8.85418782E-12;    // Vacuum permittivity
 const double K = 1.38065E-23;        // Boltzmann Constant
-const double massE = 9.10938215E-31;   // electron mass
 const double chargeE = 1.602176565E-19; // Charge of an electron
 const double AMU = 1.660538921E-27;
 const double EV_TO_K = 11604.52;
@@ -75,6 +74,7 @@ int nParticlesE; // Number of simulation electrons
 const int NC =  200;             // Total number of cells
 int nTimeSteps;          // Total time steps (default)
 double massI;  // Ion mass
+double massE; // Electron mass
 double vdfLocStart;  //VDF start location
 double vdfLocEnd;  //VDF end location
 
@@ -209,6 +209,7 @@ int parse_ini_file(char * ini_name)
     nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
     nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
     massI =  iniparser_getdouble(ini,"population:massI",-1.0);
+    massE =  iniparser_getdouble(ini,"population:massE",-1.0);
     density = iniparser_getdouble(ini,"population:density",-1.0);
     thermalVelocityE = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
     thermalVelocityI = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
