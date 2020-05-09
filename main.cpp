@@ -32,12 +32,12 @@
 # include <random>
 # include <cstring>
 # include <fstream>
-#include "iniparser.h"
+extern "C" { #include <iniparser.h> }
 
 using namespace std;
 
 /*Iniparser function*/
-extern "C" int  parse_ini_file(char * ini_name);
+int  parse_ini_file(char * ini_name);
 
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
