@@ -69,8 +69,8 @@ const double thermalVelocityE = 1; // electron temperature in eV
 const double thermalVelocityI = 0.026;  // ion temperature in eV
 
 /* CHANGED TYPE FROM CONST TO VAR FOR INPUT DATA CONTROL  */
-int nParticlesI = 50000;      // Number of simulation ions
-int nParticlesE = 50000; // Number of simulation electrons
+int nParticlesI;      // Number of simulation ions
+int nParticlesE; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
 int nTimeSteps = 1000;          // Total time steps (default)
