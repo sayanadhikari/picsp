@@ -199,8 +199,8 @@ int parse_ini_file(char * ini_name)
     int nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
     double mass_ion =  iniparser_getdouble(ini,"population:massI",-1.0);
     /* NUM OF COM PARTICLE */
-    int nParticlesI = iniGetInt(ini,"population:nParticlesI",-1);
-    int nParticlesE = iniGetInt(ini,"population:nParticlesE",-1);
+    int nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
+    int nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
     /* VDF */
     double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
     double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
