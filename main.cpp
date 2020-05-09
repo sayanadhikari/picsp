@@ -217,9 +217,7 @@ int parse_ini_file(char * ini_name)
 int main(int argc, char *argv[])
 {
     //iniparser_load(*ini);
-    char       * ini_name ;
-    ini_name = argv[1] ;
-    parse_ini_file(ini_name);
+    parse_ini_file(argv[1]);
 
 	
     double Time = 0;
