@@ -30,6 +30,7 @@ OBJ = main.o
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
+	@mv $(OBJ) $(ODIR)/$(OBJ)
 	@echo "PICSP is built"
 
 $(OBJ): main.cpp
