@@ -71,7 +71,7 @@ double thermalVelocityI;  // ion temperature in eV
 int nParticlesI;      // Number of simulation ions
 int nParticlesE; // Number of simulation electrons
 
-const int NC =  200;             // Total number of cells
+int numCells;             // Total number of cells
 int nTimeSteps;          // Total time steps (default)
 double massI;  // Ion mass
 double massE; // Electron mass
@@ -204,6 +204,7 @@ int parse_ini_file(char * ini_name)
     nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
     timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
     stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numCells = iniparser_getint(ini,"grid:numCells",-1);
     
     /* NUM OF COM PARTICLE */
     nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
     double Time = 0;
     
     /*Construct the domain parameters*/
-    domain.ni = NC+1;
+    domain.ni = numCells+1;
     domain.dx = stepSize;
     domain.x0 = 0;
     domain.xl = (domain.ni-1)*domain.dx;
