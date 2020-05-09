@@ -34,7 +34,7 @@ $(EXEC): $(OBJ)
 	@echo "PICSP is built"
 
 
-.phony: version
+.phony: version $(EXEC)
 version:
 	@echo "Embedding git version"
 	@echo "#define VERSION \"$(shell git describe --abbrev=4 --dirty --always --tags)\"" > $(SDIR)/version.h
