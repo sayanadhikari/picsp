@@ -32,7 +32,10 @@
 # include <random>
 # include <cstring>
 # include <fstream>
-#include "iniparser.h"
+
+extern "C" {
+  #include "iniparser.h"
+}
 
 using namespace std;
 
