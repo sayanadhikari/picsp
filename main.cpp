@@ -74,7 +74,7 @@ int nParticlesE; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
 int nTimeSteps;          // Total time steps (default)
-double mass_ion;  // Ion mass
+double massI;  // Ion mass
 double vdfLocStart;  //VDF start location
 double vdfLocEnd;  //VDF end location
 
@@ -208,7 +208,7 @@ int parse_ini_file(char * ini_name)
     /* NUM OF COM PARTICLE */
     nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
     nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
-    mass_ion =  iniparser_getdouble(ini,"population:massI",-1.0);
+    massI =  iniparser_getdouble(ini,"population:massI",-1.0);
     density = iniparser_getdouble(ini,"population:density",-1.0);
     thermalVelocityE = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
     thermalVelocityI = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
     /* Add singly charged Ar+ ions and electrons */
     /*********************************************/
     /* Create the species lists*/
-    species_list.emplace_back("Ion",mass_ion,chargeE,ion_spwt, nParticlesI, thermalVelocityI);
+    species_list.emplace_back("Ion",massI,chargeE,ion_spwt, nParticlesI, thermalVelocityI);
     species_list.emplace_back("Electrons",massE,-chargeE,electron_spwt, nParticlesE, thermalVelocityE);
     
     /*Assign the species list as ions and electrons*/
