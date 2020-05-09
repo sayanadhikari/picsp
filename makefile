@@ -4,16 +4,16 @@
 ## @author		Sayan Adhikari <sayan.adhikari@fys.uio.no>
 ##
 
-CC		= g++
+CC		= g++ -std=c++11 -Wall
 
-ARG = -std=c++11 -Wall
+#ARG =
                         
 
 EXEC	= picsp
 
 CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
 
-LFLAGS	= -Llib/iniparser -liniparser # Flags for linking
+LFLAGS	=  -Llib/iniparser -liniparser # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -28,11 +28,11 @@ LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 all: version $(EXEC)
 
 $(ODIR)/%.o: $(SDIR)/%.cpp
-	$(CC) $(ARG) -c -o $@ $< $(CFLAGS) $(LFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(LFLAGS)
 
 $(EXEC): $(OBJ)
 	@echo "Compiling & Linking PICSP"
-	@$(CC) $(ARG) -o $@ $^ $(CFLAGS) $(LFLAGS)
+	@$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
 
