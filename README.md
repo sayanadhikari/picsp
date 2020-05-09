@@ -17,3 +17,15 @@ Authors:
 - Rupali Paul (see separate branch): Physics Study
 - Kishor Deka (see separate branches): Physics Study
 
+Installation
+------------
+# Prerequisites
+1. gcc compiler for C++ (g++)
+2. make buildsystem
+3. git
+
+First make a clone of the master branch using the following command
+```git
+git clone https://github.com/sayanadhikari207/picsp.git
+```
+*PICSP* contains a setup file 
