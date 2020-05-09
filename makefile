@@ -22,6 +22,9 @@ LDIR	= lib
 
 OBJ     = picsp.o
 
+LIBHEAD_= iniparser/src/iniparser.h
+LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
+
 all: iniparse version $(EXEC)
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
@@ -34,7 +37,7 @@ $(EXEC): $(OBJ)
 
 iniparse:
 	@echo "Building iniparser"
-    @cd $(LDIR)/iniparser && @make
+    @cd $(LDIR)/iniparser && $(MAKE) libiniparser.a > /dev/null 2>&1
 
 .phony: version
 version:
