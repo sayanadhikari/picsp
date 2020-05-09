@@ -20,10 +20,13 @@ ODIR	= src/obj
 #HDIR	= src
 LDIR	= lib
 
-OBJ     = picsp.o
+#OBJ     = picsp.o
 
 LIBHEAD_= iniparser/src/iniparser.h
 LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
+
+_OBJ = picsp.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: version $(EXEC)
 
