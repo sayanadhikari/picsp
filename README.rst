@@ -1,3 +1,5 @@
+![GitHub Logo](/images/logo.png)
+Format: ![Alt Text](url)
 PICSP - (Particle-in-Cell Simulation of Plasma)
 ===============================================
 
