@@ -9,7 +9,7 @@ CC		= g++ -std=c++11 -Wall
 #ARG =
                         
 
-#EXEC	= picsp
+EXEC	= picsp
 
 CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
 
@@ -21,7 +21,8 @@ ODIR	= src/obj
 LDIR	= lib
 OUTDIR  = output
 
-OBJ = picsp
+_OBJ = picsp.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: version $(EXEC)
 
@@ -30,11 +31,11 @@ $(ODIR)/%.o: %.cpp
 
 $(EXEC): $(OBJ)
 	@echo "Compiling & Linking PICSP"
-	@$(CC) -c $(SDIR)/%.cpp -o $(OBJ) $(CFLAGS) $(LFLAGS)
+	@$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
 
-.phony: version $(EXEC)
+.phony: version
 version:
 	@echo "Embedding git version"
 	@echo "#define VERSION \"$(shell git describe --abbrev=4 --dirty --always --tags)\"" > $(SDIR)/version.h
