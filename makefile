@@ -30,7 +30,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: version $(EXEC)
 
-$(ODIR)/%.o: $(SDIR)/%.cpp
+$(ODIR)/%.o: %.cpp
 	$(CC) -c -o $@ $< $(CFLAGS) $(LFLAGS)
 
 $(EXEC): $(OBJ)
@@ -48,8 +48,4 @@ clean:
 	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
 
-veryclean: clean
-	@echo "Cleaning executable and iniparser"
-	@rm -f $(EXEC)
-	@cd $(LDIR)/iniparser && $(MAKE) veryclean > /dev/null 2>&1
 
