@@ -31,6 +31,7 @@ $(EXEC): $(OBJ)
 	@echo "Compiling & Linking PICSP"
 	@$(CC) $(ARG) -o $@ $^ $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
+
 iniparse:
 	@echo "Building iniparser"
     @cd $(LDIR)/iniparser && $(MAKE)
