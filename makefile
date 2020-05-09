@@ -31,6 +31,7 @@ $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@mv $(OBJ) $(ODIR)/$(OBJ)
+	@cp main.cpp $(SDIR)/main.cpp
 	@echo "PICSP is built"
 
 $(OBJ): main.cpp
@@ -44,6 +45,6 @@ version:
 clean:
 	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
-	@rm -f $(OUTDIR)/*
+	@rm -f $(OUTDIR)/* *.dat
 
 
