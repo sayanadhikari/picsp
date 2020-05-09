@@ -26,13 +26,13 @@ OUTDIR  = output
 all: version $(EXEC)
 
 OBJ = picsp.o
-picsp.o: main.cpp
-	@$(CXX) $(CXXFLAGS) -c main.cpp $(CFLAGS) $(LFLAGS)
 
 $(EXEC): $(OBJ)
-	@$(CXX) $(CXXFLAGS) -c main.cpp -o $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
+	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
+$(OBJ): main.cpp
+	@$(CXX) $(CXXFLAGS) -c main.cpp $(CFLAGS) $(LFLAGS)
 
 .phony: version
 version:
