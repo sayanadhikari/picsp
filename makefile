@@ -27,7 +27,7 @@ LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 
 all: version $(EXEC)
 
-$(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
+$(ODIR)/%.o: $(SDIR)/%.cpp
 	$(CC) $(ARG) -c -o $@ $< $(CFLAGS) $(LFLAGS)
 
 $(EXEC): $(OBJ)
