@@ -34,17 +34,10 @@
 # include <fstream>
 #include "iniparser.h"
 
-/* OS IDENTIFICATION */
-#ifdef __MACH__
-#define PATH "/usr/local/bin/gnuplot" //real time plot using GNUPLOT SAYAN 16/08/2019
-#elif __linux__
-#define PATH "/usr/bin/gnuplot"     //real time plot using GNUPLOT SAYAN 16/08/2019
-#else
-#error "Unknown compiler"
-#endif
-
-
 using namespace std;
+
+/*Iniparser function*/
+int  parse_ini_file(char * ini_name);
 
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
@@ -52,16 +45,6 @@ std::uniform_real_distribution<double> rnd_dist(0,1.0);
 double rnd()
 {
     return rnd_dist(mt_gen);
-}
-
-/* FUNCTION - LOADING VARIABLES FROM TEXT FILE (ADDED BY SAYAN on 12/12/2018) */
-
-void getItems(vector<string>& var, string path)
-{
-    ifstream is(path.c_str());
-    istream_iterator<string> start(is), end;
-    vector<string> items(start, end);
-    var = items;
 }
 
 
@@ -88,7 +71,9 @@ int nParticlesE = 50000; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
 int nTimeSteps = 1000;          // Total time steps (default)
-
+double mass_ion;  // Ion mass
+double vdfLocStart;  //VDF start location
+double vdfLocEnd;  //VDF end location
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -174,9 +159,6 @@ FILE *f3;
 
 FILE *file_sp;
 
-FILE* gnuplotPipe1 = popen(PATH, "w"); //real time plot using GNUPLOT SAYAN 23/12/2018
-FILE* gnuplotPipe2 = popen(PATH, "w"); //real time plot using GNUPLOT SAYAN 23/12/2018
-
 // Define Helper functions
 void Init(Species *species);
 void ScatterSpecies(Species *species);
@@ -200,28 +182,45 @@ double SampleVel(double T, double mass);
 bool SolvePotential(double *phi, double *rho);
 bool SolvePotentialDirect(double *phi, double *rho);
 
+
+
+/*Parsing Input file*/
+
+int parse_ini_file(char * ini_name)
+{
+    dictionary  *   ini ;
+
+    ini = iniparser_load(ini_name);
+    if (ini==NULL) {
+        fprintf(stderr, "cannot parse file: %s\n", ini_name);
+        return -1 ;
+    }
+    iniparser_dump(ini, stderr);
+    
+    /*Get Simulation Parameters */
+    int nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
+    double mass_ion =  iniparser_getdouble(ini,"population:massI",-1.0);
+    /* NUM OF COM PARTICLE */
+    int nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
+    int nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
+    /* VDF */
+    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
+    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
+    
+    iniparser_freedict(ini);
+    return 0 ;
+}
+
+
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /********************* MAIN FUNCTION ***************************/
-int main()
+int main(int argc, char *argv[])
 {
-    iniparser_load(*ini);
+    //iniparser_load(*ini);
+    parse_ini_file(argv[1]);
+
+    
     double Time = 0;
-    
-    /* FOR LOADING INPUTS */
-    vector<string> var;
-    getItems(var,"input.txt");
-    
-    
-    /* STORING DATA FROM VECTOR TO VARIABLE */
-    
-    int nTimeSteps = iniGetInt(ini,"time:nTimeSteps");
-    double mass_ion =  iniparser_getdouble(ini,"population:massI");
-    /* NUM OF COM PARTICLE */
-    int nParticlesI = iniGetInt(ini,"population:nParticlesI");
-    int nParticlesE = iniGetInt(ini,"population:nParticlesE");
-    /* VDF */
-    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart");
-    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd");
     
     /*Construct the domain parameters*/
     domain.ni = NC+1;
