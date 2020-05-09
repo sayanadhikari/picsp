@@ -63,7 +63,7 @@ const double pi = 3.14159265359;
 /* Default Simulation Parameters*/
 const double density = 1E16; // Plasma Density
 const double stepSize = 1E-5;         // Cell Spacing
-const double timeStep = 5E-12;        // Time steps
+const double timeStep;        // Time steps
 
 const double thermalVelocityE = 1; // electron temperature in eV
 const double thermalVelocityI = 0.026;  // ion temperature in eV
@@ -73,7 +73,7 @@ int nParticlesI;      // Number of simulation ions
 int nParticlesE; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
-int nTimeSteps = 1000;          // Total time steps (default)
+int nTimeSteps;          // Total time steps (default)
 double mass_ion;  // Ion mass
 double vdfLocStart;  //VDF start location
 double vdfLocEnd;  //VDF end location
@@ -201,14 +201,16 @@ int parse_ini_file(char * ini_name)
     iniparser_dump(ini, stderr);
     
     /*Get Simulation Parameters */
-    int nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
+    nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
+    timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
     mass_ion =  iniparser_getdouble(ini,"population:massI",-1.0);
     /* NUM OF COM PARTICLE */
     nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
     nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
     /* VDF */
-    double vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
-    double vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
+    vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
+    vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
     
     iniparser_freedict(ini);
     return 0 ;
