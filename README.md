@@ -1,5 +1,4 @@
 ![PICSP Logo](/images/logo.png)
-Format: ![Alt Text](url)
 
 PICSP - (Particle-in-Cell Simulation of Plasma)
 ===============================================
@@ -12,10 +11,9 @@ Contributors
 
 Authors:
 
-- `Sayan Adhikari`_: architecture and data structures, pushers, weighting schemes, overall maintainance
+- [Sayan Adhikari](mailto:sayan.adhikari@fys.uio.no): architecture and data structures, pushers, weighting schemes, overall maintainance
 - Rakesh Moulick (see separate branch): architecture and data structures, poisson solver, Collision module
 - Gunjan Sharma (see separate branch): Physics Study
 - Rupali Paul (see separate branch): Physics Study
 - Kishor Deka (see separate branches): Physics Study
 
-.. _`Sayan Adhikari`: mailto:sayan.adhikari@fys.uio.no
