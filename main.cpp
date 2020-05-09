@@ -71,7 +71,7 @@ int nParticlesE = 50000; // Number of simulation electrons
 
 const int NC =  200;             // Total number of cells
 int nTimeSteps = 1000;          // Total time steps (default)
-
+double mass_ion;  // Ion mass
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
