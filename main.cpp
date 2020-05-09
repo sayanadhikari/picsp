@@ -62,8 +62,8 @@ const double pi = 3.14159265359;
 
 /* Default Simulation Parameters*/
 const double density = 1E16; // Plasma Density
-const double stepSize = 1E-5;         // Cell Spacing
-const double timeStep;        // Time steps
+double stepSize;         // Cell Spacing
+double timeStep;        // Time steps
 
 const double thermalVelocityE = 1; // electron temperature in eV
 const double thermalVelocityI = 0.026;  // ion temperature in eV
