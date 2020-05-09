@@ -11,9 +11,9 @@ CC		= g++ -std=c++11 -Wall
 
 EXEC	= picsp
 
-CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
+CFLAGS	=  -I..lib/iniparser/src   # Flags for compiling
 
-LFLAGS	=  -Llib/iniparser -liniparser # Flags for linking
+LFLAGS	=  -L..lib/iniparser -liniparser # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -21,7 +21,7 @@ ODIR	= src/obj
 LDIR	= lib
 OUTDIR  = output
 
-_OBJ = picsp.o
+_OBJ = picsp
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: version $(EXEC)
