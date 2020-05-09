@@ -39,7 +39,22 @@ Then built the  *iniparser*
 cd lib/iniparser
 make clean
 make
-cd ..
+cd ../../
 ```
-
-*PICSP* contains a setup file 
+Now complile and built the *PICSP* code
+```shell
+make clean
+make
+``` 
+Usage
+-----
+Upon successful compilation, run the code using following command
+```shell
+./picsp input.ini
+```
+Plasma Parameter Setup
+----------------------
+Edit the input.ini or create your own .ini file using the *input.ini* file format (e.g. *test.ini*) and run the code
+```shell
+./picsp test.ini
+```
