@@ -6,20 +6,14 @@
 
 CC		= g++
 
-CLOCAL = 	-Ilib/iniparser/src\
-			#-lm
-CLOCALSA = 	-I /opt/local/include\
-			
-LLOCAL =	-Ilib/iniparser/src\
-			#-lm
-LLOCALSA =   -I /opt/local/include\
+ARG = -std=c++11 -Wall
                         
 
 EXEC	= picsp
-#CADD	= # Additional CFLAGS accessible from CLI
-CFLAGS	= -std=c++11 -Wall $(CLOCAL) $(CLOCALSA) # Flags for compiling
 
-LFLAGS	= -std=c++11 -Wall $(LLOCAL) $(LLOCALSA) # Flags for linking
+CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
+
+LFLAGS	= -Llib/iniparser -liniparser # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -40,11 +34,11 @@ all: version $(EXEC)
 
 $(ODIR)/%.o: $(SDIR)/%.c
 	@echo "Compiling $<"
-	@$(CC) -c $< -o $@ $(CFLAGS)
+	@$(CC) $(ARG) -c $< -o $@ $(CFLAGS)
 
 $(EXEC): $(OBJ) $(LIBOBJ)
 	@echo "Linking PICSP"
-	@$(CC) $^ -o $@ $(LFLAGS) -nostartfiles
+	@$(CC) $(ARG) $^ -o $@ $(LFLAGS)
 	@echo "PICSP is built"
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
