@@ -34,7 +34,7 @@ $(EXEC): $(OBJ)
 
 iniparse:
 	@echo "Building iniparser"
-    @cd $(LDIR)/iniparser && $(MAKE)
+    @cd $(LDIR)/iniparser && @make
 
 .phony: version
 version:
