@@ -37,7 +37,7 @@
 using namespace std;
 
 /*Iniparser function*/
-int  parse_ini_file(char * ini_name);
+extern "C" int  parse_ini_file(char * ini_name);
 
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
