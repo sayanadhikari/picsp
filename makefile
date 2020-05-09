@@ -9,7 +9,7 @@ CC		= g++ -std=c++11 -Wall
 #ARG =
                         
 
-EXEC	= picsp
+#EXEC	= picsp
 
 CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
 
@@ -20,13 +20,8 @@ ODIR	= src/obj
 #HDIR	= src
 LDIR	= lib
 
-#OBJ     = picsp.o
 
-LIBHEAD_= iniparser/src/iniparser.h
-LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
-
-_OBJ = picsp.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+OBJ = picsp
 
 all: version $(EXEC)
 
@@ -35,7 +30,7 @@ $(ODIR)/%.o: %.cpp
 
 $(EXEC): $(OBJ)
 	@echo "Compiling & Linking PICSP"
-	@$(CC) -o $@ $^ $(CFLAGS) $(LFLAGS)
+	@$(CC) -c $(SDIR)/%.cpp -o $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
 
