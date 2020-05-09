@@ -71,7 +71,7 @@ double thermalVelocityI;  // ion temperature in eV
 int nParticlesI;      // Number of simulation ions
 int nParticlesE; // Number of simulation electrons
 
-const int NC =  200;             // Total number of cells
+int numCells;             // Total number of cells
 int nTimeSteps;          // Total time steps (default)
 double massI;  // Ion mass
 double massE; // Electron mass
@@ -204,6 +204,7 @@ int parse_ini_file(char * ini_name)
     nTimeSteps = iniparser_getint(ini,"time:nTimeSteps",-1);
     timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
     stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numCells = iniparser_getint(ini,"grid:numCells",-1);
     
     /* NUM OF COM PARTICLE */
     nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
@@ -229,11 +230,11 @@ int main(int argc, char *argv[])
     //iniparser_load(*ini);
     parse_ini_file(argv[1]);
 
-	
+    
     double Time = 0;
     
     /*Construct the domain parameters*/
-    domain.ni = NC+1;
+    domain.ni = numCells+1;
     domain.dx = stepSize;
     domain.x0 = 0;
     domain.xl = (domain.ni-1)*domain.dx;
@@ -261,13 +262,6 @@ int main(int argc, char *argv[])
     /*Species Info: Create vector to hold the data*/
     vector <Species> species_list;
     
-    /* Grab a parameter alpha such that 0<alpha<1.
-     This parameter is responsible for the percentage of two ions respectively.
-     alpha = 0.3 means 30 percent of that species*/
-    
-    // double ALP = 0.8; // Determines the percentage contribution of First Ion.
-    //double mass_1 = 8*AMU; // mass of the heavier particle
-    //double mass_2 = 4*AMU; // mass of the lighter particle
     
     /*Calculate the specific weights of the ions and electrons*/
     double ion_spwt = (density*domain.xl)/(nParticlesI);
@@ -319,13 +313,14 @@ int main(int argc, char *argv[])
     printf("rm -rf output/*\n");
     system("rm -rf output");
     
-    system("rm -rf vdf_output");  // ADDED By SAYAN 14/08/2019
-    
     /*create an output folder*/
     system("mkdir output");
     
-    /*create a seperate directory for VDF data*/
-    system("mkdir vdf_output");      // ADDED By SAYAN 14/08/2019
+    /*create a seperate directory for phase-space data inside output*/
+    system("mkdir output/phase_space");
+    
+    /*create a seperate directory for VDF data inside output*/
+    system("mkdir output/vdf_output");
     
     char NAmassE[50];
     
@@ -360,14 +355,14 @@ int main(int argc, char *argv[])
         //Write diagnostics
         if(ts%50 == 0)
         {
-            sprintf(NAmassE,"output/i%d.dat",ts);
+            sprintf(NAmassE,"output/phase_space/i%d.dat",ts);
             f1 = fopen(NAmassE,"w");
             
-            sprintf(NAmassE,"output/e%d.dat",ts);
+            sprintf(NAmassE,"output/phase_space/e%d.dat",ts);
             f2 = fopen(NAmassE,"w");
             
             //Added by SAYAN 14/08/2019 for VDF data
-            sprintf(NAmassE,"vdf_output/i%d.dat",ts);
+            sprintf(NAmassE,"output/vdf_output/i%d.dat",ts);
             f3 = fopen(NAmassE,"w");
             
             ///////////////////////////////////////
@@ -401,6 +396,11 @@ int main(int argc, char *argv[])
     delete phi;
     delete rho;
     delete ef;
+    
+    /*copy other diagnostics to output directory*/
+    system("cp *dat output/");
+    /*clean home directory*/
+    system("rm -f *dat");
     
     return 0;
 }
