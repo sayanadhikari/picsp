@@ -22,7 +22,6 @@ local.mk
 **.txt
 **.nfs*
 **.eps
-**.png
 *.html
 src/version.h
 **.swp
