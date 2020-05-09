@@ -25,7 +25,7 @@ OUTDIR  = output
 
 all: version $(EXEC)
 
-OBJ = picsp.o
+OBJ = main.o
 
 $(EXEC): $(OBJ)
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
