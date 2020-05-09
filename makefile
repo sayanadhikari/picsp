@@ -25,7 +25,7 @@ OBJ     = picsp.o
 LIBHEAD_= iniparser/src/iniparser.h
 LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 
-all: iniparse version $(EXEC)
+all: version $(EXEC)
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 	$(CC) $(ARG) -c -o $@ $< $(CFLAGS) $(LFLAGS)
@@ -35,9 +35,6 @@ $(EXEC): $(OBJ)
 	@$(CC) $(ARG) -o $@ $^ $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
-iniparse:
-	@echo "Building iniparser"
-    @cd $(LDIR)/iniparser && $(MAKE) libiniparser.a > /dev/null 2>&1
 
 .phony: version
 version:
