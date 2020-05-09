@@ -32,7 +32,7 @@
 # include <random>
 # include <cstring>
 # include <fstream>
-#include "lib/iniparser/src/iniparser.h"
+#include "iniparser.h"
 
 using namespace std;
 
