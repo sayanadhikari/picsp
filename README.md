@@ -17,3 +17,44 @@ Authors:
 - Rupali Paul (see separate branch): Physics Study
 - Kishor Deka (see separate branches): Physics Study
 
+Installation
+------------
+#### Prerequisites
+1. gcc compiler for C++ (g++)
+2. make buildsystem
+3. git
+
+#### Procedure
+First make a clone of the master branch using the following command
+```shell
+git clone https://github.com/sayanadhikari207/picsp.git
+```
+Then enter inside the *PICSP* directory and verify the contents. 
+```shell
+cd picsp
+ls
+```
+Then built the  *iniparser*
+```shell
+cd lib/iniparser
+make clean
+make
+cd ../../
+```
+Now complile and built the *PICSP* code
+```shell
+make clean
+make
+``` 
+Usage
+-----
+Upon successful compilation, run the code using following command
+```shell
+./picsp input.ini
+```
+Plasma Parameter Setup
+----------------------
+Edit the input.ini or create your own .ini file using the *input.ini* file format (e.g. *test.ini*) and run the code
+```shell
+./picsp test.ini
+```
