@@ -11,7 +11,7 @@ data1,data2 = np.loadtxt(filename, unpack=True)
 
 #velocity data within a range
 range1 = 0.001
-range2 = 0.002
+range2 = 0.0012
 
 
 
