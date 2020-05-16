@@ -45,6 +45,7 @@ version:
 clean:
 	@echo "Cleaning compilation files (run \"make veryclean\" to clean more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
-	@rm -f $(OUTDIR)/* *.dat
+	@rm -f *.dat
+	@rm -rf $(OUTDIR)
 
 
