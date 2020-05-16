@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 from pylab import *
 # numerical data file
-filename="../output/phase_space/e0.dat"
+filename="../output/phase_space/i1000.dat"
 
 data1,data2 = np.loadtxt(filename, unpack=True)
 # disp(data_act.shape)
@@ -11,7 +11,7 @@ data1,data2 = np.loadtxt(filename, unpack=True)
 
 #velocity data within a range
 range1 = 0.001
-range2 = 0.0012
+range2 = 0.002
 
 
 
