@@ -8,11 +8,14 @@ xLen,iDen,eDen,iVel,eVel,rho,phi,ef = np.loadtxt(filename, unpack=True)
 # disp(data_act.shape)
 ActiveSubplot = True
 numCells = 200 #copy it from .ini file
-nTimePhase = 2
-if nTimePhase ==0:
-    inix = nTimePhase*numCells
+nTimeSteps = 1000 #copy it from .ini file
+nTimePhase = 2    #Stage of simulation
 
+
+if nTimePhase == 0:
+    inix = nTimePhase*numCells
 inix = nTimePhase*numCells+nTimePhase
+
 
 if ActiveSubplot==False:
     figure(1)
@@ -25,24 +28,25 @@ if ActiveSubplot==False:
     plt.title('Electron / Ion Density')
 
 
-    figure(2)
-    plt.plot(xLen[inix:inix+numCells],phi[inix:inix+numCells], linewidth=1,color='blue')
-    # plt.plot(xLen,eDen, linewidth=4,color='blue')
-    plt.xlabel('Length (m)')
-    plt.ylabel('$\\phi$ (V)')
-    plt.title('Potential')
 
-    figure(3)
+    figure(2)
     plt.plot(xLen[inix:inix+numCells],ef[inix:inix+numCells], linewidth=1,color='red')
     plt.xlabel('Length (m)')
     plt.ylabel('$E$ (V/m)')
     plt.title('Electric Field')
 
-    figure(4)
+    figure(3)
     plt.plot(xLen[inix:inix+numCells],rho[inix:inix+numCells], linewidth=1,color='red')
     plt.xlabel('Length (m)')
     plt.ylabel('$\\rho$ (V/m)')
     plt.title('Charge Density')
+
+    figure(4)
+    plt.plot(xLen[inix:inix+numCells],phi[inix:inix+numCells], linewidth=1,color='blue')
+    plt.xlabel('Length (m)')
+    plt.ylabel('$\\phi$ (V)')
+    plt.title('Potential')
+
 
 if ActiveSubplot==True:
     fig, ax = plt.subplots(figsize=(10, 10))
