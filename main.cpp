@@ -6,8 +6,8 @@
 /*
  ****************************
  Developers:
- DR. RAKESH MOULICK, LPU
- DR. SAYAN ADHIKARI, CPP-IPR
+ DR. RAKESH MOULICK, LPU, India
+ DR. SAYAN ADHIKARI, UiO, Norway
  ***************************
  
  */
