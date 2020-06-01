@@ -6,8 +6,8 @@
 /*
  ****************************
  Developers:
- DR. RAKESH MOULICK, LPU
- DR. SAYAN ADHIKARI, CPP-IPR
+ DR. RAKESH MOULICK, LPU, India
+ DR. SAYAN ADHIKARI, UiO, Norway
  ***************************
  
  */
@@ -77,6 +77,7 @@ double massI;  // Ion mass
 double massE; // Electron mass
 double vdfLocStart;  //VDF start location
 double vdfLocEnd;  //VDF end location
+int probLoc;  //VDF end location
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -155,6 +156,7 @@ private:
 Domain domain;
 FILE *file_res;
 FILE *file_ke;
+FILE *file_phi;
 FILE *f1;
 FILE *f2;
 FILE *f3;
@@ -174,6 +176,7 @@ void Write_ts(int ts, Species *ions, Species *electrons);
 void Write_Particle(FILE *file, int ts, Species *species);
 void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species);
 void WriteKE(double Time, Species *ions, Species *electrons);
+void WritePotOsc(double Time, int probLoc);
 void Write_Single_Particle(Species *species);
 void AddSources(Species *species);
 
@@ -214,9 +217,10 @@ int parse_ini_file(char * ini_name)
     density = iniparser_getdouble(ini,"population:density",-1.0);
     thermalVelocityE = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
     thermalVelocityI = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
-    /* VDF */
-    vdfLocStart = iniparser_getdouble(ini,"vdf:vdfLocStart",-1.0);
-    vdfLocEnd = iniparser_getdouble(ini,"vdf:vdfLocEnd",-1.0);
+    /* DIAGNOSTICS */
+    vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
+    vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);
+    probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
     
     iniparser_freedict(ini);
     return 0 ;
@@ -327,6 +331,7 @@ int main(int argc, char *argv[])
     file_res = fopen("results.dat","w");
     file_ke = fopen("ke.dat","w");
     file_sp = fopen("part.dat","w");
+    file_phi = fopen("phi.dat","w");
     
     
     /*MAIN LOOP*/
@@ -385,10 +390,11 @@ int main(int argc, char *argv[])
             
             Write_Single_Particle(&electrons);
             
-            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);  //Added by SAYAN 14/08/2019
+            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);
             
+            WritePotOsc(Time,probLoc);
         }
-        
+        WritePotOsc(Time,probLoc);
         Time += timeStep;
     }
     
@@ -703,6 +709,13 @@ void Write_ts(int ts, Species *ions, Species *electrons)
     }
     //fprintf(file_res,"%g \t %g \t %g\n",ts*timeStep, gamma_i[domain.ni-1], gamma_e[domain.ni-1]);
     fflush(file_res);
+}
+
+void WritePotOsc(double Time, int probLoc)
+{
+        
+    fprintf(file_phi,"%g \t %g\n",Time, domain.phi[probLoc]);
+    fflush(file_phi);
 }
 
 /* Write the Output results*/
