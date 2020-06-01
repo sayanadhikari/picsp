@@ -23,6 +23,7 @@ Installation
 1. gcc compiler for C++ (g++)
 2. make buildsystem
 3. git
+4. Python 3.0 or higher for plot
 
 #### Procedure
 First make a clone of the master branch using the following command
