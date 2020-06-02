@@ -49,7 +49,7 @@ if ActiveSubplot==False:
 
 
 if ActiveSubplot==True:
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(10, 8))
     plt.subplot(221)
     plt.plot(xLen[inix:inix+numCells],iDen[inix:inix+numCells], linewidth=1,color='blue')
     plt.plot(xLen[inix:inix+numCells],eDen[inix:inix+numCells], linewidth=1,color='red')
