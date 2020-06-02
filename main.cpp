@@ -554,7 +554,7 @@ void PushSpecies(Species *species, double *ef)
         // Remove the particles leaving the domain
         if(part.pos < domain.x0 || part.pos >= domain.xmax)
         {
-            it = species->part_list.erase(it);
+//            it = species->part_list.erase(it);
             
             /* Encountering Steady state*/
             //part.pos = (domain.xl - domain.x0)/2; // relocate the particle in the middle of the domain
@@ -564,6 +564,10 @@ void PushSpecies(Species *species, double *ef)
              part.pos = (domain.x0+(domain.ni/100)*domain.dx) + rnd()*domain.xl-((domain.ni/100)*domain.dx);
              part.vel = SampleVel(species->Temp*EV_TO_K, species->mass);
              species->add(Particle(part.pos,part.vel));*/
+            
+            part.pos = (domain.x0+(domain.ni/100)*domain.dx) + rnd()*domain.xl-((domain.ni/100)*domain.dx);
+            part.vel = SampleVel(species->Temp*EV_TO_K, species->mass);
+//            species->add(Particle(part.pos,part.vel));
             
             continue;
         }
