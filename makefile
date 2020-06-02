@@ -11,7 +11,7 @@ CXX		= g++
 
 EXEC	= picsp
 
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -g -std=c++11 -Wall
 CFLAGS	=  -Ilib/iniparser/src   # Flags for compiling
 
 LFLAGS	=  -Llib/iniparser -liniparser # Flags for linking
