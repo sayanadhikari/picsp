@@ -328,10 +328,10 @@ int main(int argc, char *argv[])
     char NAmassE[50];
     char NAmassI[50];
     
-    file_res = fopen("results.dat","w");
-    file_ke = fopen("ke.dat","w");
-    file_sp = fopen("part.dat","w");
-    file_phi = fopen("phi.dat","w");
+    file_res = fopen("output/results.dat","w");
+    file_ke = fopen("output/ke.dat","w");
+    file_sp = fopen("output/part.dat","w");
+    file_phi = fopen("output/phi.dat","w");
     
     
     /*MAIN LOOP*/
@@ -387,9 +387,9 @@ int main(int argc, char *argv[])
             
             Write_Particle(f1,ts, &ions);
             Write_Particle(f2,ts, &electrons);
+            Write_Single_Particle(&electrons);
             fclose(f1);
             fclose(f2);
-            Write_Single_Particle(&electrons);
 
 //            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);
         }
@@ -403,9 +403,9 @@ int main(int argc, char *argv[])
     delete ef;
     
     /*copy other diagnostics to output directory*/
-    system("cp *dat output/");
+//    system("cp *dat output/");
     /*clean home directory*/
-    system("rm -f *dat");
+//    system("rm -f *dat");
     
     return 0;
 }
