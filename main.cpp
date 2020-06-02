@@ -159,7 +159,6 @@ FILE *file_ke;
 FILE *file_phi;
 FILE *f1;
 FILE *f2;
-FILE *f3;
 
 
 FILE *file_sp;
@@ -174,7 +173,7 @@ void PushSpecies(Species *species, double *ef);
 void RewindSpecies(Species *species, double *ef);
 void Write_ts(int ts, Species *ions, Species *electrons);
 void Write_Particle(FILE *file, int ts, Species *species);
-void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species);
+//void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species);
 void WriteKE(double Time, Species *ions, Species *electrons);
 void WritePotOsc(double Time, int probLoc);
 void Write_Single_Particle(Species *species);
@@ -218,8 +217,8 @@ int parse_ini_file(char * ini_name)
     thermalVelocityE = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
     thermalVelocityI = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
     /* DIAGNOSTICS */
-    vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
-    vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);
+//    vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
+//    vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);
     probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
     
     iniparser_freedict(ini);
@@ -324,9 +323,10 @@ int main(int argc, char *argv[])
     system("mkdir output/phase_space");
     
     /*create a seperate directory for VDF data inside output*/
-    system("mkdir output/vdf_output");
+//    system("mkdir output/vdf_output");
     
     char NAmassE[50];
+    char NAmassI[50];
     
     file_res = fopen("results.dat","w");
     file_ke = fopen("ke.dat","w");
@@ -360,15 +360,15 @@ int main(int argc, char *argv[])
         //Write diagnostics
         if(ts%50 == 0)
         {
-            sprintf(NAmassE,"output/phase_space/i%d.dat",ts);
-            f1 = fopen(NAmassE,"w");
+            sprintf(NAmassI,"output/phase_space/i%d.dat",ts);
+            f1 = fopen(NAmassI,"w");
             
             sprintf(NAmassE,"output/phase_space/e%d.dat",ts);
             f2 = fopen(NAmassE,"w");
             
             //Added by SAYAN 14/08/2019 for VDF data
-            sprintf(NAmassE,"output/vdf_output/i%d.dat",ts);
-            f3 = fopen(NAmassE,"w");
+//            sprintf(NAmassE,"output/vdf_output/i%d.dat",ts);
+//            f3 = fopen(NAmassE,"w");
             
             ///////////////////////////////////////
             double max_phi = phi[0];
@@ -387,12 +387,11 @@ int main(int argc, char *argv[])
             
             Write_Particle(f1,ts, &ions);
             Write_Particle(f2,ts, &electrons);
-            
+            fclose(f1);
+            fclose(f2);
             Write_Single_Particle(&electrons);
-            
-            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);
-            
-            WritePotOsc(Time,probLoc);
+
+//            Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);
         }
         WritePotOsc(Time,probLoc);
         Time += timeStep;
@@ -557,17 +556,20 @@ void PushSpecies(Species *species, double *ef)
 //            it = species->part_list.erase(it);
             
             /* Encountering Steady state*/
-            //part.pos = (domain.xl - domain.x0)/2; // relocate the particle in the middle of the domain
+//            part.pos = (domain.xl - domain.x0)/2; // relocate the particle in the middle of the domain
             //part.pos = domain.x0 + rnd()*(domain.ni - 1)*domain.dx;
             //cout << (domain.x0+(domain.ni/100)*domain.dx) << endl;
             /*
              part.pos = (domain.x0+(domain.ni/100)*domain.dx) + rnd()*domain.xl-((domain.ni/100)*domain.dx);
              part.vel = SampleVel(species->Temp*EV_TO_K, species->mass);
              species->add(Particle(part.pos,part.vel));*/
-            
-            part.pos = (domain.x0+(domain.ni/100)*domain.dx) + rnd()*domain.xl-((domain.ni/100)*domain.dx);
+
+            /* Adding particles back to the domain */
+//            part.pos = (domain.x0+(domain.ni/100)*domain.dx) + rnd()*domain.xl-((domain.ni/100)*domain.dx);
+            part.pos = domain.x0 + rnd()*(domain.ni-1)*domain.dx;
             part.vel = SampleVel(species->Temp*EV_TO_K, species->mass);
 //            species->add(Particle(part.pos,part.vel));
+
             
             continue;
         }
@@ -729,21 +731,21 @@ void Write_Particle(FILE *file, int ts, Species *species)
     {
         fprintf(file,"%g \t %g\n",p.pos, p.vel);
     }
-    fflush(file_res);
+    fflush(file);
 }
 
 /******* ADDED BY SAYAN 14/08/2019  *******/
-void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species)
-{
-    for(auto& p: species->part_list)
-    {
-        if (p.pos >= vdfLocStart && p.pos <= vdfLocEnd)
-        {
-        fprintf(file,"%g\n",p.vel);
-        }
-    }
-    fflush(file_res);
-}
+//void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species)
+//{
+//    for(auto& p: species->part_list)
+//    {
+//        if (p.pos >= vdfLocStart && p.pos <= vdfLocEnd)
+//        {
+//        fprintf(file,"%g\n",p.vel);
+//        }
+//    }
+//    fflush(file_res);
+//}
 
 /* ********************************** */
 
