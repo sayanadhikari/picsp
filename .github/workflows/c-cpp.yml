@@ -18,18 +18,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node_version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node_version }}
-    - name: npm install, build and test
-      run: |
-        npm install
-        npm run build --if-present
-        npm test
 #     - name: make clean
 #       run: make clean
-    - name: make
-      run: make
+#     - name: make
+#       run: make
 #     - name: make distcheck
 #       run: make distcheck
