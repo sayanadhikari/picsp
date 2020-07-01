@@ -1,1 +1,1 @@
-#define VERSION "c8d8-dirty"
+#define VERSION "c672-dirty"
