@@ -17,6 +17,8 @@ tags
 **.vtk
 local.mk
 **.jpg
+**.png
+**.gif
 **.mp4
 **.pyc
 **.txt
