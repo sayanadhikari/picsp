@@ -34,6 +34,7 @@ SRC = $(SDIR)/main.cpp
 
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
+	@mkdir -p $(ODIR)
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 

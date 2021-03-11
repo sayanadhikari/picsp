@@ -29,3 +29,4 @@ src/version.h
 **.swp
 .DS_Store
 **.sh
+picsp
