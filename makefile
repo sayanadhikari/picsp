@@ -30,12 +30,10 @@ OBJ = main.o
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
-	@mv $(OBJ) $(ODIR)/$(OBJ)
-	@cp main.cpp $(SDIR)/main.cpp
 	@echo "PICSP is built"
 
-$(OBJ): main.cpp
-	@$(CXX) $(CXXFLAGS) -c main.cpp $(CFLAGS) $(LFLAGS)
+$(OBJ): $(SDIR)/main.cpp
+	@$(CXX) $(CXXFLAGS) -c $(SDIR)/main.cpp -o $(ODIR)/main.o $(CFLAGS) $(LFLAGS)
 
 .phony: version
 version:
