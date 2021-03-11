@@ -22,6 +22,11 @@ ODIR	= src/obj
 LDIR	= lib
 OUTDIR  = output
 
+LIBOBJ_	= iniparser/libiniparser.a
+LIBHEAD_= iniparser/src/iniparser.h
+
+LIBOBJ = $(patsubst %,$(LDIR)/%,$(LIBOBJ_))
+LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 
 all: version $(EXEC)
 
@@ -35,6 +40,10 @@ $(EXEC): $(OBJ)
 $(OBJ): $(SDIR)/main.cpp
 	@$(CXX) $(CXXFLAGS) -c $(SDIR)/main.cpp -o $(ODIR)/main.o $(CFLAGS) $(LFLAGS)
 
+$(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
+	@echo "Building iniparser"
+	@cd $(LDIR)/iniparser && $(MAKE) libiniparser.a > /dev/null 2>&1
+
 .phony: version
 version:
 	@echo "Embedding git version"
@@ -45,3 +54,5 @@ clean:
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
 	@rm -f *.dat
 	@rm -rf $(OUTDIR)
+
+
