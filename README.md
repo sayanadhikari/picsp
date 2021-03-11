@@ -28,7 +28,7 @@ Installation
 #### Procedure
 First make a clone of the master branch using the following command
 ```shell
-git clone https://github.com/sayanadhikari207/picsp.git
+git clone https://github.com/sayanadhikari/picsp.git
 ```
 Then enter inside the *PICSP* directory and verify the contents. 
 ```shell
