@@ -25,7 +25,7 @@ OUTDIR  = output
 
 all: version $(EXEC)
 
-OBJ = main.o
+OBJ = $(ODIR)/main.o
 
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
