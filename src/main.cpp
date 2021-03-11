@@ -55,7 +55,7 @@ double rnd()
 /* Define universal constants */
 const double EPS = 8.85418782E-12;    // Vacuum permittivity
 const double K = 1.38065E-23;        // Boltzmann Constant
-const double chargeE = 1.602176565E-19; // Charge of an electron
+// const double chargeE = 1.602176565E-19; // Charge of an electron
 const double AMU = 1.660538921E-27;
 const double EV_TO_K = 11604.52;
 const double pi = 3.14159265359;
@@ -70,6 +70,7 @@ int numyCells;             // Total number of cells alonx y
 int nTimeSteps;          // Total time steps (default)
 double massI;  // Ion mass
 double massE; // Electron mass
+double chargeE; // Electron charge
 // double vdfLocStart;  //VDF start location
 // double vdfLocEnd;  //VDF end location
 // int probLoc;  //VDF end location
@@ -284,6 +285,7 @@ int parse_ini_file(char * ini_name)
     nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
     double massI_unorm  =  iniparser_getdouble(ini,"population:massI",-1.0);
     double massE_unorm   =  iniparser_getdouble(ini,"population:massE",-1.0);
+    double chargeE_unorm   =  iniparser_getdouble(ini,"population:chargeE",-1.0);
     double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
     double thermalVelocityE_unorm = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
     double thermalVelocityI_unorm = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
@@ -294,8 +296,9 @@ int parse_ini_file(char * ini_name)
     // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
-    double omega_pe = sqrt((chargeE*chargeE*density_unorm)/(massE_unorm*EPS));
-    double Lambda_D = sqrt((EPS*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE*chargeE));
+    double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS));
+    double Lambda_D = sqrt((EPS*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
+    chargeE = chargeE_unorm/chargeE_unorm;
     massI = massI_unorm/massE_unorm;
     massE = massE_unorm/massE_unorm;
     velocity = velocity_unorm; ///velocity_unorm;
@@ -307,6 +310,7 @@ int parse_ini_file(char * ini_name)
     /*Calculate the specific weights of the ions and electrons*/
     ion_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesI);
     electron_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesE);
+    cout<< "omega_pe: "<<omega_pe <<endl;
 
 
     iniparser_freedict(ini);
