@@ -34,11 +34,11 @@ SRC = $(SDIR)/main.cpp
 
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
-	@mkdir -p $(ODIR)
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
 $(OBJ): $(SRC)
+	@mkdir -p $(ODIR)
 	@$(CXX) $(CXXFLAGS) -c $(SRC) -o $(OBJ) $(CFLAGS) $(LFLAGS)
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
