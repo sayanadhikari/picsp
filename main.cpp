@@ -297,15 +297,15 @@ int parse_ini_file(char * ini_name)
     double Lambda_D = sqrt((EPS*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE*chargeE));
     massI = massI_unorm/massE_unorm;
     massE = massE_unorm/massE_unorm;
-    velocity = velocity_unorm/velocity_unorm;
+    velocity = velocity_unorm; ///velocity_unorm;
     density  = density_unorm/density_unorm;
     timeStep = timeStep_unorm*omega_pe;
     stepSize = stepSize_unorm/Lambda_D;
     thermalVelocityE = thermalVelocityE_unorm/thermalVelocityE_unorm;
     thermalVelocityI = thermalVelocityI_unorm/thermalVelocityE_unorm;
     /*Calculate the specific weights of the ions and electrons*/
-    ion_spwt = (density_unorm*numxCells*numyCells*stepSize_unorm)/(nParticlesI);
-    electron_spwt = (density_unorm*numxCells*numyCells*stepSize_unorm)/(nParticlesE);
+    ion_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesI);
+    electron_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesE);
 
 
     iniparser_freedict(ini);
@@ -408,6 +408,13 @@ int main(int argc, char *argv[])
 
     for(auto &p:species_list)
         cout<< p.name << '\n' << p.mass<< '\n' << p.charge << '\n' << p.spwt << '\n' << p.NUM << endl <<endl;
+        cout<< "nParticlesI: " << nParticlesI << " nParticlesE: " << nParticlesE <<endl;
+        cout<< "numxCells: " << numxCells << " numyCells: " << numyCells <<endl;
+        cout<< "nTimeSteps: " << nTimeSteps <<endl;
+        cout<< "massI: " << massI << " massE: " << massE <<endl;
+        cout<< "velocity: " << velocity <<endl;
+        cout<< "density: " << density <<endl;
+        cout<< "timeStep: " << timeStep << " stepSize: " << stepSize <<endl;
     /***************************************************************************/
 
     /*Compute Number Density*/
@@ -458,7 +465,7 @@ int main(int argc, char *argv[])
         ScatterSpecies(&electrons);
 
         //Compute velocities
-        ScatterSpeciesVel(&ions);
+        // ScatterSpeciesVel(&ions);  //TODO
         ScatterSpeciesVel(&electrons);
 
         //Compute charge density
@@ -469,7 +476,7 @@ int main(int argc, char *argv[])
         ComputeEF(phi, efx, efy);
 
         //move particles
-        PushSpecies(&ions, efx, efy);
+        // PushSpecies(&ions, efx, efy);  // TODO
         PushSpecies(&electrons, efx, efy);
 
         //Write diagnostics
@@ -547,9 +554,9 @@ void Init(Species *species, double xvel, double yvel)
     // sample particle positions and velocities
     for(int p=0; p<species->NUM; p++)
     {
-        double x = domain.x0 + (p+0.5)*delta_x + 1e-1*sin(theta*x); //domain.x0 + rnd()*(domain.nix-1)*domain.dx;
-        double u = xvel + SampleVel(species->Temp*EV_TO_K, species->mass);                    //xvel*pow(-1,p); //SampleVel(species->Temp*EV_TO_K, species->mass);
-
+        double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x); //domain.x0 + rnd()*(domain.nix-1)*domain.dx;
+        // double u = xvel + SampleVel(species->Temp*EV_TO_K, species->mass);                    //xvel*pow(-1,p); //SampleVel(species->Temp*EV_TO_K, species->mass);
+        double u = xvel*pow(-1,p); // SampleVel(species->Temp*EV_TO_K, species->mass);
 
         double y = (p+0.5)*delta_y; //domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
         double v = yvel; // + SampleVel(species->Temp*EV_TO_K, species->mass);                    //yvel; //SampleVel(species->Temp*EV_TO_K, species->mass);
