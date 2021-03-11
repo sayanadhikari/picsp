@@ -7,7 +7,6 @@
 CXX		= g++
 
 #ARG =
-                        
 
 EXEC	= picsp
 
@@ -31,14 +30,15 @@ LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
 all: version $(EXEC)
 
 OBJ = $(ODIR)/main.o
+SRC = $(SDIR)/main.cpp
 
 $(EXEC): $(OBJ)
 	@echo "PICSP is being compiled"
 	@$(CXX) $(CXXFLAGS) -o  $(EXEC) $(OBJ) $(CFLAGS) $(LFLAGS)
 	@echo "PICSP is built"
 
-$(OBJ): $(SDIR)/main.cpp
-	@$(CXX) $(CXXFLAGS) -c $(SDIR)/main.cpp -o $(ODIR)/main.o $(CFLAGS) $(LFLAGS)
+$(OBJ): $(SRC)
+	@$(CXX) $(CXXFLAGS) -c $(SRC) -o $(OBJ) $(CFLAGS) $(LFLAGS)
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
 	@echo "Building iniparser"
@@ -50,9 +50,7 @@ version:
 	@echo "#define VERSION \"$(shell git describe --abbrev=4 --dirty --always --tags)\"" > $(SDIR)/version.h
 
 clean:
-	@echo "Cleaning compilation files"
+	@echo "Cleaning compiled files"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o
 	@rm -f *.dat
 	@rm -rf $(OUTDIR)
-
-
