@@ -11,10 +11,10 @@ Contributors
 
 Authors:
 
-- [Sayan Adhikari](mailto:sayan.adhikari@fys.uio.no): architecture and data structures, pushers, weighting schemes, overall maintainance
-- Rakesh Moulick (see separate branch): architecture and data structures, poisson solver, Collision module
-- [Rinku Mishra](mailto:rinku.mishra@cppipr.res.in) (see separate branch): pushers, dust charging implementation
-- Gunjan Sharma (see separate branch): Physics Study
+- [Sayan Adhikari](https://github.com/sayanadhikari): architecture and data structures, pushers, weighting schemes, overall maintainance (@sayanadhikari)
+- [Rakesh Moulick](https://github.com/rakeshmoulick) (see separate branch): architecture and data structures, poisson solver, pushers, Collision module
+- [Gunjan Sharma](https://github.com/gunjansharma1019) (see separate branch): architecture and data structures, pushers
+- [Rinku Mishra](https://github.com/rinku-mishra) (see separate branch): pushers, dust charging implementation
 - Rupali Paul (see separate branch): Physics Study
 - Kishor Deka (see separate branches): Physics Study
 
