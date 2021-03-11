@@ -1,1 +1,1 @@
-#define VERSION "c672-dirty"
+#define VERSION "120c"
