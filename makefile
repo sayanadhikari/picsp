@@ -59,7 +59,7 @@ version:
 	@echo "#define VERSION \"$(shell git describe --abbrev=4 --dirty --always --tags)\"" > $(SDIR)/version.h
 
 clean:
-	@echo "Cleaning compiled files"
+	@echo "Cleaning compiled files. (run 'make veryclean' to remove executables and more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o $(SDIR)/*~
 	@rm -f *.dat
 	@rm -rf $(OUTDIR)
