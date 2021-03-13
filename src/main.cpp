@@ -14,7 +14,7 @@
  */
 
 /*
- Brief Description: The code solves 1D-1V plasma problem.
+ Brief Description: The code solves 2D-2V plasma problem.
 
  The code objectives:
 
@@ -42,7 +42,6 @@ using namespace std;
 
 /*Iniparser function*/
 int  parse_ini_file(char * ini_name);
-
 /* Random Number Generator */
 std::mt19937 mt_gen(0);
 std::uniform_real_distribution<double> rnd_dist(0,1.0);
@@ -87,6 +86,63 @@ double timeStep;        // Time steps
 
 double thermalVelocityE; // electron temperature in eV
 double thermalVelocityI;  // ion temperature in eV
+
+
+/* INI PARSER */
+int parse_ini_file(char * ini_name)
+{
+    dictionary  *   ini ;
+
+    ini = iniparser_load(ini_name);
+    if (ini==NULL) {
+        fprintf(stderr, "cannot parse file: %s\n", ini_name);
+        return -1 ;
+    }
+    iniparser_dump(ini, stderr);
+
+    /*Get Simulation Parameters */
+    nTimeSteps  = iniparser_getint(ini,"time:nTimeSteps",-1);
+    double timeStep_unorm    = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    double stepSize_unorm    = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numxCells    = iniparser_getint(ini,"grid:numxCells",-1);
+    numyCells    = iniparser_getint(ini,"grid:numyCells",-1);
+
+    /* NUM OF COM PARTICLE */
+    nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
+    nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
+    double massI_unorm  =  iniparser_getdouble(ini,"population:massI",-1.0);
+    double massE_unorm   =  iniparser_getdouble(ini,"population:massE",-1.0);
+    double chargeE_unorm   =  iniparser_getdouble(ini,"population:chargeE",-1.0);
+    double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
+    double thermalVelocityE_unorm = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
+    double thermalVelocityI_unorm = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
+    double velocity_unorm = iniparser_getdouble(ini,"population:driftE",-1.0);
+    /* DIAGNOSTICS */
+    // vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
+    // vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);
+    // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
+
+    /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
+    double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS));
+    double Lambda_D = sqrt((EPS*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
+    chargeE = chargeE_unorm/chargeE_unorm;
+    massI = massI_unorm/massE_unorm;
+    massE = massE_unorm/massE_unorm;
+    velocity = velocity_unorm; ///velocity_unorm;
+    density  = density_unorm/density_unorm;
+    timeStep = timeStep_unorm*omega_pe;
+    stepSize = stepSize_unorm/Lambda_D;
+    thermalVelocityE = thermalVelocityE_unorm/thermalVelocityE_unorm;
+    thermalVelocityI = thermalVelocityI_unorm/thermalVelocityE_unorm;
+    /*Calculate the specific weights of the ions and electrons*/
+    ion_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesI);
+    electron_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesE);
+    //cout<< "omega_pe: "<<omega_pe <<endl;
+
+
+    iniparser_freedict(ini);
+    return 0 ;
+}
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -220,8 +276,17 @@ private:
     int part_id = 0;
 };
 
+// int ini(int argc, char *argv[])
+// {
+//   // INI PARSER
+//   parse_ini_file(argv[1]);
+//
+// }
+
 // Define Domain and File as the global variable
-Domain domain(numxCells+1, numyCells+1);
+Domain domain(numxCells+1, numyCells+1); // ISSUE: DEFINED BEFORE
+// Domain domain(9, 9);
+// Domain domain;
 FILE *file_res;
 FILE *file_ke;
 FILE *file_phi;
@@ -262,60 +327,7 @@ bool SolvePotential(double **phi, double **rho);
 
 /*Parsing Input file*/
 
-int parse_ini_file(char * ini_name)
-{
-    dictionary  *   ini ;
 
-    ini = iniparser_load(ini_name);
-    if (ini==NULL) {
-        fprintf(stderr, "cannot parse file: %s\n", ini_name);
-        return -1 ;
-    }
-    iniparser_dump(ini, stderr);
-
-    /*Get Simulation Parameters */
-    nTimeSteps  = iniparser_getint(ini,"time:nTimeSteps",-1);
-    double timeStep_unorm    = iniparser_getdouble(ini,"time:timeStep",-1.0);
-    double stepSize_unorm    = iniparser_getdouble(ini,"grid:stepSize",-1.0);
-    numxCells    = iniparser_getint(ini,"grid:numxCells",-1);
-    numyCells    = iniparser_getint(ini,"grid:numyCells",-1);
-
-    /* NUM OF COM PARTICLE */
-    nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
-    nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
-    double massI_unorm  =  iniparser_getdouble(ini,"population:massI",-1.0);
-    double massE_unorm   =  iniparser_getdouble(ini,"population:massE",-1.0);
-    double chargeE_unorm   =  iniparser_getdouble(ini,"population:chargeE",-1.0);
-    double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
-    double thermalVelocityE_unorm = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
-    double thermalVelocityI_unorm = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
-    double velocity_unorm = iniparser_getdouble(ini,"population:driftE",-1.0);
-    /* DIAGNOSTICS */
-    // vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
-    // vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);
-    // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
-
-    /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
-    double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS));
-    double Lambda_D = sqrt((EPS*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
-    chargeE = chargeE_unorm/chargeE_unorm;
-    massI = massI_unorm/massE_unorm;
-    massE = massE_unorm/massE_unorm;
-    velocity = velocity_unorm; ///velocity_unorm;
-    density  = density_unorm/density_unorm;
-    timeStep = timeStep_unorm*omega_pe;
-    stepSize = stepSize_unorm/Lambda_D;
-    thermalVelocityE = thermalVelocityE_unorm/thermalVelocityE_unorm;
-    thermalVelocityI = thermalVelocityI_unorm/thermalVelocityE_unorm;
-    /*Calculate the specific weights of the ions and electrons*/
-    ion_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesI);
-    electron_spwt = (density*numxCells*numyCells*stepSize)/(nParticlesE);
-    cout<< "omega_pe: "<<omega_pe <<endl;
-
-
-    iniparser_freedict(ini);
-    return 0 ;
-}
 
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -326,18 +338,21 @@ int main(int argc, char *argv[])
     parse_ini_file(argv[1]);
 
 
+    // Domain domain(numxCells+1, numyCells+1);
+
     double Time = 0;
 
     /*Construct the domain parameters*/
-    // domain.ni = numCells+1;
+    domain.nix = numxCells+1;
     domain.dx = stepSize;
     domain.x0 = 0;
     domain.xl = (domain.nix-1)*domain.dx;
     domain.xmax = domain.x0 + domain.xl;
+    cout<< "domain.nix: "<<domain.nix <<endl;
 
 
     /*Construct the domain parameters for y*/
-    //domain.niy = numyCells+1;
+    domain.niy = numyCells+1;
     domain.dy = stepSize;
     domain.y0 = 0;
     domain.yl = (domain.niy-1)*domain.dy;
