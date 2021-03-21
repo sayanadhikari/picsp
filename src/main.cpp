@@ -245,7 +245,7 @@ int parse_ini_file(char * ini_name)
     ion_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
     electron_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
     cout<< "omega_pe: "<<omega_pe <<endl;
-    
+
 
     iniparser_freedict(ini);
     return 0 ;
@@ -315,28 +315,28 @@ int main(int argc, char *argv[])
     Species &electrons = species_list[1];
 
     /*Initiate the species density and velocity fields*/
-    
-    
+
+
     ions.den = new double[domain.nix*domain.niy];
     ions.xvel = new double[domain.nix*domain.niy];
     ions.yvel = new double[domain.nix*domain.niy];
     electrons.den = new double[domain.nix*domain.niy];
     electrons.xvel = new double[domain.nix*domain.niy];
     electrons.yvel = new double[domain.nix*domain.niy];
-    
-    
+
+
     /*clear densities and velocities*/
-    
+
     memset(ions.den,0,sizeof(double)*domain.nix*domain.niy);
     memset(ions.xvel,0,sizeof(double)*domain.nix*domain.niy);
     memset(ions.yvel,0,sizeof(double)*domain.nix*domain.niy);
-    
+
     memset(electrons.den,0,sizeof(double)*domain.nix*domain.niy);
     memset(electrons.xvel,0,sizeof(double)*domain.nix*domain.niy);
     memset(electrons.yvel,0,sizeof(double)*domain.nix*domain.niy);
-    
-    
-    
+
+
+
 
     /*Initialize electrons and ions */
     Init(&ions,0,0);
@@ -501,7 +501,7 @@ void Init(Species *species, double xvel, double yvel)
     for(int p=0; p<species->NUM; p++)
     {
         double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x); //domain.x0 + rnd()*(domain.nix-1)*domain.dx;
-        
+
         double u = xvel*pow(-1,p); // SampleVel(species->Temp*EV_TO_K, species->mass);
 
         double y = (p+0.5)*delta_y; //domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
@@ -1027,9 +1027,8 @@ void ComputePE(double Time)
    for(int j=0; j<domain.niy; j++)
    for(int i=0; i<domain.nix; i++)
    {
-     pe += 0.5*domain.phi[i*domain.niy+j]*domain.rho[i*domain.niy+j]; 
-   } 
+     pe += 0.5*domain.phi[i*domain.niy+j]*domain.rho[i*domain.niy+j];
+   }
    fprintf(file_res2,"%g\t %g\n",Time, pe);
 
 }
-
