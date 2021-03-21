@@ -35,13 +35,6 @@ Then enter inside the *PICSP* directory and verify the contents.
 cd picsp
 ls
 ```
-Then built the  *iniparser*
-```shell
-cd lib/iniparser
-make clean
-make
-cd ../../
-```
 Now complile and built the *PICSP* code
 ```shell
 make clean
