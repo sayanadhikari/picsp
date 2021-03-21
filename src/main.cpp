@@ -847,7 +847,9 @@ bool SolvePotential(double *phi, double *rho)
          }
 
          L2 = sqrt(sum)/(domain.nix*domain.niy);
+         cout<<L2<<endl;
          if(L2<1e-2){return true;}
+
       }
    }
 
