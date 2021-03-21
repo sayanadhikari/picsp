@@ -30,14 +30,12 @@ First make a clone of the master branch using the following command
 ```shell
 git clone https://github.com/sayanadhikari/picsp.git
 ```
-Then enter inside the *PICSP* directory and verify the contents. 
+Then enter inside the *PICSP* directory 
 ```shell
 cd picsp
-ls
 ```
 Now complile and built the *PICSP* code
 ```shell
-make clean
 make
 ``` 
 Usage
