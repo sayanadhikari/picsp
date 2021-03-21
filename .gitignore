@@ -23,8 +23,5 @@ local.mk
 **.nfs*
 **.eps
 *.html
-version.h
+**version.h
 src/version.h
-**.swp
-.DS_Store
-**.sh
