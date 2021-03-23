@@ -1,9 +1,10 @@
+[![C/C++ CI](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml)
+[![build](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml)
+
 ![PICSP Logo](/images/logo.png)
 
 PICSP - (Particle-in-Cell Simulation of Plasma)
 ===============================================
-[![C/C++ CI](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml)
-[![build](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml)
 *PICSP* is an open source scientific program for simulating plasmas using the *Particle-In-Cell* (PIC) method on a structured mesh. The field quantities are solved using *Direct Solver* and *Gauss-Siedel solver*. The focus is to simulate bounded plasmas as well as periodic plasma system.
 
 
