@@ -192,7 +192,7 @@ double SampleVel(double T, double mass);
 
 bool SolvePotential(double *phi, double *rho);
 //bool SolvePotentialDirect(double *phi, double *rho);
-bool SpectralPotentialSolver(double *phi, double *rho)
+bool SpectralPotentialSolver(double *phi, double *rho);
 
 
 
@@ -871,42 +871,42 @@ bool SpectralPotentialSolver(double *phi, double *rho)
    fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
    fftw_plan p;
    fftw_plan b;
-   
+
    rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    rhok_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
-   
-   
+
+
    /*rhok = new fftw_complex[Nx*Nh];
    phik = new fftw_complex[Nx*Nh];
    rhok_dum = new fftw_complex[Nx*Nh];*/
-   
-   
-   
+
+
+
    double Lx = domain.xl, Ly = domain.yl;
    double kx, ky;
-   
+
    for(i=0;i<Nx;i++)
    for(j=0;j<Ny;j++)
    {
       rho[i*Ny+j] = rho[i*Ny+j]/EPS;
    }
-   
+
    p = fftw_plan_dft_r2c_2d(Nx, Ny,  &rho[0*Ny+0], &rhok[0*Nh+0], FFTW_ESTIMATE);
    fftw_execute(p);
    fftw_destroy_plan(p);
    fftw_cleanup();
-   
-   
+
+
    for(j=0;j<Nh;j++)
    {
       ky = 2.0*pi*j/Ly;
       for(i=0;i<Nx/2;i++)
       {
          kx = 2.0*pi*i/Lx;
-         
-         if(i==0&&j==0) 
+
+         if(i==0&&j==0)
          {
          phik[i*Nh+j][0] = 0;
          phik[i*Nh+j][1] = 0;
@@ -915,8 +915,8 @@ bool SpectralPotentialSolver(double *phi, double *rho)
          {
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-         
-         }       
+
+         }
       }
       for(i=Nx/2+1;i<Nx;i++)
       {
@@ -924,38 +924,38 @@ bool SpectralPotentialSolver(double *phi, double *rho)
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
       }
-   
-   
+
+
       for(i=Ny/2+1;i<Ny;i++)
       {
          kx = 2.0*pi*(i-Nx)/Lx;
-            
-            if(i==0&&j==0) 
+
+            if(i==0&&j==0)
             {
             phik[i*Nh+j][0] = 0;
             phik[i*Nh+j][1] = 0;
             }
-            else 
+            else
             {
             phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
             phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-            }      
+            }
          }
    }
-   
-   
+
+
    b = fftw_plan_dft_c2r_2d(Nx, Ny, &phik[0*Nh+0], &phi[0*Ny+0], FFTW_ESTIMATE);
    fftw_execute(b);
    fftw_destroy_plan(b);
    fftw_cleanup();
-   
-   
+
+
    for(j=0;j<Ny;j++)
    for(i=0;i<Nx;i++)
    {
       phi[i*Ny+j] /= double(Nx*Ny);
    }
-  
+
    return true;
 }
 
