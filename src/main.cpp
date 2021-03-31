@@ -1,4 +1,6 @@
 # include <iostream>
+# include <complex>
+# include <fftw3.h>
 # include <cmath>
 # include <cstdlib>
 # include <vector>
@@ -190,6 +192,7 @@ double SampleVel(double T, double mass);
 
 bool SolvePotential(double *phi, double *rho);
 //bool SolvePotentialDirect(double *phi, double *rho);
+bool SpectralPotentialSolver(double *phi, double *rho);
 
 
 
@@ -361,7 +364,8 @@ int main(int argc, char *argv[])
      and compute the electric field*/
 
     ComputeRho(rho, &ions, &electrons);
-    SolvePotential(phi, rho);
+    //SolvePotential(phi, rho);
+    SpectralPotentialSolver(phi, rho);
     ComputeEF(phi,efx,efy);
 
     RewindSpecies(&ions,efx,efy);
@@ -390,7 +394,7 @@ int main(int argc, char *argv[])
     file_ke = fopen("output/ke.dat","w");
     file_sp = fopen("output/part.dat","w");
     // file_phi = fopen("output/phi.dat","w");
-    file_res2 = fopen("output/pe.dat","w");
+    //file_res2 = fopen("output/pe.dat","w");
 
 
     /*MAIN LOOP*/
@@ -398,7 +402,7 @@ int main(int argc, char *argv[])
     for (int ts=0; ts<nTimeSteps+1; ts++)
     {
         //Compute number density
-        ScatterSpecies(&ions);
+        //ScatterSpecies(&ions);
         ScatterSpecies(&electrons);
 
         //Compute velocities
@@ -408,7 +412,8 @@ int main(int argc, char *argv[])
         //Compute charge density
         ComputeRho(rho, &ions, &electrons);
 
-        SolvePotential(phi, rho);
+        SpectralPotentialSolver(phi, rho);
+        //SolvePotential(phi, rho);
         // SolvePotentialDirect(phi, rho);
         ComputeEF(phi, efx, efy);
 
@@ -419,8 +424,8 @@ int main(int argc, char *argv[])
         //Write diagnostics
         if(ts%50== 0)
         {
-            sprintf(NAmassE,"output/phase_space/i%d.dat",ts);
-            f1 = fopen(NAmassE,"w");
+            //sprintf(NAmassE,"output/phase_space/i%d.dat",ts);
+            //f1 = fopen(NAmassE,"w");
 
             sprintf(NAmassE,"output/phase_space/e%d.dat",ts);
             f2 = fopen(NAmassE,"w");
@@ -429,8 +434,8 @@ int main(int argc, char *argv[])
             // sprintf(NAmassE,"output/vdf_output/i%d.dat",ts);
             // f3 = fopen(NAmassE,"w");
 
-            sprintf(NAmassE, "output/ef%d.dat",ts);
-            file_res1 = fopen(NAmassE,"w");
+            //sprintf(NAmassE, "output/ef%d.dat",ts);
+            //file_res1 = fopen(NAmassE,"w");
 
             ///////////////////////////////////////
             double max_phi = phi[0];
@@ -447,18 +452,18 @@ int main(int argc, char *argv[])
             printf("TS: %i \t delta_phi: %.3g\n", ts, max_phi-phi[0]);
 
 
-            WriteKE(Time, &ions, &electrons);
+            //WriteKE(Time, &ions, &electrons);
             //Write_ts(ts,&ions,&electrons);
 
-            Write_Particle(f1,ts, &ions);
+            //Write_Particle(f1,ts, &ions);
             Write_Particle(f2,ts, &electrons);
-            Write_Single_Particle(&electrons);
-            ComputePE(Time);
+            //Write_Single_Particle(&electrons);
+            //ComputePE(Time);
 
             // Write_VDF(f3,ts,vdfLocStart,vdfLocEnd, &ions);  //Added by SAYAN 14/08/2019
-            Write_pot(Time);
+            //Write_pot(Time);
 
-            fclose(f1);
+            //fclose(f1);
             fclose(f2);
             // fclose(f3);
         }
@@ -847,13 +852,116 @@ bool SolvePotential(double *phi, double *rho)
          }
 
          L2 = sqrt(sum)/(domain.nix*domain.niy);
+         cout<<L2<<endl;
          if(L2<1e-2){return true;}
+
       }
    }
 
    printf("Gauss-Seidel solver failed to converge, L2=%.3g!\n",L2);
 	return false;
 }
+
+
+
+bool SpectralPotentialSolver(double *phi, double *rho)
+{
+   int Nx = domain.nix, Ny = domain.niy, Nh = (Ny/2) + 1;
+   int i, j;
+   fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
+   fftw_plan p;
+   fftw_plan b;
+
+   rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   rhok_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+
+
+   /*rhok = new fftw_complex[Nx*Nh];
+   phik = new fftw_complex[Nx*Nh];
+   rhok_dum = new fftw_complex[Nx*Nh];*/
+
+
+
+   double Lx = domain.xl, Ly = domain.yl;
+   double kx, ky;
+
+   for(i=0;i<Nx;i++)
+   for(j=0;j<Ny;j++)
+   {
+      rho[i*Ny+j] = rho[i*Ny+j]/EPS;
+   }
+
+   p = fftw_plan_dft_r2c_2d(Nx, Ny,  &rho[0*Ny+0], &rhok[0*Nh+0], FFTW_ESTIMATE);
+   fftw_execute(p);
+   fftw_destroy_plan(p);
+   fftw_cleanup();
+
+
+   for(j=0;j<Nh;j++)
+   {
+      ky = 2.0*pi*j/Ly;
+      for(i=0;i<Nx/2;i++)
+      {
+         kx = 2.0*pi*i/Lx;
+
+         if(i==0&&j==0)
+         {
+         phik[i*Nh+j][0] = 0;
+         phik[i*Nh+j][1] = 0;
+         }
+         else
+         {
+         phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
+         phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
+
+         }
+      }
+      for(i=Nx/2+1;i<Nx;i++)
+      {
+         kx = 2.0*pi*(i-Nx)/Lx;
+         phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
+         phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
+      }
+
+
+      for(i=Ny/2+1;i<Ny;i++)
+      {
+         kx = 2.0*pi*(i-Nx)/Lx;
+
+            if(i==0&&j==0)
+            {
+            phik[i*Nh+j][0] = 0;
+            phik[i*Nh+j][1] = 0;
+            }
+            else
+            {
+            phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
+            phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
+            }
+         }
+   }
+
+
+   b = fftw_plan_dft_c2r_2d(Nx, Ny, &phik[0*Nh+0], &phi[0*Ny+0], FFTW_ESTIMATE);
+   fftw_execute(b);
+   fftw_destroy_plan(b);
+   fftw_cleanup();
+
+
+   for(j=0;j<Ny;j++)
+   for(i=0;i<Nx;i++)
+   {
+      phi[i*Ny+j] /= double(Nx*Ny);
+   }
+
+   return true;
+}
+
+
+
+
 
 /* Potential Direct Solver */
 

@@ -6,17 +6,15 @@
 
 CXX		= g++
 
-#ARG =
-
 CXXLOCAL = -Ilib/iniparser/src
-
 LLOCAL = -Ilib/iniparser/src
+
+FFLAGS = -lfftw3 -lm
 
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) # Flags for compiling
-
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL)  # Flags for linking
+CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(FFLAGS) # Flags for compiling
+LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(FFLAGS) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -24,7 +22,7 @@ ODIR	= src/obj
 LDIR	= lib
 OUTDIR  = output
 
-SRC_ 	= # Additional CPP files  
+SRC_ 	= # Additional CPP files
 OBJ_	= $(SRC_:.cpp=.o)
 
 SRC = $(patsubst %,$(SDIR)/%,$(SRC_))
