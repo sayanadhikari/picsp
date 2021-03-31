@@ -24,4 +24,4 @@ local.mk
 **.eps
 *.html
 **version.h
-src/version.h
+**/src/version.h
