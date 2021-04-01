@@ -199,6 +199,7 @@ H5std_string gNamePhi = "/phi/*";
 
 DataSpace *dataspace;
 DataType datatype(H5::PredType::NATIVE_DOUBLE);
+DataType dataInttype(H5::PredType::NATIVE_INT);
 DataSet* dataset;
 Attribute* attr;
 // DataSpace *dataspace = new DataSpace(RANK, dims);
@@ -220,6 +221,7 @@ void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species
 void writeKE(double energy[][2]);
 void writePot(int ts, double *phi);
 void writeAttributes(H5std_string groupPart, double data);
+void writeIntAttributes(H5std_string attrName, int data);
 // void Write_Single_Particle(Species *species);
 void AddSources(Species *species);
 void Inlet(Species *species);
@@ -312,8 +314,10 @@ int main(int argc, char *argv[])
 
     writeAttributes("Lx", numxCells*stepSize);
     writeAttributes("Ly", numyCells*stepSize);
-    writeAttributes("dp", dumpPeriod);
-    writeAttributes("Nt", nTimeSteps);
+    writeIntAttributes("dp", dumpPeriod);
+    writeIntAttributes("Nt", nTimeSteps);
+    writeIntAttributes("Nx", numxCells+1);
+    writeIntAttributes("Ny", numyCells+1);
 
 
     double Time = 0;
@@ -891,13 +895,14 @@ bool spectralPotentialSolver(double *phi, double *rho)
 
    rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   // Suggested by Rupak
    rhok_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
 
 
-   /*rhok = new fftw_complex[Nx*Nh];
-   phik = new fftw_complex[Nx*Nh];
-   rhok_dum = new fftw_complex[Nx*Nh];*/
+   // /*rhok = new fftw_complex[Nx*Nh];
+   // phik = new fftw_complex[Nx*Nh];
+   // rhok_dum = new fftw_complex[Nx*Nh];*/
 
 
 
@@ -922,42 +927,46 @@ bool spectralPotentialSolver(double *phi, double *rho)
       for(i=0;i<Nx/2;i++)
       {
          kx = 2.0*PI*i/Lx;
-
-         if(i==0&&j==0)
-         {
-         phik[i*Nh+j][0] = 0;
-         phik[i*Nh+j][1] = 0;
-         }
-         else
-         {
+         // suggested by Rupak
+         // if(i==0&&j==0)
+         // {
+         // phik[i*Nh+j][0] = 0;
+         // phik[i*Nh+j][1] = 0;
+         // }
+         // else
+         // {
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
 
-         }
+         // }
       }
       for(i=Nx/2+1;i<Nx;i++)
       {
-         kx = 2.0*PI*(i-Nx)/Lx;
+         // kx = 2.0*PI*(i-Nx)/Lx; // Suggested by Rupak (Double Check)
+         kx = 2.0*PI*(Nx-i)/Lx;
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
       }
+      // suggested by Rupak
+      phik[0][0] = 0;
+      phik[0][1] = 0;
 
-
-      for(i=Ny/2+1;i<Ny;i++)
-      {
-         kx = 2.0*PI*(i-Nx)/Lx;
-
-            if(i==0&&j==0)
-            {
-            phik[i*Nh+j][0] = 0;
-            phik[i*Nh+j][1] = 0;
-            }
-            else
-            {
-            phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
-            phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-            }
-         }
+      // Checked by Rupak (Should not be )
+      // for(i=Ny/2+1;i<Ny;i++)
+      // {
+      //    kx = 2.0*PI*(i-Nx)/Lx;
+      //
+      //       if(i==0&&j==0)
+      //       {
+      //       phik[i*Nh+j][0] = 0;
+      //       phik[i*Nh+j][1] = 0;
+      //       }
+      //       else
+      //       {
+      //       phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
+      //       phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
+      //       }
+      // }
    }
 
 
@@ -1141,6 +1150,16 @@ void writeAttributes(H5std_string attrName, double data)
   attr = new Attribute(file->createAttribute(attrName, datatype, *dataspace));
   // double data = numxCells*stepSize;
   attr->write(datatype, &data);
+  delete attr;
+  delete dataspace;
+}
+
+void writeIntAttributes(H5std_string attrName, int data)
+{
+  dataspace = new DataSpace(H5S_SCALAR); // create new dspace
+  attr = new Attribute(file->createAttribute(attrName, dataInttype, *dataspace));
+  // double data = numxCells*stepSize;
+  attr->write(dataInttype, &data);
   delete attr;
   delete dataspace;
 }
