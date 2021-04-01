@@ -33,6 +33,12 @@ Group* groupT = new Group( file->createGroup( "/timedata" ));
 Group* groupP = new Group( file->createGroup( "/phi" ));
 
 
+// // Create new dataspace for attribute
+//   DataSpace attr_dataspace = DataSpace(H5S_SCALAR);
+//   // Create attribute and write to it
+//   Attribute varIN = dataset.createAttribute(LenX, datatype, attr_dataspace);
+//   varIN.write(datatype, stepSize*numxCells);
+
 /***************** INIPARSER ***************/
 int  parse_ini_file(char * ini_name);
 
@@ -180,13 +186,21 @@ FILE *file_res2;
 FILE *file_sp;
 
 /********** HDF5 *********/
+// HDF5 GROUP NAMES
 H5std_string gNamePartE = "/particle.e/*";
 H5std_string gNamePartI = "/particle.i/*";
 H5std_string gNameTE = "/timedata/energy";
 H5std_string gNamePhi = "/phi/*";
+// HDF5 ATTRIBUTES NAMEs
+// const H5std_string LenX = "Lx";
+// const H5std_string LenY = "Ly";
+// const H5std_string dPeriod = "dumpPeriod";
+// const H5std_string nT = "nTimeSteps";
+
 DataSpace *dataspace;
 DataType datatype(H5::PredType::NATIVE_DOUBLE);
 DataSet* dataset;
+Attribute* attr;
 // DataSpace *dataspace = new DataSpace(RANK, dims);
 // DataSet* dataset = new DataSet(file->createDataSet(groupPart,
 //         PredType::NATIVE_FLOAT, *dataspace));
@@ -205,6 +219,7 @@ void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species
 // void writeKE(double Time, Species *ions, Species *electrons);
 void writeKE(double energy[][2]);
 void writePot(int ts, double *phi);
+void writeAttributes(H5std_string groupPart, double data);
 // void Write_Single_Particle(Species *species);
 void AddSources(Species *species);
 void Inlet(Species *species);
@@ -294,6 +309,13 @@ int main(int argc, char *argv[])
 /************* INIPARSER ********************/
     parse_ini_file(argv[1]); //INIPARSER
 /*******************************************/
+
+    writeAttributes("Lx", numxCells*stepSize);
+    writeAttributes("Ly", numyCells*stepSize);
+    writeAttributes("dp", dumpPeriod);
+    writeAttributes("Nt", nTimeSteps);
+
+
     double Time = 0;
     double energy[int(nTimeSteps/dumpPeriod)+1][2];
 
@@ -1111,4 +1133,14 @@ void computePE(double Time)
    }
    fprintf(file_res2,"%g\t %g\n",Time, pe);
 
+}
+
+void writeAttributes(H5std_string attrName, double data)
+{
+  dataspace = new DataSpace(H5S_SCALAR); // create new dspace
+  attr = new Attribute(file->createAttribute(attrName, datatype, *dataspace));
+  // double data = numxCells*stepSize;
+  attr->write(datatype, &data);
+  delete attr;
+  delete dataspace;
 }
