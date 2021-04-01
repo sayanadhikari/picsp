@@ -25,3 +25,4 @@ local.mk
 *.html
 **version.h
 src/version.h
+src/h5group.cpp

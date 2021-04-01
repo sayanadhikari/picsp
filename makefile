@@ -10,11 +10,12 @@ CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
 FFLAGS = -lfftw3 -lm
+HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(FFLAGS) # Flags for compiling
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(FFLAGS) # Flags for linking
+CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(FFLAGS) $(HFLAGS) # Flags for compiling
+LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(FFLAGS) $(HFLAGS) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -45,6 +46,7 @@ $(EXEC): $(ODIR)/main.o $(OBJ) $(LIBOBJ)
 $(ODIR)/%.o: $(SDIR)/%.cpp
 	@echo "Compiling $<"
 	@mkdir -p $(ODIR)
+	@mkdir -p $(OUTDIR)
 	@$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 $(LDIR)/iniparser/libiniparser.a: $(LIBHEAD)
