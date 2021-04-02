@@ -35,19 +35,21 @@ X, Y = np.meshgrid(x, y)
 # dataset index
 data_num = np.arange(start=0, stop=Nt, step=dp, dtype=int)
 
+maxPhi = np.max(h5["phi/%d"%Nt]);
+minPhi = np.min(h5["phi/%d"%Nt]);
+
 if (show_anim == True):
     def animate(i):
         #======Potential Data=========
         dataPhi = h5["phi/%d"%data_num[i]]
-        maxPhi = np.max(dataPhi);
-        minPhi = np.min(dataPhi);
+
 
         ax1.cla()
         if Vis3D == True:
             img1 = ax1.plot_surface(X,Y,dataPhi)
         else:
             img1 = ax1.contourf(X,Y,dataPhi)
-        ax1.set_title('Potential (TimeSteps = %d'%i+')')
+        ax1.set_title('Potential (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
         ax1.set_ylabel("$y$")
         ax1.set_xlim([0, Lx])

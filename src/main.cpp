@@ -72,7 +72,8 @@ double massI;  // Ion mass
 double massE;  // Electron mass
 double chargeE; // Electron charge
 // int probLoc;  //VDF end location
-double velocity; //5e5           // TODO
+double driftE; //5e5           // TODO
+double driftI;
 double EPS;
 
 /* Simulation Parameters*/
@@ -82,8 +83,8 @@ double electron_spwt;
 double stepSize;         // Cell Spacing
 double timeStep;        // Time steps
 
-double thermalVelocityE; // electron temperature in eV
-double thermalVelocityI;  // ion temperature in eV
+double vthE; // electron temperature in eV
+double vthI;  // ion temperature in eV
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -175,15 +176,7 @@ private:
 
 // Define Domain and File as the global variable
 Domain domain;
-FILE *file_res;
-FILE *file_ke;
-FILE *file_phi;
-FILE *f1;
-FILE *f2;
-// FILE *f3;
-FILE *file_res1;
-FILE *file_res2;
-FILE *file_sp;
+
 
 /********** HDF5 *********/
 // HDF5 GROUP NAMES
@@ -191,20 +184,13 @@ H5std_string gNamePartE = "/particle.e/*";
 H5std_string gNamePartI = "/particle.i/*";
 H5std_string gNameTE = "/timedata/energy";
 H5std_string gNamePhi = "/phi/*";
-// HDF5 ATTRIBUTES NAMEs
-// const H5std_string LenX = "Lx";
-// const H5std_string LenY = "Ly";
-// const H5std_string dPeriod = "dumpPeriod";
-// const H5std_string nT = "nTimeSteps";
+
 
 DataSpace *dataspace;
 DataType datatype(H5::PredType::NATIVE_DOUBLE);
 DataType dataInttype(H5::PredType::NATIVE_INT);
 DataSet* dataset;
 Attribute* attr;
-// DataSpace *dataspace = new DataSpace(RANK, dims);
-// DataSet* dataset = new DataSet(file->createDataSet(groupPart,
-//         PredType::NATIVE_FLOAT, *dataspace));
 
 // Define Helper functions
 void init(Species *species, double xvel,double yvel);
@@ -217,12 +203,12 @@ void rewindSpecies(Species *species, double *efx, double *efy);
 void Write_ts(int ts, Species *ions, Species *electrons);
 void writeParticle(int ts, Species *species, H5std_string groupPart);
 void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species *species);
-// void writeKE(double Time, Species *ions, Species *electrons);
+
 void writeKE(double energy[][2]);
 void writePot(int ts, double *phi);
 void writeAttributes(H5std_string groupPart, double data);
 void writeIntAttributes(H5std_string attrName, int data);
-// void Write_Single_Particle(Species *species);
+
 void AddSources(Species *species);
 void Inlet(Species *species);
 void computePE(double Time);
@@ -237,7 +223,6 @@ double sampleVel(double T, double mass);
 bool solvePotential(double *phi, double *rho);
 //bool solvePotentialDirect(double *phi, double *rho);
 bool spectralPotentialSolver(double *phi, double *rho);
-
 
 /* HDF5 initiate */
 
@@ -258,49 +243,67 @@ int parse_ini_file(char * ini_name)
     iniparser_dump(ini, stderr);
 
     /*Get Simulation Parameters */
-    nTimeSteps  = iniparser_getint(ini,"time:nTimeSteps",-1);
-    double timeStep_unorm    = iniparser_getdouble(ini,"time:timeStep",-1.0);
-    double stepSize_unorm    = iniparser_getdouble(ini,"grid:stepSize",-1.0);
-    numxCells    = iniparser_getint(ini,"grid:numxCells",-1);
-    numyCells    = iniparser_getint(ini,"grid:numyCells",-1);
+    nTimeSteps            = iniparser_getint(ini,"time:nTimeSteps",-1);
+    double timeStep_unorm = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    double stepSize_unorm = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numxCells             = iniparser_getint(ini,"grid:numxCells",-1);
+    numyCells             = iniparser_getint(ini,"grid:numyCells",-1);
 
-    /* NUM OF COM PARTICLE */
-    nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
-    nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
-    double massI_unorm  =  iniparser_getdouble(ini,"population:massI",-1.0);
-    double massE_unorm   =  iniparser_getdouble(ini,"population:massE",-1.0);
-    double chargeE_unorm   =  iniparser_getdouble(ini,"population:chargeE",-1.0);
+    /* SPECIES INFO */
+    nParticlesI           = iniparser_getint(ini,"population:nParticlesI",-1);
+    nParticlesE           = iniparser_getint(ini,"population:nParticlesE",-1);
+    double massI_unorm    =  iniparser_getdouble(ini,"population:massI",-1.0);
+    double massE_unorm    =  iniparser_getdouble(ini,"population:massE",-1.0);
+    double chargeE_unorm  =  iniparser_getdouble(ini,"population:chargeE",-1.0);
     double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
-    double thermalVelocityE_unorm = iniparser_getdouble(ini,"population:thermalVelocityE",-1.0);
-    double thermalVelocityI_unorm = iniparser_getdouble(ini,"population:thermalVelocityI",-1.0);
-    double velocity_unorm = iniparser_getdouble(ini,"population:driftE",-1.0);
+    double vthE_unorm     = iniparser_getdouble(ini,"population:vthE",-1.0);
+    double vthI_unorm     = iniparser_getdouble(ini,"population:vthI",-1.0);
+    double driftE_unorm   = iniparser_getdouble(ini,"population:driftE",-1.0);
+    double driftI_unorm   = iniparser_getdouble(ini,"population:driftI",-1.0);
+
     /* DIAGNOSTICS */
-    // vdfLocStart = iniparser_getdouble(ini,"diagnostics:vdfLocStart",-1.0);
-    // vdfLocEnd = iniparser_getdouble(ini,"diagnostics:vdfLocEnd",-1.0);dumpPeriod
     // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
-    dumpPeriod = iniparser_getint(ini,"diagnostics:dumpPeriod",-1);
+    dumpPeriod            = iniparser_getint(ini,"diagnostics:dumpPeriod",-1);
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
-    EPS = EPS_un/EPS_un;
+    EPS             = EPS_un/EPS_un;
     double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS_un));
-    double Lambda_D = sqrt((EPS_un*K*thermalVelocityE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
-    chargeE = chargeE_unorm/chargeE_unorm;
-    massI = massI_unorm/massE_unorm;
-    massE = massE_unorm/massE_unorm;
-    velocity = velocity_unorm; ///velocity_unorm;
-    density  = density_unorm/density_unorm;
-    timeStep = timeStep_unorm*omega_pe;
-    stepSize = stepSize_unorm/Lambda_D;
-    thermalVelocityE = thermalVelocityE_unorm/thermalVelocityE_unorm;
-    thermalVelocityI = thermalVelocityI_unorm/thermalVelocityE_unorm;
+    double Lambda_D = sqrt((EPS_un*K*vthE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
+    chargeE         = chargeE_unorm/chargeE_unorm;
+    massI           = massI_unorm/massE_unorm;
+    massE           = massE_unorm/massE_unorm;
+    driftE          = driftE_unorm/vthE_unorm; ///velocity_unorm;
+    driftI          = driftI_unorm/vthE_unorm;
+    density         = density_unorm/density_unorm;
+    timeStep        = timeStep_unorm*omega_pe;
+    stepSize        = stepSize_unorm/Lambda_D;
+    vthE            = vthE_unorm/vthE_unorm;
+    vthI            = vthI_unorm/vthE_unorm;
     /*Calculate the specific weights of the ions and electrons*/
-    ion_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
-    electron_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+    ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
+    electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+
+    cout << "********** IMPORTANT PLASMA QUANTITIES ***********" << '\n';
     cout<< "omega_pe: "<<omega_pe <<endl;
+    cout<< "Lambda_D: "<<Lambda_D <<endl;
+
+    cout << "*************** Input Sanity Check ***************" << '\n';
+    bool SFLAG = true;
+    if (stepSize >= 1) {
+      cout<<"STATUS, stepSize is bigger than Debye length."<<endl;
+      SFLAG = false;
+    }
+    if (timeStep > 0.01) {
+      cout<<"STATUS, timeStep is too big. The recommended value: <"<<(0.01/omega_pe)<<" s"<<endl;
+      SFLAG = false;
+    }
+    if (SFLAG==true) {
+      cout<<"STATUS, Input parameters are compatible."<<endl;
+    }
 
 
     iniparser_freedict(ini);
-    return 0 ;
+    return 0;
 }
 
 
@@ -308,9 +311,14 @@ int parse_ini_file(char * ini_name)
 /********************* MAIN FUNCTION ***************************/
 int main(int argc, char *argv[])
 {
-/************* INIPARSER ********************/
-    parse_ini_file(argv[1]); //INIPARSER
-/*******************************************/
+    /************* INIPARSER ********************/
+    if(argc<2) {
+      cout<<"ERROR, at least one argument expected (the input file)."<<endl;
+      exit (EXIT_FAILURE);
+    }
+    parse_ini_file(argv[1]);
+
+    /*********** HDF5 ATTRIBUTES ***************/
 
     writeAttributes("Lx", numxCells*stepSize);
     writeAttributes("Ly", numyCells*stepSize);
@@ -319,8 +327,11 @@ int main(int argc, char *argv[])
     writeIntAttributes("Nx", numxCells+1);
     writeIntAttributes("Ny", numyCells+1);
 
-
+    /*********** **** ***************/
     double Time = 0;
+
+    // Energy time array
+    // Note: (Define all of the time dependent arrays here to write to file in the end)
     double energy[int(nTimeSteps/dumpPeriod)+1][2];
 
     /*Construct the domain parameters*/
@@ -368,8 +379,8 @@ int main(int argc, char *argv[])
     /* Add singly charged ions and electrons */
     /*********************************************/
     /* Create the species lists*/
-    species_list.emplace_back("Ion",massI,chargeE,ion_spwt, nParticlesI, thermalVelocityI);
-    species_list.emplace_back("Electrons",massE,-chargeE,electron_spwt, nParticlesE, thermalVelocityE);
+    species_list.emplace_back("Ion",massI,chargeE,ion_spwt, nParticlesI, vthI);
+    species_list.emplace_back("Electrons",massE,-chargeE,electron_spwt, nParticlesE, vthE);
 
     /*Assign the species list as ions and electrons*/
     Species &ions = species_list[0];
@@ -398,18 +409,20 @@ int main(int argc, char *argv[])
 
 
     /*initialize electrons and ions */
-    init(&ions,0,0);
-    init(&electrons,velocity,0);
+    init(&ions,driftI,0);
+    init(&electrons,driftE,0);
 
+    cout<< "*********** Normalized Parameters ***********"<<endl;
     for(auto &p:species_list)
-        cout<< p.name << '\n' << p.mass<< '\n' << p.charge << '\n' << p.spwt << '\n' << p.NUM << endl <<endl;
-        cout<< "nParticlesI: " << nParticlesI << " nParticlesE: " << nParticlesE <<endl;
-        cout<< "numxCells: " << numxCells << " numyCells: " << numyCells <<endl;
-        cout<< "nTimeSteps: " << nTimeSteps <<endl;
-        cout<< "massI: " << massI << " massE: " << massE <<endl;
-        cout<< "velocity: " << velocity <<endl;
-        cout<< "density: " << density <<endl;
-        cout<< "timeStep: " << timeStep << " stepSize: " << stepSize <<endl;
+        cout<< p.name << " mass: " << p.mass<< " charge: " << p.charge << " spwt: " << p.spwt << " Num of particles: " << p.NUM <<endl;
+    cout<< "vdriftE: " << driftE <<" vdriftI: " << driftI<<endl;
+    cout<< "density: " << density <<endl;
+    cout<< "************ Simulation Parameters **********"<<endl;
+    cout<< "Nx: " << numxCells << " Ny: " << numyCells <<endl;
+    cout<< "Total timesteps: " << nTimeSteps <<endl;
+    cout<< "timeStep: " << timeStep << " stepSize: " << stepSize <<endl;
+
+    cout<< "********** Beginning of Simulation  **********"<<endl;
     /***************************************************************************/
 
     /*Compute Number Density*/
@@ -426,13 +439,6 @@ int main(int argc, char *argv[])
 
     rewindSpecies(&ions,efx,efy);
     rewindSpecies(&electrons,efx,efy);
-
-
-    file_res = fopen("output/results.dat","w");
-    file_ke = fopen("output/ke.dat","w");
-    file_sp = fopen("output/part.dat","w");
-    // file_phi = fopen("output/phi.dat","w");
-    //file_res2 = fopen("output/pe.dat","w");
 
 
     /*TIME LOOP*/
@@ -527,13 +533,23 @@ void init(Species *species, double xvel, double yvel)
     // sample particle positions and velocities
     for(int p=0; p<species->NUM; p++)
     {
-        double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x); //domain.x0 + rnd()*(domain.nix-1)*domain.dx;
+        // Custom Loading
+        double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x);
+        double u = xvel*pow(-1,p);
 
-        double u = xvel*pow(-1,p); // sampleVel(species->Temp*EV_TO_K, species->mass);
+        double y = (p+0.5)*delta_y;
+        double v = yvel;
 
-        double y = (p+0.5)*delta_y; //domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
-        double v = yvel; // + sampleVel(species->Temp*EV_TO_K, species->mass);                    //yvel; //sampleVel(species->Temp*EV_TO_K, species->mass);
+        // Maxwellian Loading
+        // double x = domain.x0 + rnd()*(domain.nix-1)*domain.dx;
+        // double u = sampleVel(species->Temp, species->mass);
+        // // double u = sampleVel(species->Temp*EV_TO_K, species->mass);
+        //
+        // double y = domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
+        // double v = sampleVel(species->Temp, species->mass);
+        // // double v = sampleVel(species->Temp*EV_TO_K, species->mass);
 
+        // Periodic boundary
         if(x<0) x = x + domain.xl;
         if(x>domain.xl) x = x - domain.xl;
 
@@ -563,7 +579,8 @@ void init(Species *species, double xvel, double yvel)
 /*Sample Velocity (According to Birdsall)*/
 double sampleVel(double T, double mass)
 {
-    double v_th = sqrt(2*K*T/mass);
+    // double v_th = sqrt(2*K*T/mass);
+    double v_th = T;
     return v_th*sqrt(2)*(rnd()+rnd()+rnd()-1.5);
 }
 
@@ -1140,7 +1157,7 @@ void computePE(double Time)
    {
      pe += 0.5*domain.phi[i*domain.niy+j]*domain.rho[i*domain.niy+j];
    }
-   fprintf(file_res2,"%g\t %g\n",Time, pe);
+   // fprintf(file_res2,"%g\t %g\n",Time, pe);
 
 }
 

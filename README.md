@@ -11,36 +11,41 @@ Contributors
 
 Authors:
 
-- [Sayan Adhikari](mailto:sayan.adhikari@fys.uio.no): architecture and data structures, pushers, weighting schemes, overall maintainance
-- Rakesh Moulick (see separate branch): architecture and data structures, poisson solver, Collision module
-- Gunjan Sharma (see separate branch): Physics Study
-- Rupali Paul (see separate branch): Physics Study
-- Kishor Deka (see separate branches): Physics Study
+- [Sayan Adhikari](https://github.com/sayanadhikari): architecture and data structures, pushers, weighting schemes, overall maintainance.
+- [Rakesh Moulick](https://github.com/rakeshmoulick): architecture and data structures, poisson solver, pushers, Collision module.
+- [Gunjan Sharma](https://github.com/gunjansharma1019): architecture and data structures, poisson solver, pushers.
+- [Rinku Mishra](https://github.com/rinku-mishra): pushers, dust charging implementation.
+
 
 Installation
 ------------
 #### Prerequisites
 1. gcc compiler for C++ (g++)
-2. make buildsystem
+2. GNU make buildsystem
 3. git
-4. Python 3.0 or higher for plot
+4. FFTW3
+5. HDF5
+5. Python >= 3.0 (Not tested for lower)
 
 #### Procedure
 First make a clone of the master branch using the following command
 ```shell
 git clone https://github.com/sayanadhikari207/picsp.git
 ```
-Then enter inside the *PICSP* directory and verify the contents. 
+Then enter inside the *PICSP* directory.
 ```shell
 cd picsp
-ls
 ```
 Now complile and built the *PICSP* code
 ```shell
 make clean
-make
-``` 
-Usage
+make all
+```
+#### Troubleshooting (Installation)
+If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use *conda* environment or change the path of **HFLAGS** in the makefile.
+
+Use the same method to resolve issues with **FFTW** library.
+#### Usage
 -----
 Upon successful compilation, run the code using following command
 ```shell

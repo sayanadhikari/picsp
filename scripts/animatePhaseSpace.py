@@ -45,14 +45,14 @@ if (show_anim == True):
 
         ax1.cla()
         img1 = ax1.scatter(dataex,dataevx,marker='.',color='b',alpha=1.0,s=10)
-        ax1.set_title('Electron Phase Space (TimeSteps = %d'%i+')')
+        ax1.set_title('Electron Phase Space (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
         ax1.set_ylabel("$v_x$")
         ax1.set_xlim([0, Lx])
 
         ax2.cla()
         img2 = ax2.scatter(dataix,dataivx,marker='.',color='r',alpha=1.0,s=10)
-        ax2.set_title('Ion Phase Space (TimeSteps = %d'%i+')')
+        ax2.set_title('Ion Phase Space (TimeSteps = %d'%(i*dp)+')')
         ax2.set_xlabel("$y$")
         ax2.set_ylabel("$v_y$")
         ax2.set_xlim([0, Ly])
@@ -62,7 +62,7 @@ if (show_anim == True):
 
 
 if (show_anim == True):
-    fig,(ax1,ax2) = plt.subplots(2,1, figsize=(8, 8))
+    fig,(ax1,ax2) = plt.subplots(2,1, figsize=(8, 6))
     # fig = plt.figure(figsize=(6, 6))
     # ax1 = plt.axes(projection ="3d")
     ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
