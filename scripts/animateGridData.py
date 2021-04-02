@@ -10,10 +10,10 @@ import argparse
 # import plotly.graph_objects as go
 #========= Configuration ===========
 parser = argparse.ArgumentParser(description='Grid Data Animator PICSP')
-parser.add_argument('--p', default="phi", type=str, help='Name of the parameter (phi/den.e/den.i)')
-parser.add_argument('--a', default=True, type=bool, help='Show Animation (True/False)')
-parser.add_argument('--s', default=False, type=bool, help='Save Animation (True/False)')
-parser.add_argument('--d', default=False, type=bool, help='3D Animation (True/False)')
+parser.add_argument('-p', default="phi", type=str, help='Name of the parameter (phi/den.e/den.i)')
+parser.add_argument('-a', default=True, type=bool, help='Show Animation (True/False)')
+parser.add_argument('-s', default=False, type=bool, help='Save Animation (True/False)')
+parser.add_argument('-d', default=False, type=bool, help='3D Animation (True/False)')
 args = parser.parse_args()
 
 param = args.p

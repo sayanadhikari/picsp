@@ -11,8 +11,8 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description='Phase - Space Data Animator PICSP')
-parser.add_argument('--a', default=True, type=bool, help='Show Animation (True/False)')
-parser.add_argument('--s', default=False, type=bool, help='Save Animation (True/False)')
+parser.add_argument('-a', default=True, type=bool, help='Show Animation (True/False)')
+parser.add_argument('-s', default=False, type=bool, help='Save Animation (True/False)')
 args = parser.parse_args()
 
 show_anim = args.a
