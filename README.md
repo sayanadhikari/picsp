@@ -1,3 +1,5 @@
+[![C/C++ CI](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/c-cpp.yml)
+[![build](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml/badge.svg)](https://github.com/sayanadhikari/picsp/actions/workflows/make.yml)
 ![PICSP Logo](/images/logo.png)
 
 PICSP - (Particle-in-Cell Simulation of Plasma)
