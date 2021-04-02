@@ -60,3 +60,13 @@ Edit the input.ini or create your own .ini file using the *input.ini* file forma
 ```shell
 ./picsp test.ini
 ```
+## Visualization
+To visualize the simualtion data, run the python scripts from `scripts` directory.
+#### Phase-space Animation
+```shell
+python3 animatePhaseSpace.py 
+```
+#### Potential Animation
+```shell
+python3 animatePotential.py
+```
