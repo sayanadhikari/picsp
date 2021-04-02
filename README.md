@@ -28,7 +28,7 @@ Authors:
 5. [Python >= 3.0](https://www.python.org/downloads/) (Not tested for lower)
 
 ### Procedure
-First make a clone of the master branch using the following command
+First make a clone of the ``master`` branch using the following command
 ```shell
 git clone https://github.com/sayanadhikari207/picsp.git
 ```
@@ -42,7 +42,7 @@ make clean
 make all
 ```
 ### Troubleshooting (Installation)
-If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use **conda** environment or change the path of **HFLAGS** in the makefile.
+If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use **conda** environment or change the path of **HFLAGS** in the ``makefile``.
 ```shell
 HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
 ```
@@ -56,12 +56,12 @@ Upon successful compilation, run the code using following command
 ```
 ## Plasma Parameter Setup
 
-Edit the input.ini or create your own .ini file using the *input.ini* file format (e.g. *test.ini*) and run the code
+Edit the ``input.ini`` or create your own ``.ini`` file using the ``input.ini`` file format (e.g. ``test.ini``) and run the code
 ```shell
 ./picsp test.ini
 ```
 ## Visualization
-To visualize the simualtion data, run the python scripts from `scripts` directory.
+To visualize the simulation data, run the python scripts from `scripts` directory.
 #### Phase-space Animation
 ```shell
 python3 animatePhaseSpace.py 
