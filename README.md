@@ -45,7 +45,10 @@ make clean
 make all
 ```
 #### Troubleshooting (Installation)
-If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use *conda* environment or change the path of **HFLAGS** in the makefile.
+If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use **conda** environment or change the path of **HFLAGS** in the makefile.
+```bash
+HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
+```
 
 Use the same method to resolve issues with **FFTW** library.
 #### Usage
