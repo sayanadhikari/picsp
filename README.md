@@ -68,5 +68,18 @@ python3 animatePhaseSpace.py
 ```
 #### Potential Animation
 ```shell
-python3 animatePotential.py
+python3 animateGridData.py -p phi
+```
+#### Density Animation
+##### Ion
+```shell
+python3 animateGridData.py -p den.i
+```
+##### Electron
+```shell
+python3 animateGridData.py -p den.e
+```
+#### Time Dependent Data
+```shell
+python3 timeData.py -p energy
 ```
