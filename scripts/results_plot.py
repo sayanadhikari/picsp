@@ -1,15 +1,34 @@
+#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from pylab import *
 # numerical data file
-filename="../output/results.dat"
+DIR ="../output/"
+
+file_name = "data"#"rhoNeutral" #"P"
+
+h5 = h5py.File(DIR+file_name+'.h5','r')
+
+Lx = h5.attrs["Lx"]
+Ly = h5.attrs["Ly"]
+
+Nx = int(h5.attrs["Nx"])
+Ny = int(h5.attrs["Ny"])
+
+x = np.linspace(0,Lx,Nx)
+y = np.linspace(0,Ly,Ny)
+# X, Y = np.meshgrid(x, y)
+
+dp   =  int(h5.attrs["dp"])
+Nt   =  int(h5.attrs["Nt"])
+
+data =  h5["phi/%d"%Nt]
+datae = h5["particle.e/%d"%data_num[i]]
+
 xLen,iDen,eDen,iVel,eVel,rho,phi,ef = np.loadtxt(filename, unpack=True)
-# disp(data_act.shape)
+
 ActiveSubplot = True
-numCells = 200 #copy it from .ini file
-nTimeSteps = 1000 #copy it from .ini file
-nTimePhase = 2    #Stage of simulation
 
 
 if nTimePhase == 0:
@@ -26,8 +45,6 @@ if ActiveSubplot==False:
     plt.xlabel('Length (m)')
     plt.ylabel('Density ($m^{-3}$)')
     plt.title('Electron / Ion Density')
-
-
 
     figure(2)
     plt.plot(xLen[inix:inix+numCells],ef[inix:inix+numCells], linewidth=1,color='red')

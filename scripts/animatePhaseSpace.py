@@ -1,14 +1,23 @@
-#!/usr/bin/ python
+#!/usr/bin/env python3
 
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits import mplot3d
+import argparse
 # import plotly.graph_objects as go
 #========= Configuration ===========
-show_anim = True
-save_anim = False
+
+
+parser = argparse.ArgumentParser(description='Phase - Space Data Animator PICSP')
+parser.add_argument('--a', default=True, type=bool, help='Show Animation (True/False)')
+parser.add_argument('--s', default=False, type=bool, help='Save Animation (True/False)')
+args = parser.parse_args()
+
+show_anim = args.a
+save_anim = args.s
+
 interval = 0.001#in seconds
 
 DIR ="../output/"
@@ -61,18 +70,16 @@ if (show_anim == True):
 
 
 
+
+fig,(ax1,ax2) = plt.subplots(2,1, figsize=(8, 6))
+ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
 if (show_anim == True):
-    fig,(ax1,ax2) = plt.subplots(2,1, figsize=(8, 6))
-    # fig = plt.figure(figsize=(6, 6))
-    # ax1 = plt.axes(projection ="3d")
-    ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
-    # ani.save('phase_space.gif',writer='imagemagick')
     plt.show()
-    if(save_anim == True):
-        try:
-            Writer = animation.writers['ffmpeg']
-            writer = Writer(fps=(1/interval), metadata=dict(artist='Me'), bitrate=1800)
-        except RuntimeError:
-            print("ffmpeg not available trying ImageMagickWriter")
-            writer = animation.ImageMagickWriter(fps=(1/interval))
-        ani.save('animation2d.mp4')
+if(save_anim == True):
+    try:
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=(1/interval), metadata=dict(artist='Me'), bitrate=1800)
+    except RuntimeError:
+        print("ffmpeg not available trying ImageMagickWriter")
+        writer = animation.ImageMagickWriter(fps=(1/interval))
+    ani.save('PICSP-phasespace.mp4')

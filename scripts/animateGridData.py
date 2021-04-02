@@ -1,4 +1,4 @@
-#!/usr/bin/ python
+#!/usr/bin/env python3
 
 import numpy as np
 import h5py
@@ -6,11 +6,20 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits import mplot3d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import argparse
 # import plotly.graph_objects as go
 #========= Configuration ===========
-show_anim = True
-save_anim = False
-Vis3D = True
+parser = argparse.ArgumentParser(description='Grid Data Animator PICSP')
+parser.add_argument('--p', default="phi", type=str, help='Name of the parameter (phi/den.e/den.i)')
+parser.add_argument('--a', default=True, type=bool, help='Show Animation (True/False)')
+parser.add_argument('--s', default=False, type=bool, help='Save Animation (True/False)')
+parser.add_argument('--d', default=False, type=bool, help='3D Animation (True/False)')
+args = parser.parse_args()
+
+param = args.p
+show_anim = args.a
+save_anim = args.s
+Vis3D = args.d
 interval = 0.001#in seconds
 
 DIR ="../output/"
@@ -22,7 +31,7 @@ h5 = h5py.File(DIR+file_name+'.h5','r')
 Lx = h5.attrs["Lx"]
 Ly = h5.attrs["Ly"]
 
-Nx = int(h5.attrs["Nx"]);
+Nx = int(h5.attrs["Nx"])
 Ny = int(h5.attrs["Ny"])
 
 dp   =  int(h5.attrs["dp"])
@@ -35,26 +44,32 @@ X, Y = np.meshgrid(x, y)
 # dataset index
 data_num = np.arange(start=0, stop=Nt, step=dp, dtype=int)
 
-maxPhi = np.max(h5["phi/%d"%Nt]);
-minPhi = np.min(h5["phi/%d"%Nt]);
+maxPhi = np.max(h5[param+"/%d"%Nt]);
+minPhi = np.min(h5[param+"/%d"%Nt]);
 
 if (show_anim == True):
     def animate(i):
         #======Potential Data=========
-        dataPhi = h5["phi/%d"%data_num[i]]
+        data = h5[param+"/%d"%data_num[i]]
 
 
         ax1.cla()
         if Vis3D == True:
-            img1 = ax1.plot_surface(X,Y,dataPhi)
+            img1 = ax1.plot_surface(X,Y,data)
+            ax1.set_zlim([minPhi, maxPhi])
         else:
-            img1 = ax1.contourf(X,Y,dataPhi)
-        ax1.set_title('Potential (TimeSteps = %d'%(i*dp)+')')
+            img1 = ax1.contourf(X,Y,data)
+        if ("phi" in param ):
+            ax1.set_title('Potential (TimeSteps = %d'%(i*dp)+')')
+        elif ("den" in param ):
+            if ("i" in param ):
+                ax1.set_title('Ion Density (TimeSteps = %d'%(i*dp)+')')
+            else:
+                ax1.set_title('Electron Density (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
         ax1.set_ylabel("$y$")
         ax1.set_xlim([0, Lx])
         ax1.set_ylim([0, Ly])
-        ax1.set_zlim([minPhi, maxPhi])
         cax.cla()
         fig.colorbar(img1, cax=cax)
 
@@ -66,13 +81,13 @@ if (show_anim == True):
     fig,ax1 = plt.subplots(1,1, figsize=(6, 6))
     div = make_axes_locatable(ax1)
     cax = div.append_axes('right', '5%', '5%')
-    dataPhi = h5["phi/%d"%data_num[0]]
+    data = h5["phi/%d"%data_num[0]]
     if Vis3D == True:
         fig = plt.figure(figsize=(6, 6))
         ax1 = plt.axes(projection ="3d")
-        img1 = ax1.plot_surface(X,Y,dataPhi)
+        img1 = ax1.plot_surface(X,Y,data)
     else:
-        img1 = ax1.contourf(X,Y,dataPhi)
+        img1 = ax1.contourf(X,Y,data)
     cbar = fig.colorbar(img1,cax=cax)
     ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
     # ani.save('phase_space.gif',writer='imagemagick')
