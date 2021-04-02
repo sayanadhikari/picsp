@@ -20,12 +20,12 @@ Authors:
 ## Installation
 
 ### Prerequisites
-1. gcc compiler for C++ (g++)
-2. GNU make buildsystem
-3. git
-4. FFTW3
-5. HDF5
-5. Python >= 3.0 (Not tested for lower)
+1. [GCC compiler for C++ (g++)](https://gcc.gnu.org/)
+2. [GNU make buildsystem](https://www.gnu.org/software/automake/) (Mostly comes with every unix based systems)
+3. [git](https://git-scm.com/)
+4. [FFTW3](http://www.fftw.org/download.html)
+5. [HDF5](https://www.hdfgroup.org/solutions/hdf5/)
+5. [Python >= 3.0](https://www.python.org/downloads/) (Not tested for lower)
 
 ### Procedure
 First make a clone of the master branch using the following command
