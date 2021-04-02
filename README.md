@@ -43,7 +43,7 @@ make all
 ```
 ### Troubleshooting (Installation)
 If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use **conda** environment or change the path of **HFLAGS** in the makefile.
-```bash
+```shell
 HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
 ```
 
