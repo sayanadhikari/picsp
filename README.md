@@ -5,17 +5,16 @@
 
 # PICSP - (Particle-in-Cell Simulation of Plasma)
 
-*PICSP* is an open source scientific program for simulating plasmas using the *Particle-In-Cell* (PIC) method on a structured mesh. The field quantities are solved using *Direct Solver* and *Gauss-Siedel solver*. The focus is to simulate bounded as well as periodic plasma system.
+**PICSP** is an open source scientific program for simulating plasmas using the *Particle-In-Cell* (PIC) method on a 2D structured mesh. The field quantities are solved using *Spectral Solver*, *Direct Solver* and *Gauss-Siedel solver*. The focus is to simulate bounded as well as periodic plasma system.
 
 
 ## Contributors
 
 Authors:
 
-- [Sayan Adhikari](https://github.com/sayanadhikari): architecture and data structures, pushers, weighting schemes, overall maintainance.
-- [Rakesh Moulick](https://github.com/rakeshmoulick): architecture and data structures, poisson solver, pushers, Collision module.
-- [Gunjan Sharma](https://github.com/gunjansharma1019): architecture and data structures, poisson solver, pushers.
-- [Rinku Mishra](https://github.com/rinku-mishra): pushers, dust charging implementation.
+- [Sayan Adhikari](https://github.com/sayanadhikari), (UiO, Norway): architecture and data structures, pushers, weighting schemes, overall maintainance.
+- [Rakesh Moulick](https://github.com/rakeshmoulick), (RC, India): architecture and data structures, poisson solver, pushers, Collision module.
+- [Gunjan Sharma](https://github.com/gunjansharma1019), (CPP, India): architecture and data structures, poisson solver, pushers.
 
 
 ## Installation
