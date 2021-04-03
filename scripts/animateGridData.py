@@ -2,11 +2,13 @@
 
 import numpy as np
 import h5py
+import matplotlib as mp
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits import mplot3d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import argparse
+import os
 # import plotly.graph_objects as go
 #========= Configuration ===========
 parser = argparse.ArgumentParser(description='Grid Data Animator PICSP')
@@ -20,11 +22,19 @@ param = args.p
 show_anim = args.a
 save_anim = args.s
 Vis3D = args.d
-interval = 0.001#in seconds
+interval = 10 #in mseconds
 
 DIR ="../output/"
 
 file_name = "data"#"rhoNeutral" #"P"
+
+
+#========== Figure Directory Setup =============
+figPath  = "figures"  # DO NOT CHANGE THE PATH
+if os.path.exists(figPath):
+    print("figure directory exists. Existing figures will be replaced.")
+else:
+    os.mkdir(figPath)
 
 h5 = h5py.File(DIR+file_name+'.h5','r')
 
@@ -44,8 +54,8 @@ X, Y = np.meshgrid(x, y)
 # dataset index
 data_num = np.arange(start=0, stop=Nt, step=dp, dtype=int)
 
-maxPhi = np.max(h5[param+"/%d"%Nt]);
-minPhi = np.min(h5[param+"/%d"%Nt]);
+maxP = np.max(h5[param+"/%d"%Nt]);
+minP = np.min(h5[param+"/%d"%Nt]);
 
 if (show_anim == True):
     def animate(i):
@@ -56,7 +66,7 @@ if (show_anim == True):
         ax1.cla()
         if Vis3D == True:
             img1 = ax1.plot_surface(X,Y,data)
-            ax1.set_zlim([minPhi, maxPhi])
+            ax1.set_zlim([minP, maxP])
         else:
             img1 = ax1.contourf(X,Y,data)
         if ("phi" in param ):
@@ -74,22 +84,32 @@ if (show_anim == True):
         fig.colorbar(img1, cax=cax)
 
 
+##### FIG SIZE CALC ############
+figsize = np.array([150,150/1.618]) #Figure size in mm
+dpi = 300                         #Print resolution
+ppi = np.sqrt(1920**2+1200**2)/24 #Screen resolution
 
-
+mp.rc('text', usetex=True)
+mp.rc('font', family='sans-serif', size=10, serif='Computer Modern Roman')
+mp.rc('axes', titlesize=10)
+mp.rc('axes', labelsize=10)
+mp.rc('xtick', labelsize=10)
+mp.rc('ytick', labelsize=10)
+mp.rc('legend', fontsize=10)
 
 if (show_anim == True):
-    fig,ax1 = plt.subplots(1,1, figsize=(6, 6))
+    fig,ax1 = plt.subplots(figsize=figsize/25.4,constrained_layout=False,dpi=ppi)
     div = make_axes_locatable(ax1)
-    cax = div.append_axes('right', '5%', '5%')
-    data = h5["phi/%d"%data_num[0]]
+    cax = div.append_axes('right', '4%', '4%')
+    data = h5[param+"/%d"%data_num[0]]
     if Vis3D == True:
-        fig = plt.figure(figsize=(6, 6))
+        fig = plt.figure(figsize=figsize/25.4,constrained_layout=True,dpi=ppi)
         ax1 = plt.axes(projection ="3d")
         img1 = ax1.plot_surface(X,Y,data)
     else:
         img1 = ax1.contourf(X,Y,data)
     cbar = fig.colorbar(img1,cax=cax)
-    ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
+    ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval,blit=False)
     # ani.save('phase_space.gif',writer='imagemagick')
     plt.show()
     if(save_anim == True):
@@ -99,4 +119,5 @@ if (show_anim == True):
         except RuntimeError:
             print("ffmpeg not available trying ImageMagickWriter")
             writer = animation.ImageMagickWriter(fps=(1/interval))
-        ani.save('animation2d.mp4')
+        print("Saving movie to "+figPath+"/. Please wait .....")
+        ani.save(figPath+"/"+param+'_animation_PICSP.mp4')

@@ -2,10 +2,12 @@
 
 import numpy as np
 import h5py
+import matplotlib as mp
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits import mplot3d
 import argparse
+import os
 # import plotly.graph_objects as go
 #========= Configuration ===========
 
@@ -18,11 +20,19 @@ args = parser.parse_args()
 show_anim = args.a
 save_anim = args.s
 
-interval = 0.001#in seconds
+interval = 10#in seconds
 
 DIR ="../output/"
 
 file_name = "data"#"rhoNeutral" #"P"
+
+#========== Figure Directory Setup =============
+figPath  = "figures"  # DO NOT CHANGE THE PATH
+if os.path.exists(figPath):
+    print("figure directory exists. Existing figures will be replaced.")
+else:
+    os.mkdir(figPath)
+
 
 h5 = h5py.File(DIR+file_name+'.h5','r')
 
@@ -35,6 +45,7 @@ Nt   =  int(h5.attrs["Nt"])
 
 
 data_num = np.arange(start=0, stop=Nt, step=dp, dtype=int)
+
 
 if (show_anim == True):
     def animate(i):
@@ -69,10 +80,21 @@ if (show_anim == True):
         # ax1.set_zlim([-Lz, Lz])
 
 
+##### FIG SIZE CALC ############
+figsize = np.array([150,150/1.618]) #Figure size in mm
+dpi = 300                         #Print resolution
+ppi = np.sqrt(1920**2+1200**2)/24 #Screen resolution
 
+mp.rc('text', usetex=True)
+mp.rc('font', family='sans-serif', size=10, serif='Computer Modern Roman')
+mp.rc('axes', titlesize=10)
+mp.rc('axes', labelsize=10)
+mp.rc('xtick', labelsize=10)
+mp.rc('ytick', labelsize=10)
+mp.rc('legend', fontsize=10)
 
-fig,(ax1,ax2) = plt.subplots(2,1, figsize=(8, 6))
-ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval*1e+3,blit=False)
+fig,(ax1,ax2) = plt.subplots(2,1,figsize=figsize/25.4,constrained_layout=True,dpi=ppi)
+ani = animation.FuncAnimation(fig,animate,frames=len(data_num),interval=interval,blit=False)
 if (show_anim == True):
     plt.show()
 if(save_anim == True):
@@ -82,4 +104,5 @@ if(save_anim == True):
     except RuntimeError:
         print("ffmpeg not available trying ImageMagickWriter")
         writer = animation.ImageMagickWriter(fps=(1/interval))
-    ani.save('PICSP-phasespace.mp4')
+    print("Saving movie to "+figPath+"/. Please wait .....")
+    ani.save(figPath+'/phasespace_animation_PICSP.mp4')

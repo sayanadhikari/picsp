@@ -62,7 +62,8 @@ const double PI = 3.14159265359;
 // const double AMU = 1.660538921E-27;
 
 /*************** USER CHOICE ******************/
-short int solverType;
+short int solverType; // Poisson SOlver
+short int loadType;   // Particle and velocity sampling
 /************ VARIABLE INITIALIZATION **********/
 int nParticlesI;      // Number of simulation ions
 int nParticlesE; // Number of simulation electrons
@@ -271,6 +272,7 @@ int parse_ini_file(char * ini_name)
 
     /* USER CHOICE */
     solverType            = iniparser_getint(ini,"solver:solverType",-1);
+    loadType              = iniparser_getint(ini,"population:loadType",-1);
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
     EPS             = EPS_un/EPS_un;
@@ -307,6 +309,11 @@ int parse_ini_file(char * ini_name)
     if (solverType != 1 && solverType != 2) {
       cout<<"ERROR, Wrong Solver Type. The recommended value: 1 or 2"<<endl;
       cout << "solverType: " << solverType <<endl;
+      SFLAG = false;
+    }
+    if (loadType != 1 && loadType != 2) {
+      cout<<"ERROR, Wrong Load Type. The recommended value: 1 or 2"<<endl;
+      cout << "loadType: " << loadType <<endl;
       SFLAG = false;
     }
     if (SFLAG==true) {
@@ -560,31 +567,46 @@ void init(Species *species, double xvel, double yvel)
     // sample particle positions and velocities
     for(int p=0; p<species->NUM; p++)
     {
-        // Custom Loading
-        double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x);
-        double u = xvel*pow(-1,p);
+        if (loadType==1) {
+          // Maxwellian Loading
+          double x = domain.x0 + rnd()*(domain.nix-1)*domain.dx;
+          double u = sampleVel(species->Temp, species->mass);
+          // double u = sampleVel(species->Temp*EV_TO_K, species->mass);
 
-        double y = (p+0.5)*delta_y;
-        double v = yvel;
+          double y = domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
+          double v = sampleVel(species->Temp, species->mass);
+          // double v = sampleVel(species->Temp*EV_TO_K, species->mass);
 
-        // Maxwellian Loading
-        // double x = domain.x0 + rnd()*(domain.nix-1)*domain.dx;
-        // double u = sampleVel(species->Temp, species->mass);
-        // // double u = sampleVel(species->Temp*EV_TO_K, species->mass);
-        //
-        // double y = domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
-        // double v = sampleVel(species->Temp, species->mass);
-        // // double v = sampleVel(species->Temp*EV_TO_K, species->mass);
+          // Periodic boundary
+          if(x<0) x = x + domain.xl;
+          if(x>domain.xl) x = x - domain.xl;
 
-        // Periodic boundary
-        if(x<0) x = x + domain.xl;
-        if(x>domain.xl) x = x - domain.xl;
+          if(y<0) y = y + domain.yl;
+          if(y>domain.yl) y = y - domain.yl;
 
-        if(y<0) y = y + domain.yl;
-        if(y>domain.yl) y = y - domain.yl;
+          // Add to the list
+          species->add(Particle(x,y,u,v));
 
-        // Add to the list
-        species->add(Particle(x,y,u,v));
+        }
+        else if (loadType==2) {
+          // Custom Loading
+          double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x);
+          double u = xvel*pow(-1,p);
+
+          double y = (p+0.5)*delta_y;
+          double v = yvel;
+
+          // Periodic boundary
+          if(x<0) x = x + domain.xl;
+          if(x>domain.xl) x = x - domain.xl;
+
+          if(y<0) y = y + domain.yl;
+          if(y>domain.yl) y = y - domain.yl;
+
+          // Add to the list
+          species->add(Particle(x,y,u,v));
+
+        }
     }
 }
 
