@@ -10,6 +10,7 @@
 # include <random>
 # include <cstring>
 # include <fstream>
+#include <chrono>
 
 extern "C" {
   #include "iniparser.h"
