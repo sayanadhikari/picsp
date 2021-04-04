@@ -4,6 +4,16 @@
 ## @author		Sayan Adhikari <sayan.adhikari@fys.uio.no>
 ##
 
+
+####### UBUNTU ##########
+INCHDF	:=
+LIBHDF  :=
+OS := $(shell lsb_release -si)
+ifeq ($(OS),Ubuntu)
+  INCHDF    = -I/usr/include/hdf5/serial/
+  LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
+endif
+###############################
 CXX		= g++
 
 CXXLOCAL = -Ilib/iniparser/src
@@ -12,10 +22,12 @@ LLOCAL = -Ilib/iniparser/src
 FFLAGS = -lfftw3 -lm
 HFLAGS = -lhdf5 -lhdf5_cpp
 
+
+
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL)  # Flags for compiling
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) # Flags for linking
+CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(INCHDF) # Flags for compiling
+LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(LIBHDF) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -68,7 +80,3 @@ veryclean: clean
 	@echo "Cleaning executables and iniparser"
 	@rm -f $(EXEC)
 	@cd $(LDIR)/iniparser && $(MAKE) veryclean > /dev/null 2>&1
-
-ubuntu:
-	@export CPATH="/usr/include/hdf5/serial/"
-	@export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
