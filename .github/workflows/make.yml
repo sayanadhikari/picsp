@@ -24,12 +24,12 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: FFTW3
+      - name: FFTW3 - 1
         run: wget http://www.fftw.org/fftw-3.3.9.tar.gz && tar -xvf fftw-3.3.9.tar.gz
-#         run: cd fftw-3.3.9
-#         run: ./configure
-#         run: make all
-#         run: sudo make install
+      - name: FFTW3 - 2
+        run: cd fftw-3.3.9 && ./configure
+      - name: FFTW3 - 3
+        run: make all && sudo make install
 #         run: cd ..
       # Runs a single command using the runners shell
       - name: Make all
