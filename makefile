@@ -9,8 +9,8 @@ CXX		= g++
 CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
-FFLAGS = -lfftw3 -lm 
-HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
+FFLAGS = -lfftw3 -lm
+HFLAGS = -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
 
@@ -31,6 +31,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(OBJ_))
 
 LIBOBJ_	= iniparser/libiniparser.a
 LIBHEAD_= iniparser/src/iniparser.h
+
 
 LIBOBJ = $(patsubst %,$(LDIR)/%,$(LIBOBJ_))
 LIBHEAD = $(patsubst %,$(LDIR)/%,$(LIBHEAD_))
