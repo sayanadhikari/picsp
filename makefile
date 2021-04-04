@@ -68,3 +68,7 @@ veryclean: clean
 	@echo "Cleaning executables and iniparser"
 	@rm -f $(EXEC)
 	@cd $(LDIR)/iniparser && $(MAKE) veryclean > /dev/null 2>&1
+
+ubuntu:
+	export CPATH="/usr/include/hdf5/serial/"
+	export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
