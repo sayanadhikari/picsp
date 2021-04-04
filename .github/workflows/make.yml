@@ -24,12 +24,9 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: FFTW3 and HDF5
+      # Install required libraries
+      - name: Install required libraries (FFTW3 and HDF5)
         run: sudo apt-get install -y fftw3-dev libhdf5-dev libhdf5-serial-dev
-      - name: EXPORT PATH
-        run: |
-            export CPATH="/usr/include/hdf5/serial/"
-            export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
       # Runs a single command using the runners shell
       - name: Make all
         run: make all
