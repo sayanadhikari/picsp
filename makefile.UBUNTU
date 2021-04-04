@@ -10,7 +10,7 @@ CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
 FFLAGS = -lfftw3 -lm
-HFLAGS = -lhdf5 -lhdf5_cpp
+HFLAGS = -I /usr/include/hdf5/serial/ -L /usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
 
@@ -68,7 +68,3 @@ veryclean: clean
 	@echo "Cleaning executables and iniparser"
 	@rm -f $(EXEC)
 	@cd $(LDIR)/iniparser && $(MAKE) veryclean > /dev/null 2>&1
-
-ubuntu:
-	@export CPATH="/usr/include/hdf5/serial/"
-	@export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
