@@ -29,7 +29,7 @@ jobs:
       - name: EXPORT 1
         run: export CPATH="/usr/include/hdf5/serial/" && export C_INCLUDE_PATH="/usr/include/hdf5/serial/"
       - name: EXPORT 2
-        run: export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
+        run: export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/" && locate H5Cpp.h
       # Runs a single command using the runners shell
       - name: Make all
         run: make all
