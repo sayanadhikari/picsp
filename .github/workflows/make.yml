@@ -27,7 +27,9 @@ jobs:
       - name: FFTW3 and HDF5
         run: sudo apt-get install -y fftw3-dev libhdf5-dev libhdf5-serial-dev
       - name: EXPORT 1
-        run: export CPATH="/usr/include/hdf5/serial/" && export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
+        run: export C_INCLUDE_PATH="/usr/include/hdf5/serial/"
+      - name: EXPORT 2
+        run: export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
       # Runs a single command using the runners shell
       - name: Make all
         run: make all
