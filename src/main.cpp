@@ -334,6 +334,7 @@ int parse_ini_file(char * ini_name)
 /********************* MAIN FUNCTION ***************************/
 int main(int argc, char *argv[])
 {
+    auto start = chrono::steady_clock::now(); //timer start
     /************* INIPARSER ********************/
     if(argc<2) {
       cout<<"ERROR, at least one argument expected (the input file)."<<endl;
@@ -550,6 +551,10 @@ int main(int argc, char *argv[])
     delete groupDE;
     delete groupDI;
     delete file;
+    //****** END OF TIMER *****//
+    auto end = chrono::steady_clock::now();
+    auto diff = end - start;
+    cout << "Total time taken by PICSP: "<< chrono::duration <double> (diff).count() << " s" << endl;
 
     return 0;
 }

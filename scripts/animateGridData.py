@@ -22,7 +22,7 @@ param = args.p
 show_anim = args.a
 save_anim = args.s
 Vis3D = args.d
-interval = 10 #in mseconds
+interval = 100 #in mseconds
 
 DIR ="../output/"
 

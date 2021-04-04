@@ -20,7 +20,7 @@ args = parser.parse_args()
 show_anim = args.a
 save_anim = args.s
 
-interval = 10#in seconds
+interval = 100#in seconds
 
 DIR ="../output/"
 
