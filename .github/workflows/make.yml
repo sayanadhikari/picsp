@@ -29,7 +29,7 @@ jobs:
       - name: FFTW3 - 2
         run: cd fftw-3.3.9 && ./configure && make all && sudo make install
       - name: HDF5
-        run: sudo apt-get install libhdf5-serial-dev && sudo apt-get install libhdf5-cpp-100
+        run: sudo apt-get install libhdf5-serial-dev && sudo apt-get install libhdf5-cpp-103
       - name: EXPORT
         run: export C_INCLUDE_PATH=/usr/include/hdf5/serial/ && export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/hdf5/serial
       # Runs a single command using the runners shell
