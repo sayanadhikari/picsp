@@ -10,12 +10,15 @@ CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
 FFLAGS = -lfftw3 -lm
-HFLAGS = -I /usr/include/hdf5/serial/ -L /usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lhdf5_cpp
+HFLAGS = -lhdf5 -lhdf5_cpp
+
+INCHDF    = -I/usr/include/hdf5/serial/
+LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
 
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL)  # Flags for compiling
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) # Flags for linking
+CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(INCHDF) # Flags for compiling
+LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(LIBHDF) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
