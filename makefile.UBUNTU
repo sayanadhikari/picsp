@@ -4,6 +4,16 @@
 ## @author		Sayan Adhikari <sayan.adhikari@fys.uio.no>
 ##
 
+
+####### UBUNTU ##########
+INCHDF	:=
+LIBHDF  :=
+OS := $(shell lsb_release -si)
+ifeq ($(UNAME_S),Ubuntu)
+  INCHDF    = -I/usr/include/hdf5/serial/
+  LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
+endif
+###############################
 CXX		= g++
 
 CXXLOCAL = -Ilib/iniparser/src
@@ -12,8 +22,7 @@ LLOCAL = -Ilib/iniparser/src
 FFLAGS = -lfftw3 -lm
 HFLAGS = -lhdf5 -lhdf5_cpp
 
-INCHDF    = -I/usr/include/hdf5/serial/
-LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
+
 
 EXEC	= picsp
 
