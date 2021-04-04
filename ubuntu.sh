@@ -12,6 +12,3 @@ apt -y update
 apt -y upgrade
 apt-get install -y fftw3-dev libhdf5-dev libhdf5-serial-dev python3-pip build-essential
 
-# 
-# export CPATH="/usr/include/hdf5/serial/"
-# export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu/hdf5/serial/"
