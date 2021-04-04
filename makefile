@@ -74,7 +74,6 @@ version:
 clean:
 	@echo "Cleaning compiled files. (run 'make veryclean' to remove executables and more)"
 	@rm -f *~ $(ODIR)/*.o $(SDIR)/*.o $(SDIR)/*~
-	@rm -f *.dat
 	@rm -rf $(OUTDIR)
 veryclean: clean
 	@echo "Cleaning executables and iniparser"
