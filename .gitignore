@@ -8,7 +8,6 @@ picsp
 parsedump.txt
 **.sublime*
 **.h5
-gmon.out
 **local.ini
 src/main.local.c
 output
@@ -17,8 +16,6 @@ tags
 **.vtk
 local.mk
 **.jpg
-**.png
-**.gif
 **.mp4
 **.pyc
 **.txt
@@ -26,8 +23,7 @@ local.mk
 **.eps
 *.html
 **version.h
-**.swp
+src/version.h
+src/h5group.cpp
+**inputCalc.py
 .DS_Store
-**.sh
-picsp
-**/src/version.h
