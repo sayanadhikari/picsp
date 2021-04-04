@@ -9,7 +9,7 @@ CXX		= g++
 CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
-FFLAGS = -lfftw3 -lm
+FFLAGS = -lfftw3 -lm 
 HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
