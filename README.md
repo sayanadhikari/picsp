@@ -36,15 +36,28 @@ Then enter inside the *PICSP* directory.
 ```shell
 cd picsp
 ```
+---
+**NOTE**
+Ubuntu users can run ``ubuntu.sh`` file to install **FFTW3** and **HDF5** libraries with superuser privilege.
+```shell
+sudo bash ubuntu.sh
+```
+---
 Now complile and built the *PICSP* code
 ```shell
-make clean
+make veryclean
 make all
 ```
 ### Troubleshooting (Installation)
-If you have installed **HDF5** library from source, you may get some issues regarding the libraries. Either use **conda** environment or change the path of **HFLAGS** in the ``makefile``.
+If you have not installed **HDF5** library from source, you may get some issues regarding the library. Try to use ``apt-get`` for ``Debian`` based machines (e.g. ``Ubuntu``), or any default package manager to install respective libraries. For ``MacOS`` ``Homebrew`` is recommended.
+
+For ``Ubuntu``: 
 ```shell
-HFLAGS = -I/usr/local/Caskroom/miniconda/base/lib/ -lhdf5 -lhdf5_cpp
+sudo apt-get install -y fftw3-dev libhdf5-dev libhdf5-serial-dev
+```
+For ``MacOs``: 
+```shell
+brew install fftw hdf5@1.10
 ```
 
 Use the same method to resolve issues with **FFTW** library.
