@@ -972,9 +972,9 @@ bool spectralPotentialSolver(double *phi, double *rho)
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
 
 
-   // /*rhok = new fftw_complex[Nx*Nh];
+   // rhok = new fftw_complex[Nx*Nh];
    // phik = new fftw_complex[Nx*Nh];
-   // rhok_dum = new fftw_complex[Nx*Nh];*/
+   // rhok_dum = new fftw_complex[Nx*Nh];
 
 
 
@@ -987,61 +987,51 @@ bool spectralPotentialSolver(double *phi, double *rho)
       rho[i*Ny+j] = rho[i*Ny+j]/EPS;
    }
 
+   // Take FFT of rho
    p = fftw_plan_dft_r2c_2d(Nx, Ny,  &rho[0*Ny+0], &rhok[0*Nh+0], FFTW_ESTIMATE);
    fftw_execute(p);
    fftw_destroy_plan(p);
    fftw_cleanup();
 
+   // Write dummy file
+   for(j=0;j<Nh;j++)
+   for(i=0;i<Nx;i++)
+   {
+      rhok_dum[i*Nh+j][0] = rhok[i*Nh+j][0];
+      rhok_dum[i*Nh+j][1] = rhok[i*Nh+j][1];
+   }
 
+   // Find phik = rhok / (kx^2 + ky^2)
    for(j=0;j<Nh;j++)
    {
       ky = 2.0*PI*j/Ly;
       for(i=0;i<Nx/2;i++)
       {
          kx = 2.0*PI*i/Lx;
-         // suggested by Rupak
-         // if(i==0&&j==0)
-         // {
-         // phik[i*Nh+j][0] = 0;
-         // phik[i*Nh+j][1] = 0;
-         // }
-         // else
-         // {
+         
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-
-         // }
       }
       for(i=Nx/2+1;i<Nx;i++)
       {
-         // kx = 2.0*PI*(i-Nx)/Lx; // Suggested by Rupak (Double Check)
          kx = 2.0*PI*(Nx-i)/Lx;
+         
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
       }
-      // suggested by Rupak
-      phik[0][0] = 0;
-      phik[0][1] = 0;
-
-      // Checked by Rupak (Should not be )
-      // for(i=Ny/2+1;i<Ny;i++)
-      // {
-      //    kx = 2.0*PI*(i-Nx)/Lx;
-      //
-      //       if(i==0&&j==0)
-      //       {
-      //       phik[i*Nh+j][0] = 0;
-      //       phik[i*Nh+j][1] = 0;
-      //       }
-      //       else
-      //       {
-      //       phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
-      //       phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-      //       }
-      // }
+   }
+   phik[0][0] = 0;
+   phik[0][1] = 0;
+   
+   // Write dummy file
+   for(j=0;j<Nh;j++)
+   for(i=0;i<Nx;i++)
+   {
+      phik_dum[i*Nh+j][0] = phik[i*Nh+j][0];
+      phik_dum[i*Nh+j][1] = phik[i*Nh+j][1];
    }
 
-
+   // Take iFFT of phik
    b = fftw_plan_dft_c2r_2d(Nx, Ny, &phik[0*Nh+0], &phi[0*Ny+0], FFTW_ESTIMATE);
    fftw_execute(b);
    fftw_destroy_plan(b);
