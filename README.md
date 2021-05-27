@@ -43,7 +43,7 @@ Ubuntu users can run ``ubuntu.sh`` file to install **FFTW3** and **HDF5** librar
 sudo bash ubuntu.sh
 ```
 ---
-Now complile and built the *PICSP* code
+Now complile and built the *PICSP* code.
 ```shell
 make veryclean
 make all
