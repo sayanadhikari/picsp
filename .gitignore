@@ -27,3 +27,4 @@ src/version.h
 src/h5group.cpp
 **inputCalc.py
 .DS_Store
+*.icloud
