@@ -55,7 +55,7 @@ double rnd()
 
 /********************************************/
 /********* UNIVERSAL CONSTANTS *************/
-const double EPS_un = 8.85418782E-12;    // Vacuum permittivity
+const double EPS = 8.85418782E-12;    // Vacuum permittivity
 const double K = 1.38065E-23;            // Boltzmann Constant
 const double EV_TO_K = 11604.52;         // Conversion of EV to K
 const double PI = 3.14159265359;
@@ -79,7 +79,7 @@ double chargeE; // Electron charge
 // int probLoc;  //VDF end location
 double driftE; //5e5           // TODO
 double driftI;
-double EPS;
+// double EPS;
 
 /* Simulation Parameters*/
 double density; // Plasma Density
@@ -90,6 +90,7 @@ double timeStep;        // Time steps
 
 double vthE; // electron temperature in eV
 double vthI;  // ion temperature in eV
+double v_te; // electron thermal velocity
 
 double Lambda_D;
 double omega_pe;
@@ -253,22 +254,23 @@ int parse_ini_file(char * ini_name)
 
     /*Get Simulation Parameters */
     nTimeSteps            = iniparser_getint(ini,"time:nTimeSteps",-1);
-    double timeStep_unorm = iniparser_getdouble(ini,"time:timeStep",-1.0);
-    double stepSize_unorm = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
     numxCells             = iniparser_getint(ini,"grid:numxCells",-1);
     numyCells             = iniparser_getint(ini,"grid:numyCells",-1);
 
     /* SPECIES INFO */
     nParticlesI           = iniparser_getint(ini,"population:nParticlesI",-1);
     nParticlesE           = iniparser_getint(ini,"population:nParticlesE",-1);
-    double massI_unorm    = iniparser_getdouble(ini,"population:massI",-1.0);
-    double massE_unorm    = iniparser_getdouble(ini,"population:massE",-1.0);
-    double chargeE_unorm  = iniparser_getdouble(ini,"population:chargeE",-1.0);
-    double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
-    double vthE_unorm     = iniparser_getdouble(ini,"population:vthE",-1.0);
-    double vthI_unorm     = iniparser_getdouble(ini,"population:vthI",-1.0);
-    double driftE_unorm   = iniparser_getdouble(ini,"population:driftE",-1.0);
-    double driftI_unorm   = iniparser_getdouble(ini,"population:driftI",-1.0);
+    massI    = iniparser_getdouble(ini,"population:massI",-1.0);
+    massE    = iniparser_getdouble(ini,"population:massE",-1.0);
+    chargeE  = iniparser_getdouble(ini,"population:chargeE",-1.0);
+    density  = iniparser_getdouble(ini,"population:density",-1.0);
+    vthE     = iniparser_getdouble(ini,"population:vthE",-1.0);
+    vthI     = iniparser_getdouble(ini,"population:vthI",-1.0);
+    driftE  = iniparser_getdouble(ini,"population:driftE",-1.0);
+    driftI   = iniparser_getdouble(ini,"population:driftI",-1.0);
+    v_te = sqrt(2*K*vthE*EV_TO_K/massE); // electron thermal vel
 
     /* DIAGNOSTICS */
     // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
@@ -279,19 +281,19 @@ int parse_ini_file(char * ini_name)
     loadType              = iniparser_getint(ini,"population:loadType",-1);
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
-    EPS             = EPS_un;//EPS_un;
-    double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS_un));
-    double Lambda_D = sqrt((EPS_un*K*vthE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
-    chargeE         = chargeE_unorm;//chargeE_unorm;
-    massI           = massI_unorm;//massE_unorm;
-    massE           = massE_unorm;//massE_unorm;
-    driftE          = driftE_unorm;//vthE_unorm; ///velocity_unorm;
-    driftI          = driftI_unorm;//vthE_unorm;
-    density         = density_unorm;//density_unorm;
-    timeStep        = timeStep_unorm*omega_pe;
-    stepSize        = stepSize_unorm/Lambda_D;
-    vthE            = vthE_unorm;//vthE_unorm;
-    vthI            = vthI_unorm;//vthE_unorm;
+    // EPS             = EPS_un;//EPS_un;
+    double omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));
+    double Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));
+    // chargeE         = chargeE_unorm;//chargeE_unorm;
+    // massI           = massI_unorm;//massE_unorm;
+    // massE           = massE_unorm;//massE_unorm;
+    // driftE          = driftE_unorm;//vthE_unorm; ///velocity_unorm;
+    // driftI          = driftI_unorm;//vthE_unorm;
+    // density         = density_unorm;//density_unorm;
+    // timeStep        = timeStep_unorm*omega_pe;
+    // stepSize        = stepSize_unorm/Lambda_D;
+    // vthE            = vthE_unorm;//vthE_unorm;
+    // vthI            = vthI_unorm;//vthE_unorm;
     /*Calculate the specific weights of the ions and electrons*/
     ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
     electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
@@ -440,10 +442,10 @@ int main(int argc, char *argv[])
     init(&ions,driftI,0);
     init(&electrons,driftE,0);
 
-    cout<< "*********** Normalized Parameters ***********"<<endl;
+    cout<< "*********** Parameters ***********"<<endl;
     for(auto &p:species_list)
         cout<< p.name << " mass: " << p.mass<< " charge: " << p.charge << " spwt: " << p.spwt << " Num of particles: " << p.NUM <<endl;
-    cout<< "vdriftE: " << driftE <<" vdriftI: " << driftI<<endl;
+    cout<< "vdriftE: " << sqrt(2*(driftE*chargeE)/massE) <<" vdriftI: " << sqrt(2*(driftI*chargeE)/massI)<<endl;
     cout<< "density: " << density <<endl;
     cout<< "************ Simulation Parameters **********"<<endl;
     cout<< "Nx: " << numxCells << " Ny: " << numyCells <<endl;
@@ -569,7 +571,8 @@ int main(int argc, char *argv[])
 /*initialize the particle data : initial positions and velocities of each particle*/
 void init(Species *species, double xvel, double yvel)
 {
-
+   xvel = xvel/v_te;
+   yvel = yvel/v_te;
    double delta_x = domain.xl/species->NUM;
    double delta_y = domain.yl/species->NUM;
    double theta = 2*PI/domain.xl;
@@ -638,7 +641,6 @@ void init(Species *species, double xvel, double yvel)
 double sampleVel(double T, double mass)
 {
     double v_th = sqrt(2*K*T/mass);
-    double v_te = sqrt(2*K*vthE*EV_TO_K/massE);
     double vt = v_th*sqrt(2)*(rnd()+rnd()+rnd()-1.5);
     return vt/v_te;
 }
@@ -798,8 +800,8 @@ void pushSpecies(Species *species, double *efx, double *efy)
         // gather electric field onto particle position
         double part_efx = gather(lcx,lcy,efx);
         double part_efy = gather(lcx,lcy,efy);
-        
-        
+
+
         double wl = Lambda_D*omega_pe;
 
         // advance velocity
@@ -877,7 +879,7 @@ void rewindSpecies(Species *species, double *efx, double *efy)
         p.xvel -= 0.5*(1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efx;
         p.yvel -= 0.5*(1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efy;
     }
-    
+
 }
 
 /* Compute the charge densities */
@@ -888,10 +890,10 @@ void computeRho(double *rho, Species *ions, Species *electrons)
 
     for(int i=1; i<domain.nix-1; i++)
     for(int j=1; j<domain.niy-1; j++){
-        
+
         rho[i*domain.niy+j]=(-ions->den[i*domain.niy+j] +
         electrons->den[i*domain.niy+j]);
-        
+
         //rho[i*domain.niy+j]=ions->charge*ions->den[i*domain.niy+j] +
         //electrons->charge*electrons->den[i*domain.niy+j];
         }
