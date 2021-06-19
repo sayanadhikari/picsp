@@ -14,7 +14,8 @@ Authors:
 
 - [Sayan Adhikari](https://github.com/sayanadhikari), (UiO, Norway): architecture and data structures, pushers, weighting schemes, overall maintainance.
 - [Rakesh Moulick](https://github.com/rakeshmoulick), (RC, India): architecture and data structures, poisson solver, pushers, Collision module.
-- [Gunjan Sharma](https://github.com/gunjansharma1019), (CPP, India): architecture and data structures, poisson solver, pushers.
+- [Gunjan Sharma](https://github.com/gunjansharma1019), (CPP, India): architecture and data structures, poisson solver.
+- [Rupak Mukherjee](https://github.com/RupakMukherjee), (PPPL, USA): parallelization, poisson solver.
 
 
 ## Installation
