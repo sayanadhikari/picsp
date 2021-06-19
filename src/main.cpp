@@ -35,7 +35,6 @@ Group* groupP = new Group( file->createGroup( "/phi" ));
 Group* groupDE = new Group( file->createGroup( "/den.e" ));
 Group* groupDI = new Group( file->createGroup( "/den.i" ));
 
-
 // // Create new dataspace for attribute
 //   DataSpace attr_dataspace = DataSpace(H5S_SCALAR);
 //   // Create attribute and write to it
@@ -450,7 +449,7 @@ int main(int argc, char *argv[])
     init(&ions,driftI,0);
     init(&electrons,driftE,0);
 
-    
+
     cout<< "*********** Parameters ***********"<<endl;
     for(auto &p:species_list)
         cout<< p.name << " mass: " << p.mass<< " charge: " << p.charge << " spwt: " << p.spwt << " Num of particles: " << p.NUM <<endl;
@@ -488,7 +487,7 @@ int main(int argc, char *argv[])
 
     /*TIME LOOP*/
 
-   //int ti =0; // Time dependent parameter index (Energy[ti])
+    int ti =0; // Time dependent parameter index (Energy[ti])
 
     for (int ts=0; ts<nTimeSteps+1; ts++)
     {
@@ -529,21 +528,23 @@ int main(int argc, char *argv[])
 
           printf("TS: %i \t delta_phi: %.3g\n", ts, max_phi-phi[0]);
 
-        ///  writeSpecies(ts, &ions, gNamePartI, gNameDenI);
-        ///  writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
+          writeSpecies(ts, &ions, gNamePartI, gNameDenI);
+          writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
 
-        ///  writePot(ts, phi);
+          writePot(ts, phi);
 
           //computePE(Time);
-        ///  energy[ti][0] = computeKE(&ions);
-        ///  energy[ti][1] = computeKE(&electrons);
-        ///  ti++; // increase time dependent parameter index
+          energy[ti][0] = computeKE(&ions);
+          energy[ti][1] = computeKE(&electrons);
+          ti++; // increase time dependent parameter index
 
       }
       // WritePotOsc(Time,probLoc);
       // Time += timeStep;
     }
-  ///  writeKE(energy);
+
+    writeKE(energy);
+
     /*free up memory*/
     delete[] phi;
     delete[] rho;
@@ -556,17 +557,22 @@ int main(int argc, char *argv[])
     delete[] electrons.xvel;
     delete[] electrons.yvel;
 
-    /* HDF5*/
+
+    // /* HDF5*/
     // delete dataset;
     // delete dataspace;
-    /*delete groupE;
+    // cout << "/* OK */" << '\n';
+    // /*
+    delete groupE;
     delete groupI;
     delete groupT;
     delete groupP;
     delete groupDE;
     delete groupDI;
-    delete file;*/
+    // delete file;
+    // */
     //****** END OF TIMER *****//
+
     auto end = chrono::steady_clock::now();
     auto diff = end - start;
     cout << "Total time taken by PICSP: "<< chrono::duration <double> (diff).count() << " s" << endl;
