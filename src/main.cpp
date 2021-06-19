@@ -73,19 +73,21 @@ int numxCells;             // Total number of cells alonx x
 int numyCells;             // Total number of cells alonx y
 int nTimeSteps;          // Total time steps (default)
 int dumpPeriod;         // Data dump period
-double massI;  // Ion mass
-double massE;  // Electron mass
-double chargeE; // Electron charge
+double massI;           // Ion mass
+double massE;            // Electron mass
+double chargeE;         // Electron charge
 // int probLoc;  //VDF end location
-double driftE; //5e5           // TODO
+double driftE;          // TODO
 double driftI;
 // double EPS;
 
+
+
 /* Simulation Parameters*/
-double density; // Plasma Density
+double density;  // Plasma Density
 double ion_spwt;
 double electron_spwt;
-double stepSize;         // Cell Spacing
+double stepSize;          // Cell Spacing
 double timeStep;        // Time steps
 
 double vthE; // electron temperature in eV
@@ -282,8 +284,8 @@ int parse_ini_file(char * ini_name)
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
     // EPS             = EPS_un;//EPS_un;
-    double omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));
-    double Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));
+    omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));
+    Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));
     // chargeE         = chargeE_unorm;//chargeE_unorm;
     // massI           = massI_unorm;//massE_unorm;
     // massE           = massE_unorm;//massE_unorm;
@@ -295,8 +297,8 @@ int parse_ini_file(char * ini_name)
     // vthE            = vthE_unorm;//vthE_unorm;
     // vthI            = vthI_unorm;//vthE_unorm;
     /*Calculate the specific weights of the ions and electrons*/
-    ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
-    electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+    //ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
+    //electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
 
     cout << "********** IMPORTANT PLASMA QUANTITIES ***********" << '\n';
     cout<< "omega_pe: "<<omega_pe <<endl;
@@ -364,9 +366,14 @@ int main(int argc, char *argv[])
     // Note: (Define all of the time dependent arrays here to write to file in the end)
     double energy[int(nTimeSteps/dumpPeriod)+1][2];
 
+
+    //omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));;
+    //Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));;
+
+
     /*Construct the domain parameters*/
     domain.nix = numxCells+1;
-    domain.dx = stepSize;
+    domain.dx = stepSize/Lambda_D;
     domain.x0 = 0;
     domain.xl = (domain.nix-1)*domain.dx;
     domain.xmax = domain.x0 + domain.xl;
@@ -374,7 +381,7 @@ int main(int argc, char *argv[])
 
     /*Construct the domain parameters for y*/
     domain.niy = numyCells+1;
-    domain.dy = stepSize;
+    domain.dy = stepSize/Lambda_D;
     domain.y0 = 0;
     domain.yl = (domain.niy-1)*domain.dy;
     domain.ymax = domain.y0 + domain.yl;
@@ -403,8 +410,9 @@ int main(int argc, char *argv[])
     /*Species Info: Create vector to hold the data*/
     vector <Species> species_list;
 
-    //ion_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
-    //electron_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+    ion_spwt = (density*numxCells*numyCells*domain.dx*domain.dy)/(nParticlesI);
+    electron_spwt = (density*numxCells*numyCells*domain.dx*domain.dy)/(nParticlesE);
+
 
     /* Add singly charged ions and electrons */
     /*********************************************/
@@ -442,6 +450,7 @@ int main(int argc, char *argv[])
     init(&ions,driftI,0);
     init(&electrons,driftE,0);
 
+    
     cout<< "*********** Parameters ***********"<<endl;
     for(auto &p:species_list)
         cout<< p.name << " mass: " << p.mass<< " charge: " << p.charge << " spwt: " << p.spwt << " Num of particles: " << p.NUM <<endl;
@@ -450,7 +459,7 @@ int main(int argc, char *argv[])
     cout<< "************ Simulation Parameters **********"<<endl;
     cout<< "Nx: " << numxCells << " Ny: " << numyCells <<endl;
     cout<< "Total timesteps: " << nTimeSteps <<endl;
-    cout<< "timeStep: " << timeStep << " stepSize: " << stepSize <<endl;
+    cout<< "timeStep: " << timeStep << " stepSize: " << domain.dx <<endl;
 
     cout<< "********** Beginning of Simulation  **********"<<endl;
     /***************************************************************************/
@@ -479,7 +488,7 @@ int main(int argc, char *argv[])
 
     /*TIME LOOP*/
 
-    int ti =0; // Time dependent parameter index (Energy[ti])
+   //int ti =0; // Time dependent parameter index (Energy[ti])
 
     for (int ts=0; ts<nTimeSteps+1; ts++)
     {
@@ -488,7 +497,7 @@ int main(int argc, char *argv[])
       scatterSpecies(&electrons);
 
       //Compute velocities
-      //scatterSpeciesVel(&ions);  //TODO
+      scatterSpeciesVel(&ions);  //TODO
       scatterSpeciesVel(&electrons);
 
       //Compute charge density
@@ -505,11 +514,11 @@ int main(int argc, char *argv[])
       computeEF(phi, efx, efy);
 
       //move particles
-      //pushSpecies(&ions, efx, efy);  // TODO
+      pushSpecies(&ions, efx, efy);  // TODO
       pushSpecies(&electrons, efx, efy);
 
       //Write diagnostics
-      if(ts%50== 0)
+      if(ts%100== 0)
       {
           double max_phi = phi[0];
           for(int i=0; i<domain.nix; i++)
@@ -520,21 +529,21 @@ int main(int argc, char *argv[])
 
           printf("TS: %i \t delta_phi: %.3g\n", ts, max_phi-phi[0]);
 
-          writeSpecies(ts, &ions, gNamePartI, gNameDenI);
-          writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
+        ///  writeSpecies(ts, &ions, gNamePartI, gNameDenI);
+        ///  writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
 
-          writePot(ts, phi);
+        ///  writePot(ts, phi);
 
           //computePE(Time);
-          energy[ti][0] = computeKE(&ions);
-          energy[ti][1] = computeKE(&electrons);
-          ti++; // increase time dependent parameter index
+        ///  energy[ti][0] = computeKE(&ions);
+        ///  energy[ti][1] = computeKE(&electrons);
+        ///  ti++; // increase time dependent parameter index
 
       }
       // WritePotOsc(Time,probLoc);
       // Time += timeStep;
     }
-    writeKE(energy);
+  ///  writeKE(energy);
     /*free up memory*/
     delete[] phi;
     delete[] rho;
@@ -550,13 +559,13 @@ int main(int argc, char *argv[])
     /* HDF5*/
     // delete dataset;
     // delete dataspace;
-    delete groupE;
+    /*delete groupE;
     delete groupI;
     delete groupT;
     delete groupP;
     delete groupDE;
     delete groupDI;
-    delete file;
+    delete file;*/
     //****** END OF TIMER *****//
     auto end = chrono::steady_clock::now();
     auto diff = end - start;
@@ -571,8 +580,8 @@ int main(int argc, char *argv[])
 /*initialize the particle data : initial positions and velocities of each particle*/
 void init(Species *species, double xvel, double yvel)
 {
-   xvel = xvel/v_te;
-   yvel = yvel/v_te;
+   //xvel = xvel/v_te;
+   //yvel = yvel/v_te;
    double delta_x = domain.xl/species->NUM;
    double delta_y = domain.yl/species->NUM;
    double theta = 2*PI/domain.xl;
@@ -582,12 +591,12 @@ void init(Species *species, double xvel, double yvel)
         if (loadType==1) {
           // Maxwellian Loading
           double x = domain.x0 + rnd()*(domain.nix-1)*domain.dx;
-          double u = sampleVel(species->Temp, species->mass);
-          // double u = sampleVel(species->Temp*EV_TO_K, species->mass);
+          //double u = sampleVel(species->Temp, species->mass);
+          double u = sampleVel(species->Temp*EV_TO_K, species->mass);
 
           double y = domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
-          double v = sampleVel(species->Temp, species->mass);
-          // double v = sampleVel(species->Temp*EV_TO_K, species->mass);
+          //double v = sampleVel(species->Temp, species->mass);
+          double v = sampleVel(species->Temp*EV_TO_K, species->mass);
 
           // Periodic boundary
           if(x<0) x = x + domain.xl;
@@ -640,6 +649,7 @@ void init(Species *species, double xvel, double yvel)
 /*Sample Velocity (According to Birdsall)*/
 double sampleVel(double T, double mass)
 {
+    //double v_te = sqrt(2*K*vthE*EV_TO_K/massE);
     double v_th = sqrt(2*K*T/mass);
     double vt = v_th*sqrt(2)*(rnd()+rnd()+rnd()-1.5);
     return vt/v_te;
@@ -724,7 +734,11 @@ void scatterSpecies(Species *species)
 
     for(int i=0; i<domain.nix; i++)
     for(int j=0; j<domain.niy; j++)
-        field[i*domain.niy+j] /=density;  //Added
+    {
+      field[i*domain.niy+j] /=density;  //Added
+      //cout << species->name << " density :" << field[i*domain.niy+j] << endl;
+    }
+
 
     //field[0] *=2.0;
     //field[domain.ni-1] *= 2.0;
@@ -1163,7 +1177,7 @@ void computeEF(double *phi, double *efx, double *efy)
 /* Write the Output results*/
 void writeSpecies(int ts, Species *species, H5std_string groupPart, H5std_string gNameDen)
 {
-    /******* Particle Data ******/
+    /////////// Particle Data ///////////
     hsize_t nP = species->part_list.size();
     hsize_t  dims[2] = {nP,4};
     groupPart.replace(groupPart.begin()+12,groupPart.end(),to_string(ts));
@@ -1184,7 +1198,7 @@ void writeSpecies(int ts, Species *species, H5std_string groupPart, H5std_string
     dataset->write(varray, datatype);
     delete dataset;
     delete dataspace;
-    /*********** Density Data ************/
+    ///////////// Density Data //////////////
     hsize_t nx = domain.nix;
     hsize_t ny = domain.niy;
     hsize_t  dimsp[2] = {nx,ny};
