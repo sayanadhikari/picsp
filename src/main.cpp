@@ -35,7 +35,6 @@ Group* groupP = new Group( file->createGroup( "/phi" ));
 Group* groupDE = new Group( file->createGroup( "/den.e" ));
 Group* groupDI = new Group( file->createGroup( "/den.i" ));
 
-
 // // Create new dataspace for attribute
 //   DataSpace attr_dataspace = DataSpace(H5S_SCALAR);
 //   // Create attribute and write to it
@@ -55,7 +54,7 @@ double rnd()
 
 /********************************************/
 /********* UNIVERSAL CONSTANTS *************/
-const double EPS_un = 8.85418782E-12;    // Vacuum permittivity
+const double EPS = 8.85418782E-12;    // Vacuum permittivity
 const double K = 1.38065E-23;            // Boltzmann Constant
 const double EV_TO_K = 11604.52;         // Conversion of EV to K
 const double PI = 3.14159265359;
@@ -73,23 +72,29 @@ int numxCells;             // Total number of cells alonx x
 int numyCells;             // Total number of cells alonx y
 int nTimeSteps;          // Total time steps (default)
 int dumpPeriod;         // Data dump period
-double massI;  // Ion mass
-double massE;  // Electron mass
-double chargeE; // Electron charge
+double massI;           // Ion mass
+double massE;            // Electron mass
+double chargeE;         // Electron charge
 // int probLoc;  //VDF end location
-double driftE; //5e5           // TODO
+double driftE;          // TODO
 double driftI;
-double EPS;
+// double EPS;
+
+
 
 /* Simulation Parameters*/
-double density; // Plasma Density
+double density;  // Plasma Density
 double ion_spwt;
 double electron_spwt;
-double stepSize;         // Cell Spacing
+double stepSize;          // Cell Spacing
 double timeStep;        // Time steps
 
 double vthE; // electron temperature in eV
 double vthI;  // ion temperature in eV
+double v_te; // electron thermal velocity
+
+double Lambda_D;
+double omega_pe;
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -250,22 +255,23 @@ int parse_ini_file(char * ini_name)
 
     /*Get Simulation Parameters */
     nTimeSteps            = iniparser_getint(ini,"time:nTimeSteps",-1);
-    double timeStep_unorm = iniparser_getdouble(ini,"time:timeStep",-1.0);
-    double stepSize_unorm = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
     numxCells             = iniparser_getint(ini,"grid:numxCells",-1);
     numyCells             = iniparser_getint(ini,"grid:numyCells",-1);
 
     /* SPECIES INFO */
     nParticlesI           = iniparser_getint(ini,"population:nParticlesI",-1);
     nParticlesE           = iniparser_getint(ini,"population:nParticlesE",-1);
-    double massI_unorm    = iniparser_getdouble(ini,"population:massI",-1.0);
-    double massE_unorm    = iniparser_getdouble(ini,"population:massE",-1.0);
-    double chargeE_unorm  = iniparser_getdouble(ini,"population:chargeE",-1.0);
-    double density_unorm  = iniparser_getdouble(ini,"population:density",-1.0);
-    double vthE_unorm     = iniparser_getdouble(ini,"population:vthE",-1.0);
-    double vthI_unorm     = iniparser_getdouble(ini,"population:vthI",-1.0);
-    double driftE_unorm   = iniparser_getdouble(ini,"population:driftE",-1.0);
-    double driftI_unorm   = iniparser_getdouble(ini,"population:driftI",-1.0);
+    massI    = iniparser_getdouble(ini,"population:massI",-1.0);
+    massE    = iniparser_getdouble(ini,"population:massE",-1.0);
+    chargeE  = iniparser_getdouble(ini,"population:chargeE",-1.0);
+    density  = iniparser_getdouble(ini,"population:density",-1.0);
+    vthE     = iniparser_getdouble(ini,"population:vthE",-1.0);
+    vthI     = iniparser_getdouble(ini,"population:vthI",-1.0);
+    driftE  = iniparser_getdouble(ini,"population:driftE",-1.0);
+    driftI   = iniparser_getdouble(ini,"population:driftI",-1.0);
+    v_te = sqrt(2*K*vthE*EV_TO_K/massE); // electron thermal vel
 
     /* DIAGNOSTICS */
     // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
@@ -276,22 +282,22 @@ int parse_ini_file(char * ini_name)
     loadType              = iniparser_getint(ini,"population:loadType",-1);
 
     /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
-    EPS             = EPS_un/EPS_un;
-    double omega_pe = sqrt((chargeE_unorm*chargeE_unorm*density_unorm)/(massE_unorm*EPS_un));
-    double Lambda_D = sqrt((EPS_un*K*vthE_unorm*EV_TO_K)/(density_unorm*chargeE_unorm*chargeE_unorm));
-    chargeE         = chargeE_unorm/chargeE_unorm;
-    massI           = massI_unorm/massE_unorm;
-    massE           = massE_unorm/massE_unorm;
-    driftE          = driftE_unorm/vthE_unorm; ///velocity_unorm;
-    driftI          = driftI_unorm/vthE_unorm;
-    density         = density_unorm/density_unorm;
-    timeStep        = timeStep_unorm*omega_pe;
-    stepSize        = stepSize_unorm/Lambda_D;
-    vthE            = vthE_unorm/vthE_unorm;
-    vthI            = vthI_unorm/vthE_unorm;
+    // EPS             = EPS_un;//EPS_un;
+    omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));
+    Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));
+    // chargeE         = chargeE_unorm;//chargeE_unorm;
+    // massI           = massI_unorm;//massE_unorm;
+    // massE           = massE_unorm;//massE_unorm;
+    // driftE          = driftE_unorm;//vthE_unorm; ///velocity_unorm;
+    // driftI          = driftI_unorm;//vthE_unorm;
+    // density         = density_unorm;//density_unorm;
+    // timeStep        = timeStep_unorm*omega_pe;
+    // stepSize        = stepSize_unorm/Lambda_D;
+    // vthE            = vthE_unorm;//vthE_unorm;
+    // vthI            = vthI_unorm;//vthE_unorm;
     /*Calculate the specific weights of the ions and electrons*/
-    ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
-    electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+    //ion_spwt        = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
+    //electron_spwt   = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
 
     cout << "********** IMPORTANT PLASMA QUANTITIES ***********" << '\n';
     cout<< "omega_pe: "<<omega_pe <<endl;
@@ -303,7 +309,7 @@ int parse_ini_file(char * ini_name)
       cout<<"ERROR, stepSize is bigger than Debye length."<<endl;
       SFLAG = false;
     }
-    if (timeStep > 0.01) {
+    if (timeStep > 0.1) {
       cout<<"ERROR, timeStep is too big. The recommended value: <"<<(0.01/omega_pe)<<" s"<<endl;
       SFLAG = false;
     }
@@ -351,6 +357,7 @@ int main(int argc, char *argv[])
     writeIntAttributes("Nt", nTimeSteps);
     writeIntAttributes("Nx", numxCells+1);
     writeIntAttributes("Ny", numyCells+1);
+    writeIntAttributes("den_norm_factor", density);
 
     /*********** **** ***************/
     // double Time = 0;
@@ -359,9 +366,14 @@ int main(int argc, char *argv[])
     // Note: (Define all of the time dependent arrays here to write to file in the end)
     double energy[int(nTimeSteps/dumpPeriod)+1][2];
 
+
+    //omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));;
+    //Lambda_D = sqrt((EPS*K*vthE*EV_TO_K)/(density*chargeE*chargeE));;
+
+
     /*Construct the domain parameters*/
     domain.nix = numxCells+1;
-    domain.dx = stepSize;
+    domain.dx = stepSize/Lambda_D;
     domain.x0 = 0;
     domain.xl = (domain.nix-1)*domain.dx;
     domain.xmax = domain.x0 + domain.xl;
@@ -369,7 +381,7 @@ int main(int argc, char *argv[])
 
     /*Construct the domain parameters for y*/
     domain.niy = numyCells+1;
-    domain.dy = stepSize;
+    domain.dy = stepSize/Lambda_D;
     domain.y0 = 0;
     domain.yl = (domain.niy-1)*domain.dy;
     domain.ymax = domain.y0 + domain.yl;
@@ -398,8 +410,9 @@ int main(int argc, char *argv[])
     /*Species Info: Create vector to hold the data*/
     vector <Species> species_list;
 
-    ion_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesI);
-    electron_spwt = (density*numxCells*numyCells*stepSize*stepSize)/(nParticlesE);
+    ion_spwt = (density*numxCells*numyCells*domain.dx*domain.dy)/(nParticlesI);
+    electron_spwt = (density*numxCells*numyCells*domain.dx*domain.dy)/(nParticlesE);
+
 
     /* Add singly charged ions and electrons */
     /*********************************************/
@@ -437,15 +450,16 @@ int main(int argc, char *argv[])
     init(&ions,driftI,0);
     init(&electrons,driftE,0);
 
-    cout<< "*********** Normalized Parameters ***********"<<endl;
+
+    cout<< "*********** Parameters ***********"<<endl;
     for(auto &p:species_list)
         cout<< p.name << " mass: " << p.mass<< " charge: " << p.charge << " spwt: " << p.spwt << " Num of particles: " << p.NUM <<endl;
-    cout<< "vdriftE: " << driftE <<" vdriftI: " << driftI<<endl;
+    cout<< "vdriftE: " << sqrt(2*(driftE*chargeE)/massE) <<" vdriftI: " << sqrt(2*(driftI*chargeE)/massI)<<endl;
     cout<< "density: " << density <<endl;
     cout<< "************ Simulation Parameters **********"<<endl;
     cout<< "Nx: " << numxCells << " Ny: " << numyCells <<endl;
     cout<< "Total timesteps: " << nTimeSteps <<endl;
-    cout<< "timeStep: " << timeStep << " stepSize: " << stepSize <<endl;
+    cout<< "timeStep: " << timeStep << " stepSize: " << domain.dx <<endl;
 
     cout<< "********** Beginning of Simulation  **********"<<endl;
     /***************************************************************************/
@@ -504,7 +518,7 @@ int main(int argc, char *argv[])
       pushSpecies(&electrons, efx, efy);
 
       //Write diagnostics
-      if(ts%50== 0)
+      if(ts%dumpPeriod== 0)
       {
           double max_phi = phi[0];
           for(int i=0; i<domain.nix; i++)
@@ -529,7 +543,9 @@ int main(int argc, char *argv[])
       // WritePotOsc(Time,probLoc);
       // Time += timeStep;
     }
+
     writeKE(energy);
+
     /*free up memory*/
     delete[] phi;
     delete[] rho;
@@ -542,17 +558,22 @@ int main(int argc, char *argv[])
     delete[] electrons.xvel;
     delete[] electrons.yvel;
 
-    /* HDF5*/
+
+    // /* HDF5*/
     // delete dataset;
     // delete dataspace;
+    // cout << "/* OK */" << '\n';
+    // /*
     delete groupE;
     delete groupI;
     delete groupT;
     delete groupP;
     delete groupDE;
     delete groupDI;
-    delete file;
+    // delete file;
+    // */
     //****** END OF TIMER *****//
+
     auto end = chrono::steady_clock::now();
     auto diff = end - start;
     cout << "Total time taken by PICSP: "<< chrono::duration <double> (diff).count() << " s" << endl;
@@ -566,7 +587,8 @@ int main(int argc, char *argv[])
 /*initialize the particle data : initial positions and velocities of each particle*/
 void init(Species *species, double xvel, double yvel)
 {
-
+   //xvel = xvel/v_te;
+   //yvel = yvel/v_te;
    double delta_x = domain.xl/species->NUM;
    double delta_y = domain.yl/species->NUM;
    double theta = 2*PI/domain.xl;
@@ -576,12 +598,12 @@ void init(Species *species, double xvel, double yvel)
         if (loadType==1) {
           // Maxwellian Loading
           double x = domain.x0 + rnd()*(domain.nix-1)*domain.dx;
-          double u = sampleVel(species->Temp, species->mass);
-          // double u = sampleVel(species->Temp*EV_TO_K, species->mass);
+          //double u = sampleVel(species->Temp, species->mass);
+          double u = sampleVel(species->Temp*EV_TO_K, species->mass);
 
           double y = domain.y0 + rnd()*(domain.niy-1)*domain.dy; //(p+0.5)*delta_y;
-          double v = sampleVel(species->Temp, species->mass);
-          // double v = sampleVel(species->Temp*EV_TO_K, species->mass);
+          //double v = sampleVel(species->Temp, species->mass);
+          double v = sampleVel(species->Temp*EV_TO_K, species->mass);
 
           // Periodic boundary
           if(x<0) x = x + domain.xl;
@@ -596,8 +618,8 @@ void init(Species *species, double xvel, double yvel)
         }
         else if (loadType==2) {
           // Custom Loading
-          double x = domain.x0 + (p+0.5)*delta_x + 0.1*sin(theta*x);
-          double u = xvel*pow(-1,p);
+          double x = domain.x0 + (p+0.5)*delta_x; // + 0.1*sin(theta*x);
+          double u = xvel*pow(-1,p) + sampleVel(species->Temp*EV_TO_K, species->mass) + 0.1*sin(u*theta);
 
           double y = (p+0.5)*delta_y;
           double v = yvel;
@@ -634,9 +656,10 @@ void init(Species *species, double xvel, double yvel)
 /*Sample Velocity (According to Birdsall)*/
 double sampleVel(double T, double mass)
 {
-    // double v_th = sqrt(2*K*T/mass);
-    double v_th = T;
-    return v_th*sqrt(2)*(rnd()+rnd()+rnd()-1.5);
+    //double v_te = sqrt(2*K*vthE*EV_TO_K/massE);
+    double v_th = sqrt(2*K*T/mass);
+    double vt = v_th*sqrt(2)*(rnd()+rnd()+rnd()-1.5);
+    return vt/v_te;
 }
 
 /*Covert the physical coordinate to the logical coordinate*/
@@ -654,17 +677,17 @@ double YtoL(double ypos)
 /*scatter the particle data to the mesh and collect the densities at the mesh */
 void scatter(double lx, double ly, double value, double *field)
 {
-   double dxdy = domain.dx*domain.dy;
+   //double dxdy = domain.dx*domain.dy;
 
    int i = (int) lx;
    int j = (int) ly;
    double di = lx - i;
    double dj = ly - j;            // scatter particle density at nodes
 
-   field[i*domain.niy+j] += value*(1-di)*(1-dj)/dxdy;
-   field[(i+1)*domain.niy+j] += value*(di)*(1-dj)/dxdy;
-   field[i*domain.niy+j+1] += value*(1-di)*(dj)/dxdy;
-   field[(i+1)*domain.niy+j+1] += value*(di)*(dj)/dxdy;
+   field[i*domain.niy+j] += value*(1-di)*(1-dj); //dxdy;
+   field[(i+1)*domain.niy+j] += value*(di)*(1-dj); //dxdy;
+   field[i*domain.niy+j+1] += value*(1-di)*(dj); //dxdy;
+   field[(i+1)*domain.niy+j+1] += value*(di)*(dj); //dxdy;
 }
 
 /* Gather field values at logical coordinates*/
@@ -712,9 +735,17 @@ void scatterSpecies(Species *species)
       }
 
     /*divide by cell volume*/
-    /*for(int i=0; i<domain.nix; i++)
+    for(int i=0; i<domain.nix; i++)
     for(int j=0; j<domain.niy; j++)
-        field[i][j] /=domain.dx*domain.dy;*/
+        field[i*domain.niy+j] /=domain.dx*domain.dy;
+
+    for(int i=0; i<domain.nix; i++)
+    for(int j=0; j<domain.niy; j++)
+    {
+      field[i*domain.niy+j] /=density;  //Added
+      //cout << species->name << " density :" << field[i*domain.niy+j] << endl;
+    }
+
 
     //field[0] *=2.0;
     //field[domain.ni-1] *= 2.0;
@@ -759,9 +790,11 @@ void scatterSpeciesVel(Species *species)
 
 
     /*divide by cell volume*/
-    /*for(int i=0; i<domain.nix; i++)
-    for(int j=0; j<domain.niy; j++)
-        field[i][j] /=(species->den[i][j]*domain.dx*domain.dy);*/
+    for(int i=0; i<domain.nix; i++)
+    for(int j=0; j<domain.niy; j++){
+        field1[i*domain.niy+j] /=(species->den[i*domain.niy+j]*domain.dx*domain.dy);
+        field2[i*domain.niy+j] /=(species->den[i*domain.niy+j]*domain.dx*domain.dy);
+        }
 
     //field[0][0] *=2.0;
     //field[domain.nix-1] *= 2.0;
@@ -789,9 +822,12 @@ void pushSpecies(Species *species, double *efx, double *efy)
         double part_efx = gather(lcx,lcy,efx);
         double part_efy = gather(lcx,lcy,efy);
 
+
+        double wl = Lambda_D*omega_pe;
+
         // advance velocity
-        part.xvel += timeStep*qm*part_efx;
-        part.yvel += timeStep*qm*part_efy;
+        part.xvel += (1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efx;
+        part.yvel += (1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efy;
 
         // Advance particle position
         part.xpos += timeStep*part.xvel;
@@ -860,9 +896,11 @@ void rewindSpecies(Species *species, double *efx, double *efy)
         double part_efx = gather(lcx,lcy,efx);
         double part_efy = gather(lcx,lcy,efy);
         //rewind velocity
-        p.xvel -= 0.5*timeStep*qm*part_efx;
-        p.yvel -= 0.5*timeStep*qm*part_efy;
+        double wl = Lambda_D*omega_pe;
+        p.xvel -= 0.5*(1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efx;
+        p.yvel -= 0.5*(1/(wl*wl))*(qm*vthE*chargeE/chargeE)*timeStep*part_efy;
     }
+
 }
 
 /* Compute the charge densities */
@@ -873,8 +911,12 @@ void computeRho(double *rho, Species *ions, Species *electrons)
 
     for(int i=1; i<domain.nix-1; i++)
     for(int j=1; j<domain.niy-1; j++){
-        rho[i*domain.niy+j]=ions->charge*ions->den[i*domain.niy+j] +
-        electrons->charge*electrons->den[i*domain.niy+j];
+
+        rho[i*domain.niy+j]=(-ions->den[i*domain.niy+j] +
+        electrons->den[i*domain.niy+j]);
+
+        //rho[i*domain.niy+j]=ions->charge*ions->den[i*domain.niy+j] +
+        //electrons->charge*electrons->den[i*domain.niy+j];
         }
 
     for(int j=0; j<domain.niy; j++)
@@ -918,7 +960,7 @@ bool solvePotential(double *phi, double *rho)
            int r=j-1; if(r<0) r=domain.niy-2;
            int s=j+1; if(s>domain.niy-1) s=1;
 
-   double g = 0.5*(1/((1/dx2)+(1/dy2)))*( ((phi[p*domain.niy+j]+phi[q*domain.niy+j])/dx2) + ((phi[i*domain.niy+r]+phi[i*domain.niy+s])/dy2) + (rho[i*domain.niy+j]/EPS) );
+   double g = 0.5*(1/((1/dx2)+(1/dy2)))*( ((phi[p*domain.niy+j]+phi[q*domain.niy+j])/dx2) + ((phi[i*domain.niy+r]+phi[i*domain.niy+s])/dy2) + (rho[i*domain.niy+j]) );
 
   // double R1 = 0.25*(phi[p][j]+phi[q][j]+phi[i][r]+phi[i][s]+(dx2*rho[i][j]/EPS))-phi[i][j];
   phi[i*domain.niy+j] = phi[i*domain.niy+j] + 1.4*(g - phi[i*domain.niy+j]);
@@ -939,7 +981,7 @@ bool solvePotential(double *phi, double *rho)
 
          //double R = -(rho[i][j]/EPS0) - (phi[p][j]-2*phi[i][j]+phi[q][j])/dx2 - (phi[i][r]-2*phi[i][j]+phi[i][s])/dy2;
 
-         double R = 0.25*(phi[p*domain.niy+j]+phi[q*domain.niy+j]+phi[i*domain.niy+r]+phi[i*domain.niy+s]+(dx2*rho[i*domain.niy+j]/EPS))-phi[i*domain.niy+j];
+         double R = 0.25*(phi[p*domain.niy+j]+phi[q*domain.niy+j]+phi[i*domain.niy+r]+phi[i*domain.niy+s]+(dx2*rho[i*domain.niy+j]))-phi[i*domain.niy+j];
 
          sum = sum + (R*R);
          }
@@ -962,6 +1004,7 @@ bool spectralPotentialSolver(double *phi, double *rho)
    int Nx = domain.nix, Ny = domain.niy, Nh = (Ny/2) + 1;
    int i, j;
    fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
+
    fftw_plan p;
    fftw_plan b;
 
@@ -972,80 +1015,81 @@ bool spectralPotentialSolver(double *phi, double *rho)
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
 
 
-   // /*rhok = new fftw_complex[Nx*Nh];
+   // rhok = new fftw_complex[Nx*Nh];
    // phik = new fftw_complex[Nx*Nh];
-   // rhok_dum = new fftw_complex[Nx*Nh];*/
-
+   // rhok_dum = new fftw_complex[Nx*Nh];
 
 
    double Lx = domain.xl, Ly = domain.yl;
    double kx, ky;
 
-   for(i=0;i<Nx;i++)
-   for(j=0;j<Ny;j++)
-   {
-      rho[i*Ny+j] = rho[i*Ny+j]/EPS;
-   }
 
-   p = fftw_plan_dft_r2c_2d(Nx, Ny,  &rho[0*Ny+0], &rhok[0*Nh+0], FFTW_ESTIMATE);
+   //int num_thrd = omp_get_num_threads();
+
+
+   // Take FFT of rho
+   //fftw_init_threads();
+
+    p = fftw_plan_dft_r2c_2d(Nx, Ny,  &rho[0*Ny+0], &rhok[0*Nh+0], FFTW_ESTIMATE);
+   //fftw_plan_with_nthreads(4);
    fftw_execute(p);
    fftw_destroy_plan(p);
    fftw_cleanup();
 
 
+   // Write dummy file
+
+   for(j=0;j<Nh;j++)
+   for(i=0;i<Nx;i++)
+   {
+      rhok_dum[i*Nh+j][0] = rhok[i*Nh+j][0];
+      rhok_dum[i*Nh+j][1] = rhok[i*Nh+j][1];
+   }
+
+   // Find phik = rhok / (kx^2 + ky^2)
+
    for(j=0;j<Nh;j++)
    {
       ky = 2.0*PI*j/Ly;
+      //#pragma openmp parallel for
       for(i=0;i<Nx/2;i++)
       {
          kx = 2.0*PI*i/Lx;
-         // suggested by Rupak
-         // if(i==0&&j==0)
-         // {
-         // phik[i*Nh+j][0] = 0;
-         // phik[i*Nh+j][1] = 0;
-         // }
-         // else
-         // {
+
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-
-         // }
       }
+      //#pragma openmp parallel for
       for(i=Nx/2+1;i<Nx;i++)
       {
-         // kx = 2.0*PI*(i-Nx)/Lx; // Suggested by Rupak (Double Check)
          kx = 2.0*PI*(Nx-i)/Lx;
+
          phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
          phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
       }
-      // suggested by Rupak
-      phik[0][0] = 0;
-      phik[0][1] = 0;
+   }
 
-      // Checked by Rupak (Should not be )
-      // for(i=Ny/2+1;i<Ny;i++)
-      // {
-      //    kx = 2.0*PI*(i-Nx)/Lx;
-      //
-      //       if(i==0&&j==0)
-      //       {
-      //       phik[i*Nh+j][0] = 0;
-      //       phik[i*Nh+j][1] = 0;
-      //       }
-      //       else
-      //       {
-      //       phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
-      //       phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-      //       }
-      // }
+   phik[0][0] = 0;
+   phik[0][1] = 0;
+
+   // Write dummy file
+   for(j=0;j<Nh;j++)
+   for(i=0;i<Nx;i++)
+   {
+      phik_dum[i*Nh+j][0] = phik[i*Nh+j][0];
+      phik_dum[i*Nh+j][1] = phik[i*Nh+j][1];
    }
 
 
+   // Take iFFT of phik
+   //fftw_init_threads();
+
    b = fftw_plan_dft_c2r_2d(Nx, Ny, &phik[0*Nh+0], &phi[0*Ny+0], FFTW_ESTIMATE);
+   //fftw_plan_with_nthreads(4);
    fftw_execute(b);
    fftw_destroy_plan(b);
    fftw_cleanup();
+   //fftw_cleanup_threads();
 
 
    for(j=0;j<Ny;j++)
@@ -1053,7 +1097,6 @@ bool spectralPotentialSolver(double *phi, double *rho)
    {
       phi[i*Ny+j] /= double(Nx*Ny);
    }
-
    return true;
 }
 
@@ -1141,7 +1184,7 @@ void computeEF(double *phi, double *efx, double *efy)
 /* Write the Output results*/
 void writeSpecies(int ts, Species *species, H5std_string groupPart, H5std_string gNameDen)
 {
-    /******* Particle Data ******/
+    /////////// Particle Data ///////////
     hsize_t nP = species->part_list.size();
     hsize_t  dims[2] = {nP,4};
     groupPart.replace(groupPart.begin()+12,groupPart.end(),to_string(ts));
@@ -1162,7 +1205,7 @@ void writeSpecies(int ts, Species *species, H5std_string groupPart, H5std_string
     dataset->write(varray, datatype);
     delete dataset;
     delete dataspace;
-    /*********** Density Data ************/
+    ///////////// Density Data //////////////
     hsize_t nx = domain.nix;
     hsize_t ny = domain.niy;
     hsize_t  dimsp[2] = {nx,ny};

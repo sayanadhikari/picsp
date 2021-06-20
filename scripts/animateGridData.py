@@ -46,6 +46,7 @@ Ny = int(h5.attrs["Ny"])
 
 dp   =  int(h5.attrs["dp"])
 Nt   =  int(h5.attrs["Nt"])
+den_norm_factor = h5.attrs["den_norm_factor"]
 
 x = np.linspace(0,Lx,Nx)
 y = np.linspace(0,Ly,Ny)
@@ -61,6 +62,10 @@ if (show_anim == True):
     def animate(i):
         #======Potential Data=========
         data = h5[param+"/%d"%data_num[i]]
+        data = np.transpose(data)
+        if ("den" in param ):
+            data = data*den_norm_factor
+
 
 
         ax1.cla()
@@ -102,6 +107,9 @@ if (show_anim == True):
     div = make_axes_locatable(ax1)
     cax = div.append_axes('right', '4%', '4%')
     data = h5[param+"/%d"%data_num[0]]
+    data = np.transpose(data)
+    if ("den" in param ):
+        data = data*den_norm_factor
     if Vis3D == True:
         fig = plt.figure(figsize=figsize/25.4,constrained_layout=True,dpi=ppi)
         ax1 = plt.axes(projection ="3d")

@@ -68,14 +68,14 @@ if (show_anim == True):
         ax1.set_title('Electron Phase Space (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
         ax1.set_ylabel("$v_x$")
-        ax1.set_xlim([0, Lx])
+        # ax1.set_xlim([0, Lx])
 
         ax2.cla()
         img2 = ax2.scatter(dataix,dataivx,marker='.',color='r',alpha=1.0,s=10)
         ax2.set_title('Ion Phase Space (TimeSteps = %d'%(i*dp)+')')
         ax2.set_xlabel("$y$")
         ax2.set_ylabel("$v_y$")
-        ax2.set_xlim([0, Ly])
+        # ax2.set_xlim([0, Ly])
         # ax1.set_ylim([-1, 1])
         # ax1.set_zlim([-Lz, Lz])
 
