@@ -357,6 +357,7 @@ int main(int argc, char *argv[])
     writeIntAttributes("Nt", nTimeSteps);
     writeIntAttributes("Nx", numxCells+1);
     writeIntAttributes("Ny", numyCells+1);
+    writeIntAttributes("den_norm_factor", density);
 
     /*********** **** ***************/
     // double Time = 0;
