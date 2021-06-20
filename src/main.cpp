@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
       pushSpecies(&electrons, efx, efy);
 
       //Write diagnostics
-      if(ts%100== 0)
+      if(ts%dumpPeriod== 0)
       {
           double max_phi = phi[0];
           for(int i=0; i<domain.nix; i++)
