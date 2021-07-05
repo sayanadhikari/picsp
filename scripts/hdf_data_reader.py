@@ -4,8 +4,8 @@ import argparse
 import pandas as pd
 
 parser = argparse.ArgumentParser(description='Grid Data Viewer PICSP')
-parser.add_argument('-p', default="phi", type=str, help='Name of the parameter (phi/den.e/den.i)')
-parser.add_argument('-t', default=0, type=int, help='timestep to view (e.g. 100)')
+parser.add_argument('-p', default="efx", type=str, help='Name of the parameter (phi/den.e/den.i)')
+parser.add_argument('-t', default=200, type=int, help='timestep to view (e.g. 100)')
 
 args = parser.parse_args()
 
