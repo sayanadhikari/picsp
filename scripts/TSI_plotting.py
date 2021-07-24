@@ -26,27 +26,27 @@ xpos = []
 xvel = []
 
 # for j in range(1,3):
-for i in range(0,1000,500):
-    for j in range(1,3):
-        fig, axs = plt.subplots(j,1)
-        datae = h5["particle.e/%d"%i]
-        xe = datae[:,0]
-        ye = datae[:,1]
-        vxe = datae[:,2]
-        vye = datae[:,3]
-        xpos.append(xe)
-        xvel.append(vxe)
-        KE.append(np.sum(vxe**2) + np.sum(vye**2))
-        axs[j-1].scatter(xpos,xvel,s=0.5)
+# for i in range(0,1000,500):
+#     for j in range(1,3):
+#         fig, axs = plt.subplots(j,1)
+#         datae = h5["particle.e/%d"%i]
+#         xe = datae[:,0]
+#         ye = datae[:,1]
+#         vxe = datae[:,2]
+#         vye = datae[:,3]
+#         xpos.append(xe)
+#         xvel.append(vxe)
+#         KE.append(np.sum(vxe**2) + np.sum(vye**2))
+#         axs[j-1].scatter(xpos,xvel,s=0.5)
 
 
-# i = 500
-# datae = h5["particle.e/%d"%i]
-# xe = datae[:,0]
-# vxe = datae[:,2]
-# xpos.append(xe)
-# xvel.append(vxe)
-# plt.scatter(xpos,xvel,s=0.05)
+i = 500
+datae = h5["particle.e/%d"%i]
+xe = datae[:,0]
+vxe = datae[:,2]
+xpos.append(xe)
+xvel.append(vxe)
+plt.scatter(xpos,xvel,s=0.05)
 
 
 # i = 400
