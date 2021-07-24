@@ -85,7 +85,7 @@ figsize = np.array([150,150/1.618]) #Figure size in mm
 dpi = 300                         #Print resolution
 ppi = np.sqrt(1920**2+1200**2)/24 #Screen resolution
 
-mp.rc('text', usetex=True)
+mp.rc('text', usetex=False)
 mp.rc('font', family='sans-serif', size=10, serif='Computer Modern Roman')
 mp.rc('axes', titlesize=10)
 mp.rc('axes', labelsize=10)
