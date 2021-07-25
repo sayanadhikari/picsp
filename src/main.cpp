@@ -279,25 +279,25 @@ int parse_ini_file(char * ini_name)
     // iniparser_dump(ini, stderr); // Comment out to fix issues with iniparser
 
     /*Get Simulation Parameters */
-    nTimeSteps            = iniparser_getint(ini,"time:nTimeSteps",-1);
-    timeStep = iniparser_getdouble(ini,"time:timeStep",-1.0);
-    stepSize = iniparser_getdouble(ini,"grid:stepSize",-1.0);
-    numxCells             = iniparser_getint(ini,"grid:numxCells",-1);
-    numyCells             = iniparser_getint(ini,"grid:numyCells",-1);
+    nTimeSteps  = iniparser_getint(ini,"time:nTimeSteps",-1);
+    timeStep    = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    stepSize    = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numxCells   = iniparser_getint(ini,"grid:numxCells",-1);
+    numyCells   = iniparser_getint(ini,"grid:numyCells",-1);
 
     /* SPECIES INFO */
-    nParticlesI           = iniparser_getint(ini,"population:nParticlesI",-1);
-    nParticlesE           = iniparser_getint(ini,"population:nParticlesE",-1);
+    nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
+    nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
     massI    = iniparser_getdouble(ini,"population:massI",-1.0);
     massE    = iniparser_getdouble(ini,"population:massE",-1.0);
     chargeE  = iniparser_getdouble(ini,"population:chargeE",-1.0);
     density  = iniparser_getdouble(ini,"population:density",-1.0);
     vthE     = iniparser_getdouble(ini,"population:vthE",-1.0);
     vthI     = iniparser_getdouble(ini,"population:vthI",-1.0);
-    driftE  = iniparser_getdouble(ini,"population:driftE",-1.0);
+    driftE   = iniparser_getdouble(ini,"population:driftE",-1.0);
     driftI   = iniparser_getdouble(ini,"population:driftI",-1.0);
     offsetE  = iniparser_getdouble(ini,"population:offsetE",-1.0);
-    offsetI   = iniparser_getdouble(ini,"population:offsetI",-1.0);
+    offsetI  = iniparser_getdouble(ini,"population:offsetI",-1.0);
 
 
     /* DIAGNOSTICS */
@@ -368,14 +368,17 @@ int main(int argc, char *argv[])
     parse_ini_file(argv[1]);
 
     /*********** HDF5 ATTRIBUTES ***************/
-
-    writeAttributes("Lx", numxCells*stepSize);
-    writeAttributes("Ly", numyCells*stepSize);
+    writeAttributes("Lx", numxCells*stepSize*Lambda_D);
+    writeAttributes("Ly", numyCells*stepSize*Lambda_D);
     writeIntAttributes("dp", dumpPeriod);
     writeIntAttributes("Nt", nTimeSteps);
+    writeAttributes("dt", timeStep/omega_pe);
     writeIntAttributes("Nx", numxCells+1);
     writeIntAttributes("Ny", numyCells+1);
-    writeIntAttributes("den_norm_factor", density);
+    writeAttributes("density", density);
+    writeAttributes("massI", massI);
+    writeAttributes("vthE", vthE);
+    writeAttributes("vthI", vthI);
 
     /*********** **** ***************/
     // double Time = 0;
@@ -600,6 +603,8 @@ int main(int argc, char *argv[])
     delete groupDI;
     delete groupEFx;
     delete groupEFy;
+    delete groupPK;
+    delete groupRK;
     // delete file;
     // */
     //****** END OF TIMER ******/
@@ -1026,7 +1031,12 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
       // advance velocity & particle position
         part.xvel = v_plus[0] + (vthE/(wl*wl))*qm*part_efx*0.5*timeStep;
         part.xpos += timeStep*part.xvel;
-        if(loadType==2 && loadType==3)
+        if(loadType==2)
+        {
+          part.yvel = part.yvel;
+          part.ypos = part.ypos;
+        }
+        else if(loadType==3)
         {
           part.yvel = part.yvel;
           part.ypos = part.ypos;
@@ -1511,7 +1521,7 @@ void writePotk(int ts, fftw_complex *phik)
   hsize_t nx = domain.nix;
   hsize_t ny = domain.niy;
   hsize_t  dimsp[2] = {nx,ny};
-  gNamePhik.replace(gNamePhik.begin()+5,gNamePhik.end(),to_string(ts));
+  gNamePhik.replace(gNamePhik.begin()+6,gNamePhik.end(),to_string(ts));
   dataspace = new DataSpace(RANK, dimsp); // create new dspace
   dataset = new DataSet(file->createDataSet(gNamePhik,datatype, *dataspace));
   dataset->write(phik, datatype);
@@ -1524,7 +1534,7 @@ void writeRhok(int ts, fftw_complex *rhok)
   hsize_t nx = domain.nix;
   hsize_t ny = domain.niy;
   hsize_t  dimsp[2] = {nx,ny};
-  gNameRhok.replace(gNameRhok.begin()+5,gNameRhok.end(),to_string(ts));
+  gNameRhok.replace(gNameRhok.begin()+6,gNameRhok.end(),to_string(ts));
   dataspace = new DataSpace(RANK, dimsp); // create new dspace
   dataset = new DataSet(file->createDataSet(gNameRhok,datatype, *dataspace));
   dataset->write(rhok, datatype);
