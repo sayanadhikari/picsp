@@ -195,7 +195,7 @@ if plot:
   # print(wb)
 
   Z = np.log(np.abs(F))
-  #Z = np.abs(F)
+  # Z = np.abs(F)
 
   # ==== Figure =============
 
@@ -239,7 +239,6 @@ if plot:
     ax.set_xlabel('$k \lambda_{D}$')
     ax.set_ylabel('$\omega/\omega_{pi}$')
   else:
-      None
       plt.axhline(y=1.0, color='b', linestyle='--',label='$\omega_{pe}$')
       plt.plot(kadl, wl, '--w', label="langmuir wave")
       leg = ax.legend()
