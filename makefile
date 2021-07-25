@@ -10,7 +10,7 @@ INCHDF	:=
 LIBHDF  :=
 OS := $(shell lsb_release -si)
 ifeq ($(OS),Ubuntu)
-  INCHDF    = -I/usr/include/hdf5/serial/
+  INCHDF    = -I /usr/include/hdf5/serial/
   LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
 endif
 ###############################
@@ -19,6 +19,13 @@ CXX		= g++
 CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
 
+INC :=
+LIB :=
+ARM := $(shell uname -p)
+ifeq ($(ARM),arm)
+  INC = -I/opt/local/include
+  LIB = -L/opt/local/lib
+endif
 FFLAGS = -lfftw3 -lm
 HFLAGS = -lhdf5 -lhdf5_cpp
 
@@ -26,8 +33,8 @@ HFLAGS = -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(INCHDF) # Flags for compiling
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(LIBHDF) # Flags for linking
+CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(INC) $(INCHDF) # Flags for compiling
+LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(LIB) $(LIBHDF) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -53,7 +60,7 @@ all: version $(EXEC)
 
 $(EXEC): $(ODIR)/main.o $(OBJ) $(LIBOBJ)
 	@echo "Linking PICSP"
-	@$(CXX) $^ -o $@ $(LFLAGS) $(FFLAGS) $(HFLAGS)
+	@$(CXX) $^ -o $@ $(LFLAGS) $(INC) $(LIB) $(FFLAGS) $(HFLAGS)
 	@echo "PICSP is built"
 
 $(ODIR)/%.o: $(SDIR)/%.cpp

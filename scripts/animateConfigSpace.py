@@ -53,28 +53,29 @@ if (show_anim == True):
         datae = h5["particle.e/%d"%data_num[i]]
         dataex = datae[:,0]
         dataey = datae[:,1]
-        dataevx = datae[:,2]
-        dataevy = datae[:,3]
+        # dataevx = datae[:,2]
+        # dataevy = datae[:,3]
 
         #======Ion Data=========
         datai = h5["particle.i/%d"%data_num[i]]
         dataix = datai[:,0]
         dataiy = datai[:,1]
-        dataivx = datai[:,2]
-        dataivy = datai[:,3]
+        # dataivx = datai[:,2]
+        # dataivy = datai[:,3]
 
         ax1.cla()
-        img1 = ax1.scatter(dataex,dataevx,marker='.',color='b',alpha=1.0,s=10)
-        ax1.set_title('Electron Phase Space (TimeSteps = %d'%(i*dp)+')')
+        img1 = ax1.scatter(dataex,dataey,marker='.',color='b',alpha=1.0,s=10)
+        img2 = ax1.scatter(dataix,dataiy,marker='.',color='r',alpha=1.0,s=10)
+        ax1.set_title('Electron Config Space (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
-        ax1.set_ylabel("$v_x$")
+        ax1.set_ylabel("$y$")
         # ax1.set_xlim([0, Lx])
 
         ax2.cla()
-        img2 = ax2.scatter(dataix,dataivx,marker='.',color='r',alpha=1.0,s=10)
-        ax2.set_title('Ion Phase Space (TimeSteps = %d'%(i*dp)+')')
+        img2 = ax2.scatter(dataix,dataiy,marker='.',color='r',alpha=1.0,s=10)
+        ax2.set_title('Ion Config Space (TimeSteps = %d'%(i*dp)+')')
         ax2.set_xlabel("$x$")
-        ax2.set_ylabel("$v_x$")
+        ax2.set_ylabel("$y$")
         # ax2.set_xlim([0, Ly])
         # ax1.set_ylim([-1, 1])
         # ax1.set_zlim([-Lz, Lz])
@@ -105,4 +106,4 @@ if(save_anim == True):
         print("ffmpeg not available trying ImageMagickWriter")
         writer = animation.ImageMagickWriter(fps=(1/interval))
     print("Saving movie to "+figPath+"/. Please wait .....")
-    ani.save(figPath+'/phasespace_animation_PICSP.mp4')
+    ani.save(figPath+'/configspace_animation_PICSP.mp4')
