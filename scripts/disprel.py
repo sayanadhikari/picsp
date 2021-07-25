@@ -88,6 +88,7 @@ Ly = h5.attrs["Ly"]
 Nx = int(h5.attrs["Nx"])
 Ny = int(h5.attrs["Ny"])
 
+
 dp   =  int(h5.attrs["dp"])
 Nt   =  int(h5.attrs["Nt"])
 
@@ -136,10 +137,6 @@ if plot:
 
 
   dx = Lx/Nx #x[1]-x[0]
-  # dt = t[1]-t[0]
-  # dx = x[1]-x[0]
-  # Mt = len(t)
-  # Mx = len(x)
   omega = 2*np.pi*np.arange(Nt)/(Nt*dt)
   k     = 2*np.pi*np.arange(Nx)/(Nx*dx)
   print('Length of k: ',len(k))
@@ -221,13 +218,13 @@ if plot:
   # print(K[:oRange,:].shape,Omega[:oRange,:].shape,Z[:oRange,:].shape)
   # print(oRange)
   if norm == "omega_pi":
-    oRange = int(oRange/200) #for periodic system in x
+    # oRange = int(oRange/200) #for periodic system in x
     # oRange = int(oRange/10) #for bounded system in x
-    plt.pcolor(K[:oRange,:], Omega[:oRange,:], Z[:oRange,:],shading='auto',cmap = 'inferno',vmin=0,vmax=np.max(Z[:oRange,:])) #np.min(Z[:oRange,:])
+    plt.pcolor(K[:oRange,:], Omega[:oRange,:], Z[:oRange,:],shading='auto',cmap = 'inferno',vmin=np.min(Z[:oRange,:]),vmax=np.max(Z[:oRange,:])) #np.min(Z[:oRange,:])
     plt.colorbar()
   else:
     # oRange = int(oRange/50)
-    plt.pcolor(K[:oRange,:], Omega[:oRange,:], Z[:oRange,:],shading='auto',vmin=np.min(Z[:oRange,:]),vmax=np.max(Z[:oRange,:]))
+    plt.pcolor(K[:oRange,:], Omega[:oRange,:], Z[:oRange,:],shading='auto',cmap = 'inferno',vmin=np.min(Z[:oRange,:]),vmax=np.max(Z[:oRange,:]))
     # plt.pcolor(Z[:oRange,:],shading='auto')
     #plt.pcolor(K, Omega, Z,shading='auto',vmin=np.min(Z),vmax=np.max(Z))
     #plt.imshow(K, Omega, Z)
@@ -244,10 +241,10 @@ if plot:
   else:
       None
       plt.axhline(y=1.0, color='b', linestyle='--',label='$\omega_{pe}$')
-    # plt.plot(kadl, wl, '--w', label="langmuir wave")
-    # leg = ax.legend()
-    # ax.set_xlabel('$k~[1/m]$')
-    # ax.set_ylabel('$\omega/\omega_{pe}$')
+      plt.plot(kadl, wl, '--w', label="langmuir wave")
+      leg = ax.legend()
+      ax.set_xlabel('$k \lambda_{D}$')
+      ax.set_ylabel('$\omega/\omega_{pe}$')
 
   ax.set_ylim([0, 2])
   plt.savefig(pjoin(savedir, norm+'_disprel.png'))
