@@ -102,8 +102,8 @@ cia = np.sqrt(gamma_e*kb*Te/mi)
 
 
 
-x = np.linspace(0,Lx,Nx)
-y = np.linspace(0,Ly,Ny)
+x = np.linspace(0,Lx*dl,Nx)
+y = np.linspace(0,Ly*dl,Ny)
 X, Y = np.meshgrid(x, y)
 
 dt = h5.attrs["dt"]*dp
@@ -146,7 +146,7 @@ if plot:
   # dt = vars['timeStep']*vars['save_step'] #t[1]-t[0]
 
 
-  dx = Lx/Nx #x[1]-x[0]
+  dx = (Lx*dl)/Nx #x[1]-x[0]
   omega = 2*np.pi*np.arange(Nt)/(Nt*dt)
   k     = 2*np.pi*np.arange(Nx)/(Nx*dx)
   print('Length of k: ',len(k))

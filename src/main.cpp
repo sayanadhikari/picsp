@@ -368,8 +368,8 @@ int main(int argc, char *argv[])
     parse_ini_file(argv[1]);
 
     /*********** HDF5 ATTRIBUTES ***************/
-    writeAttributes("Lx", numxCells*stepSize*Lambda_D);
-    writeAttributes("Ly", numyCells*stepSize*Lambda_D);
+    writeAttributes("Lx", numxCells*stepSize);
+    writeAttributes("Ly", numyCells*stepSize);
     writeIntAttributes("dp", dumpPeriod);
     writeIntAttributes("Nt", nTimeSteps);
     writeAttributes("dt", timeStep/omega_pe);
