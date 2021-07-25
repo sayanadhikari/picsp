@@ -46,7 +46,7 @@ Ny = int(h5.attrs["Ny"])
 
 dp   =  int(h5.attrs["dp"])
 Nt   =  int(h5.attrs["Nt"])
-den_norm_factor = h5.attrs["den_norm_factor"]
+density = h5.attrs["density"]
 
 x = np.linspace(0,Lx,Nx)
 y = np.linspace(0,Ly,Ny)
@@ -64,7 +64,7 @@ if (show_anim == True):
         data = h5[param+"/%d"%data_num[i]]
         data = np.transpose(data)
         if ("den" in param ):
-            data = data*den_norm_factor
+            data = data*density
 
 
 
@@ -94,7 +94,7 @@ figsize = np.array([150,150/1.618]) #Figure size in mm
 dpi = 300                         #Print resolution
 ppi = np.sqrt(1920**2+1200**2)/24 #Screen resolution
 
-mp.rc('text', usetex=True)
+mp.rc('text', usetex=False)
 mp.rc('font', family='sans-serif', size=10, serif='Computer Modern Roman')
 mp.rc('axes', titlesize=10)
 mp.rc('axes', labelsize=10)
@@ -109,7 +109,7 @@ if (show_anim == True):
     data = h5[param+"/%d"%data_num[0]]
     data = np.transpose(data)
     if ("den" in param ):
-        data = data*den_norm_factor
+        data = data*density
     if Vis3D == True:
         fig = plt.figure(figsize=figsize/25.4,constrained_layout=True,dpi=ppi)
         ax1 = plt.axes(projection ="3d")
