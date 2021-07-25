@@ -15,45 +15,7 @@ import argparse
 import h5py
 
 
-#######################################################
-# Analytical ion-acoustic dispresion relation
-ne = 1E12 #vars['Load'][0]['density']
-ni = ne
 
-eps0 = constants('electric constant')
-kb = constants('Boltzmann constant')
-me = constants('electron mass')
-e = constants('elementary charge')
-c0 = constants('speed of light in vacuum')
-
-mi  = 1*constants('atomic mass constant')
-gamma_e = 5./3
-
-Te        = 1.0             # in eV
-Ti        = 0.026            # in eV
-
-units = 'EV'
-if units == 'MKS':
-  tEeV  = 0.5*me*(Te*Te)/e
-  tEK   = tEeV*11604.525
-  tIeV  = 0.5*mi*(Ti*Ti)/e
-  tIK   = tIeV*11604.525
-if units == 'EV':
-  tEK    = Te*11604.525
-  tESI   = np.sqrt(2*(Te*e)/me)
-  tIK   = Ti*11604.525
-  tISI   = np.sqrt(2*(Te*e)/mi)
-
-Te  = tEK #vars['tEK'] #1.6*11604
-Ti  = tIK #vars['tIK'] #0.1*11604
-
-wpi = np.sqrt(e**2*ni/(eps0*mi))
-wpe = np.sqrt(e**2*ne/(eps0*me))
-dl	= np.sqrt(eps0*kb*Te/(ni*e*e))
-dli	= np.sqrt(eps0*kb*Ti/(ni*e*e))
-print("wpe={}".format(wpe))
-print("dl={}".format(dl))
-cia = np.sqrt(gamma_e*kb*Te/mi)
 
 ####################################################
 
@@ -79,7 +41,7 @@ norm        = args.norm
 # Set processed data directory
 # folder_base= os.path.basename(os.path.dirname(folder))
 savedir     = pjoin(folder, 'processed_Efield')
-print(savedir)
+
 h5 = h5py.File(pjoin(folder,'data.h5'),'r')
 
 Lx = h5.attrs["Lx"]
@@ -92,11 +54,59 @@ Ny = int(h5.attrs["Ny"])
 dp   =  int(h5.attrs["dp"])
 Nt   =  int(h5.attrs["Nt"])
 
+ne = h5.attrs["density"]
+ni = ne
+
+mi  = h5.attrs["massI"]
+
+Te        = h5.attrs["vthE"]             # in eV
+Ti        = h5.attrs["vthI"]           # in eV
+units = 'EV'
+#######################################################
+# Analytical ion-acoustic dispresion relation
+
+
+eps0 = constants('electric constant')
+kb = constants('Boltzmann constant')
+me = constants('electron mass')
+e = constants('elementary charge')
+c0 = constants('speed of light in vacuum')
+
+
+gamma_e = 5./3
+
+
+if units == 'MKS':
+  tEeV  = 0.5*me*(Te*Te)/e
+  tEK   = tEeV*11604.525
+  tIeV  = 0.5*mi*(Ti*Ti)/e
+  tIK   = tIeV*11604.525
+if units == 'EV':
+  tEK    = Te*11604.525
+  tESI   = np.sqrt(2*(Te*e)/me)
+  tIK   = Ti*11604.525
+  tISI   = np.sqrt(2*(Te*e)/mi)
+
+Te  = tEK #vars['tEK'] #1.6*11604
+Ti  = tIK #vars['tIK'] #0.1*11604
+
+wpi = np.sqrt(e**2*ni/(eps0*mi))
+wpe = np.sqrt(e**2*ne/(eps0*me))
+dl	= np.sqrt(eps0*kb*Te/(ni*e*e))
+dli	= np.sqrt(eps0*kb*Ti/(ni*e*e))
+print("wpe={}".format(wpe))
+print("dl={}".format(dl))
+cia = np.sqrt(gamma_e*kb*Te/mi)
+
+
+
+
+
 x = np.linspace(0,Lx,Nx)
 y = np.linspace(0,Ly,Ny)
 X, Y = np.meshgrid(x, y)
 
-dt = 0.01*(1/wpe)*dp
+dt = h5.attrs["dt"]*dp
 
 n = np.arange(start=0, stop=Nt, step=dp, dtype=int)
 t = n*dt
@@ -195,7 +205,7 @@ if plot:
   # print(wb)
 
   Z = np.log(np.abs(F))
-  #Z = np.abs(F)
+  # Z = np.abs(F)
 
   # ==== Figure =============
 
@@ -239,7 +249,6 @@ if plot:
     ax.set_xlabel('$k \lambda_{D}$')
     ax.set_ylabel('$\omega/\omega_{pi}$')
   else:
-      None
       plt.axhline(y=1.0, color='b', linestyle='--',label='$\omega_{pe}$')
       plt.plot(kadl, wl, '--w', label="langmuir wave")
       leg = ax.legend()
