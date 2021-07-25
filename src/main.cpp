@@ -379,6 +379,8 @@ int main(int argc, char *argv[])
     writeAttributes("massI", massI);
     writeAttributes("vthE", vthE);
     writeAttributes("vthI", vthI);
+    writeIntAttributes("nParticlesE", nParticlesE);
+    writeIntAttributes("nParticlesI", nParticlesI);
 
     /*********** **** ***************/
     // double Time = 0;

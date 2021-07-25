@@ -66,7 +66,7 @@ if (show_anim == True):
         ax1.cla()
         img1 = ax1.scatter(dataex,dataey,marker='.',color='b',alpha=1.0,s=10)
         img2 = ax1.scatter(dataix,dataiy,marker='.',color='r',alpha=1.0,s=10)
-        ax1.set_title('Electron Config Space (TimeSteps = %d'%(i*dp)+')')
+        ax1.set_title('Electron/Ion Config Space (TimeSteps = %d'%(i*dp)+')')
         ax1.set_xlabel("$x$")
         ax1.set_ylabel("$y$")
         ax1.set_xlim([0, Lx])

@@ -33,13 +33,13 @@ h5 = h5py.File(DIR+file_name+'.h5','r')
 # Attribute load from data h5
 dp   =  int(h5.attrs["dp"])
 Nt   =  int(h5.attrs["Nt"])
-
+nParticlesE = h5.attrs["nParticlesE"]
+nParticlesI = h5.attrs["nParticlesI"]
 # dataset index
 data_num = np.arange(start=0, stop=Nt, step=dp, dtype=int)
 
 # Data load from data h5
-data = h5["timedata/"+param]
-
+data = h5["timedata/"+param]/nParticlesE
 # ==== Figure =============
 
 ##### FIG SIZE CALC ############
@@ -56,8 +56,8 @@ mp.rc('xtick', labelsize=10)
 mp.rc('ytick', labelsize=10)
 mp.rc('legend', fontsize=10)
 
-ax.plot(data_num,data[:-1,0],label="$KE_{i}$")
-ax.plot(data_num,data[:-1,1],label="$KE_{e}$")
+ax.semilogy(data_num,data[:-1,0],label="$KE_{i}$")
+ax.semilogy(data_num,data[:-1,1],label="$KE_{e}$")
 leg = ax.legend()
 ax.set_xlabel('$TimeSteps\,[\mathrm{m}]$')
 if ("energy" in param ):
