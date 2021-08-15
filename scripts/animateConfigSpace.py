@@ -55,7 +55,6 @@ if (show_anim == True):
         dataey = datae[:,1]
         # dataevx = datae[:,2]
         # dataevy = datae[:,3]
-
         #======Ion Data=========
         datai = h5["particle.i/%d"%data_num[i]]
         dataix = datai[:,0]
