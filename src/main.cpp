@@ -37,8 +37,8 @@ Group* groupEFx = new Group( file->createGroup( "/efx" ));
 Group* groupEFy = new Group( file->createGroup( "/efy" ));
 Group* groupDE = new Group( file->createGroup( "/den.e" ));
 Group* groupDI = new Group( file->createGroup( "/den.i" ));
-Group* groupPK = new Group( file->createGroup( "/phik" ));
-Group* groupRK = new Group( file->createGroup( "/rhok" ));
+// Group* groupPK = new Group( file->createGroup( "/phik" ));
+// Group* groupRK = new Group( file->createGroup( "/rhok" ));
 
 // // Create new dataspace for attribute
 //   DataSpace attr_dataspace = DataSpace(H5S_SCALAR);
@@ -128,8 +128,8 @@ public:
     double *efx;  // Electric field along x
     double *efy;  // Electric field along y
     double *rho; // Charge Density
-    fftw_complex *rhok;
-    fftw_complex *phik;
+    // fftw_complex *rhok;
+    // fftw_complex *phik;
 
 };
 
@@ -210,8 +210,8 @@ H5std_string gNameEFx = "/efx/*";
 H5std_string gNameEFy = "/efy/*";
 H5std_string gNameDenE = "/den.e/*";
 H5std_string gNameDenI = "/den.i/*";
-H5std_string gNamePhik = "/phik/*";
-H5std_string gNameRhok = "/rhok/*";
+// H5std_string gNamePhik = "/phik/*";
+// H5std_string gNameRhok = "/rhok/*";
 
 
 DataSpace *dataspace;
@@ -235,8 +235,8 @@ void Write_VDF(FILE *file, int ts, double vdfLocStart, double vdfLocEnd, Species
 void writeKE(double energy[][2]); // 2 for KE of two species
 void writePot(int ts, double *phi);
 void writeRho(int ts, double *rho);
-void writePotk(int ts, fftw_complex *phik);
-void writeRhok(int ts, fftw_complex *rhok);
+// void writePotk(int ts, fftw_complex *phik);
+// void writeRhok(int ts, fftw_complex *rhok);
 void writeEFx(int ts, double *efx);
 void writeEFy(int ts, double *efy);
 void writeAttributes(H5std_string groupPart, double data);
@@ -255,9 +255,9 @@ double sampleVel(double T, double mass);
 
 bool solvePotential(double *phi, double *rho);
 //bool solvePotentialDirect(double *phi, double *rho);
-bool spectralPotentialSolver(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok);
+bool spectralPotentialSolver(double *phi, double *rho); //, fftw_complex *phik, fftw_complex *rhok);
 
-double CrossProduct(double v1[], double v2[]);
+double* CrossProduct(double v1[], double v2[]);
 void BorispushSpecies(Species *species, double *efx, double *efy, double B[]);
 
 /* HDF5 initiate */
@@ -412,8 +412,8 @@ int main(int argc, char *argv[])
     domain.efx = new double[domain.nix*domain.niy];
     domain.efy = new double[domain.nix*domain.niy];
     domain.rho = new double[domain.nix*domain.niy];
-    domain.rhok = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
-    domain.phik = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
+    // domain.rhok = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
+    // domain.phik = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
 
 
 
@@ -422,8 +422,8 @@ int main(int argc, char *argv[])
     double *efx = domain.efx;
     double *efy = domain.efy;
     double *rho = domain.rho;
-    fftw_complex *rhok = domain.rhok;
-    fftw_complex *phik = domain.phik;
+    // fftw_complex *rhok = domain.rhok;
+    // fftw_complex *phik = domain.phik;
 
     /* Clear the domain fields*/
 
@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
 
     /* Poisson Solver */
     if (solverType==1) {
-      spectralPotentialSolver(phi, rho, phik, rhok);
+      spectralPotentialSolver(phi, rho); //, phik, rhok);
     }
     else if (solverType==2) {
       solvePotential(phi, rho);
@@ -530,7 +530,7 @@ int main(int argc, char *argv[])
       computeRho(rho, &ions, &electrons);
 
       if (solverType==1) {
-        spectralPotentialSolver(phi, rho, phik, rhok);
+        spectralPotentialSolver(phi, rho); //, phik, rhok);
       }
       else if (solverType==2) {
         solvePotential(phi, rho);
@@ -557,16 +557,21 @@ int main(int argc, char *argv[])
 
           writeSpecies(ts, &ions, gNamePartI, gNameDenI);
           writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
-
+          
           writePot(ts, phi);
           writeRho(ts, rho);
           writeEFx(ts, efx);
           writeEFy(ts, efy);
-          writePotk(ts, phik);
-          writeRhok(ts, rhok);
+          // stop writing
+
+
+          // writePotk(ts, phik);
+          // writeRhok(ts, rhok);
           //computePE(Time);
-          energy[ti][0] = computeKE(&ions);
-          energy[ti][1] = computeKE(&electrons);
+
+          // energy[ti][0] = computeKE(&ions);
+          // energy[ti][1] = computeKE(&electrons);
+          // stop writing
           ti++; // increase time dependent parameter index
 
       }
@@ -574,7 +579,7 @@ int main(int argc, char *argv[])
       // Time += timeStep;
     }
 
-    writeKE(energy);
+    // writeKE(energy); // stop writing
 
     /*free up memory*/
     delete[] phi;
@@ -603,8 +608,8 @@ int main(int argc, char *argv[])
     delete groupDI;
     delete groupEFx;
     delete groupEFy;
-    delete groupPK;
-    delete groupRK;
+    // delete groupPK;
+    // delete groupRK;
     // delete file;
     // */
     //****** END OF TIMER ******/
@@ -977,6 +982,18 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
     double qm = species->charge/species->mass;
     list<Particle>::iterator it = species->part_list.begin();
     double wl = Lambda_D*omega_pe;
+	
+	double t_mag2;
+    int dim;
+
+    double *v_minus = new double[3];
+    double *v_prime = new double[3];
+    double *v_plus = new double[3];
+
+    double *t = new double[3];
+    double *s = new double[3];
+	
+	
     // loop over particles
     while (it!=species->part_list.end())
     {
@@ -991,15 +1008,7 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
         double part_efx = gather(lcx,lcy,efx);
         double part_efy = gather(lcx,lcy,efy);
 
-        double t_mag2;
-        int dim;
-
-        double *v_minus = new double[3];
-        double *v_prime = new double[3];
-        double *v_plus = new double[3];
-
-        double *t = new double[3];
-        double *s = new double[3];
+        
 
         for(dim=0; dim<3; dim++)
           {
@@ -1017,13 +1026,13 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
         v_minus[1] = part.yvel + (vthE/(wl*wl))*qm*part_efy*0.5*timeStep;
         v_minus[2] = 0.0;
 
-        double v_minus_cross_t[] = {CrossProduct(v_minus, t)};
+        double *v_minus_cross_t = CrossProduct(v_minus, t);
 
         v_prime[0] = v_minus[0] + v_minus_cross_t[0];
         v_prime[1] = v_minus[1] + v_minus_cross_t[1];
         v_prime[2] = 0.0;
 
-        double v_prime_cross_s[] = {CrossProduct(v_prime, s)};
+        double *v_prime_cross_s = CrossProduct(v_prime, s);
         v_plus[0] = v_minus[0] + v_prime_cross_s[0];
         v_plus[1] = v_minus[1] + v_prime_cross_s[1];
 
@@ -1067,16 +1076,24 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
       else
           it++;
     }
+	
+	delete[] v_minus;
+	delete[] v_prime;
+	delete[] v_plus;
+	delete[] t;
+	delete[] s;
 }
 
 
-double CrossProduct(double v1[3], double v2[3])
+double* CrossProduct(double v1[3], double v2[3])
 {
-  double *r = new double[3];
+  // double *r = new double[3];
+  static double r[3];
   r[0] = v1[1]*v2[2] - v1[2]*v2[1];
   r[1] = -v1[0]*v2[2] + v1[2]*v2[0];
   r[2] = v1[0]*v2[1] - v1[1]*v2[0];
-  return *r;
+  
+  return r;  
 }
 
 
@@ -1208,18 +1225,18 @@ bool solvePotential(double *phi, double *rho)
 }
 
 
-bool spectralPotentialSolver(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok)
+bool spectralPotentialSolver(double *phi, double *rho) //, fftw_complex *phik, fftw_complex *rhok)
 {
    int Nx = domain.nix, Ny = domain.niy, Nh = (Ny/2) + 1;
    int i, j;
-   fftw_complex *rhok_dum, *phik_dum;
-   // fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
+   // fftw_complex *rhok_dum, *phik_dum;
+   fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
 
    fftw_plan p;
    fftw_plan b;
 
-   // rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
-   // phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    // Suggested by Rupak
    rhok_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
@@ -1516,31 +1533,31 @@ void writeEFy(int ts, double *efy)
 }
 
 
-void writePotk(int ts, fftw_complex *phik)
-{
-  hsize_t nx = domain.nix;
-  hsize_t ny = domain.niy;
-  hsize_t  dimsp[2] = {nx,ny};
-  gNamePhik.replace(gNamePhik.begin()+6,gNamePhik.end(),to_string(ts));
-  dataspace = new DataSpace(RANK, dimsp); // create new dspace
-  dataset = new DataSet(file->createDataSet(gNamePhik,datatype, *dataspace));
-  dataset->write(phik, datatype);
-  delete dataset;
-  delete dataspace;
-}
+// void writePotk(int ts, fftw_complex *phik)
+// {
+  // hsize_t nx = domain.nix;
+  // hsize_t ny = domain.niy;
+  // hsize_t  dimsp[2] = {nx,ny};
+  // gNamePhik.replace(gNamePhik.begin()+6,gNamePhik.end(),to_string(ts));
+  // dataspace = new DataSpace(RANK, dimsp); // create new dspace
+  // dataset = new DataSet(file->createDataSet(gNamePhik,datatype, *dataspace));
+  // dataset->write(phik, datatype);
+  // delete dataset;
+  // delete dataspace;
+// }
 
-void writeRhok(int ts, fftw_complex *rhok)
-{
-  hsize_t nx = domain.nix;
-  hsize_t ny = domain.niy;
-  hsize_t  dimsp[2] = {nx,ny};
-  gNameRhok.replace(gNameRhok.begin()+6,gNameRhok.end(),to_string(ts));
-  dataspace = new DataSpace(RANK, dimsp); // create new dspace
-  dataset = new DataSet(file->createDataSet(gNameRhok,datatype, *dataspace));
-  dataset->write(rhok, datatype);
-  delete dataset;
-  delete dataspace;
-}
+// void writeRhok(int ts, fftw_complex *rhok)
+// {
+  // hsize_t nx = domain.nix;
+  // hsize_t ny = domain.niy;
+  // hsize_t  dimsp[2] = {nx,ny};
+  // gNameRhok.replace(gNameRhok.begin()+6,gNameRhok.end(),to_string(ts));
+  // dataspace = new DataSpace(RANK, dimsp); // create new dspace
+  // dataset = new DataSet(file->createDataSet(gNameRhok,datatype, *dataspace));
+  // dataset->write(rhok, datatype);
+  // delete dataset;
+  // delete dataspace;
+// }
 
 // void computePE(double Time)
 // {
