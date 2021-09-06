@@ -105,7 +105,7 @@ double v_te; // electron thermal velocity
 double Lambda_D;
 double omega_pe;
 
-double B[3] = {0.0};
+double B[3] = {0.0, 0.00001, 0.0001};
 
 /* Class Domain: Hold the domain parameters*/
 class Domain
@@ -128,8 +128,8 @@ public:
     double *efx;  // Electric field along x
     double *efy;  // Electric field along y
     double *rho; // Charge Density
-    // fftw_complex *rhok;
-    // fftw_complex *phik;
+    fftw_complex *rhok;
+    fftw_complex *phik;
 
 };
 
@@ -255,7 +255,7 @@ double sampleVel(double T, double mass);
 
 bool solvePotential(double *phi, double *rho);
 //bool solvePotentialDirect(double *phi, double *rho);
-bool spectralPotentialSolver(double *phi, double *rho); //, fftw_complex *phik, fftw_complex *rhok);
+bool spectralPotentialSolver(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok);
 
 double* CrossProduct(double v1[], double v2[]);
 void BorispushSpecies(Species *species, double *efx, double *efy, double B[]);
@@ -412,8 +412,8 @@ int main(int argc, char *argv[])
     domain.efx = new double[domain.nix*domain.niy];
     domain.efy = new double[domain.nix*domain.niy];
     domain.rho = new double[domain.nix*domain.niy];
-    // domain.rhok = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
-    // domain.phik = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
+    domain.rhok = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
+    domain.phik = (fftw_complex*) fftw_malloc(domain.nix*(domain.niy/2+1) * sizeof(fftw_complex));
 
 
 
@@ -422,8 +422,8 @@ int main(int argc, char *argv[])
     double *efx = domain.efx;
     double *efy = domain.efy;
     double *rho = domain.rho;
-    // fftw_complex *rhok = domain.rhok;
-    // fftw_complex *phik = domain.phik;
+    fftw_complex *rhok = domain.rhok;
+    fftw_complex *phik = domain.phik;
 
     /* Clear the domain fields*/
 
@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
 
     /* Poisson Solver */
     if (solverType==1) {
-      spectralPotentialSolver(phi, rho); //, phik, rhok);
+      spectralPotentialSolver(phi, rho, phik, rhok);
     }
     else if (solverType==2) {
       solvePotential(phi, rho);
@@ -530,7 +530,7 @@ int main(int argc, char *argv[])
       computeRho(rho, &ions, &electrons);
 
       if (solverType==1) {
-        spectralPotentialSolver(phi, rho); //, phik, rhok);
+        spectralPotentialSolver(phi, rho, phik, rhok);
       }
       else if (solverType==2) {
         solvePotential(phi, rho);
@@ -557,7 +557,7 @@ int main(int argc, char *argv[])
 
           writeSpecies(ts, &ions, gNamePartI, gNameDenI);
           writeSpecies(ts, &electrons, gNamePartE, gNameDenE);
-          
+
           writePot(ts, phi);
           writeRho(ts, rho);
           writeEFx(ts, efx);
@@ -569,8 +569,8 @@ int main(int argc, char *argv[])
           // writeRhok(ts, rhok);
           //computePE(Time);
 
-          // energy[ti][0] = computeKE(&ions);
-          // energy[ti][1] = computeKE(&electrons);
+          energy[ti][0] = computeKE(&ions);
+          energy[ti][1] = computeKE(&electrons);
           // stop writing
           ti++; // increase time dependent parameter index
 
@@ -579,7 +579,7 @@ int main(int argc, char *argv[])
       // Time += timeStep;
     }
 
-    // writeKE(energy); // stop writing
+    writeKE(energy); // stop writing
 
     /*free up memory*/
     delete[] phi;
@@ -592,6 +592,8 @@ int main(int argc, char *argv[])
     delete[] ions.yvel;
     delete[] electrons.xvel;
     delete[] electrons.yvel;
+	delete[] phik;
+	delete[] rhok;
 
 
     // /* HDF5*/
@@ -982,7 +984,7 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
     double qm = species->charge/species->mass;
     list<Particle>::iterator it = species->part_list.begin();
     double wl = Lambda_D*omega_pe;
-	
+
 	double t_mag2;
     int dim;
 
@@ -992,8 +994,8 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
 
     double *t = new double[3];
     double *s = new double[3];
-	
-	
+
+
     // loop over particles
     while (it!=species->part_list.end())
     {
@@ -1008,7 +1010,7 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
         double part_efx = gather(lcx,lcy,efx);
         double part_efy = gather(lcx,lcy,efy);
 
-        
+
 
         for(dim=0; dim<3; dim++)
           {
@@ -1076,7 +1078,7 @@ void BorispushSpecies(Species *species, double *efx, double *efy, double B[])
       else
           it++;
     }
-	
+
 	delete[] v_minus;
 	delete[] v_prime;
 	delete[] v_plus;
@@ -1092,8 +1094,8 @@ double* CrossProduct(double v1[3], double v2[3])
   r[0] = v1[1]*v2[2] - v1[2]*v2[1];
   r[1] = -v1[0]*v2[2] + v1[2]*v2[0];
   r[2] = v1[0]*v2[1] - v1[1]*v2[0];
-  
-  return r;  
+
+  return r;
 }
 
 
@@ -1225,18 +1227,18 @@ bool solvePotential(double *phi, double *rho)
 }
 
 
-bool spectralPotentialSolver(double *phi, double *rho) //, fftw_complex *phik, fftw_complex *rhok)
+bool spectralPotentialSolver(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok)
 {
    int Nx = domain.nix, Ny = domain.niy, Nh = (Ny/2) + 1;
    int i, j;
-   // fftw_complex *rhok_dum, *phik_dum;
-   fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
+   fftw_complex *rhok_dum, *phik_dum;
+   // fftw_complex *rhok, *phik, *rhok_dum, *phik_dum;
 
    fftw_plan p;
    fftw_plan b;
 
-   rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
-   phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   // rhok = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
+   // phik = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    // Suggested by Rupak
    rhok_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
    phik_dum = (fftw_complex*) fftw_malloc(Nx*Nh * sizeof(fftw_complex));
@@ -1278,26 +1280,24 @@ bool spectralPotentialSolver(double *phi, double *rho) //, fftw_complex *phik, f
    for(j=0;j<Nh;j++)
    {
       ky = 2.0*PI*j/Ly;
-      // Ky = ky*sin((ky*domain.dy/2)/(ky*domain.dy/2));
+
       //#pragma openmp parallel for
       for(i=0;i<Nx/2;i++)
       {
          kx = 2.0*PI*i/Lx;
-         // Kx = kx*sin((kx*domain.dx/2)/(kx*domain.dx/2));
-         phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
-         phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-         // phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(Kx*Kx+Ky*Ky);
-         // phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(Kx*Kx+Ky*Ky);
+
+         phik[i*Nh+j][0] = rhok_dum[i*Nh+j][0]/(kx*kx+ky*ky);
+         phik[i*Nh+j][1] = rhok_dum[i*Nh+j][1]/(kx*kx+ky*ky);
+
       }
       //#pragma openmp parallel for
       for(i=Nx/2+1;i<Nx;i++)
       {
          kx = 2.0*PI*(Nx-i)/Lx;
-         // Kx = kx*sin((kx*domain.dx/2)/(kx*domain.dx/2));
-         phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx+ky*ky);
-         phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx+ky*ky);
-         // phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(Kx*Kx+Ky*Ky);
-         // phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(Kx*Kx+Ky*Ky);
+
+         phik[i*Nh+j][0] = rhok_dum[i*Nh+j][0]/(kx*kx+ky*ky);
+         phik[i*Nh+j][1] = rhok_dum[i*Nh+j][1]/(kx*kx+ky*ky);
+
       }
    }
 
@@ -1329,6 +1329,9 @@ bool spectralPotentialSolver(double *phi, double *rho) //, fftw_complex *phik, f
    {
       phi[i*Ny+j] /= double(Nx*Ny);
    }
+
+   delete[] rhok_dum;
+   delete[] phik_dum;
    return true;
 }
 
