@@ -4,9 +4,11 @@
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
+#include <fftw3.h>
 
 
 /*constants*/
+#define PI 3.14159
 #define EPS_0 8.85418782e-12  	// F/m, vacuum permittivity
 #define K	1.38065e-23			// J/K, Boltzmann constant
 #define ME 9.10938215e-31		// kg, electron mass
@@ -17,12 +19,14 @@
 
 /*simulation parameters, these could come from an input file*/
 #define PLASMA_DEN	1e14		// plasma density to load
-#define NUM_IONS 10000		// number of ions
-#define NUM_ELECTRONS 10000	    // number of electrons
+#define NUM_IONS 5000		// number of ions
+#define NUM_ELECTRONS 5000	    // number of electrons
 #define DX 1e-1					// x cell spacing
 #define DY 1e-1					// y cell spacing
-#define NCx 128				// number of cells along x
-#define NCy 128				// number of cells along y
+#define DZ 1e-1
+#define NCx 64				// number of cells along x
+#define NCy 64				// number of cells along y
+#define NCz 0
 #define NUM_TS	500			// number of time steps
 #define DT 1e-2				// time step size
 #define EV_TO_K 11604.52 // conversion from eV to K
@@ -37,22 +41,30 @@ struct Domain
 {
 	int nix;				/*number of nodes along x*/
   int niy;				/*number of nodes along y*/
+  int niz;
 	double x0;			/*mesh origin*/
   double y0;
-	double dx;			/*cell spacing*/
+  double z0;
+  double dx;			/*cell spacing*/
   double dy;
-	double xl;			/*domain length*/
+  double dz;
+  double xl;			/*domain length*/
   double yl;
+  double zl;
   double xmax;		/*domain max position*/
   double ymax;
+  double zmax;
 
 /*data structures*/
 	double *phi;		/*potential*/
 	double *efx;			/*electric field*/
   double *efy;
+  // double *efz;
 	double *rho;		/*charge density*/
 	double *ndi;		/*ion density*/
 	double *nde;		/*electron density*/
+  fftw_complex *phik;
+  fftw_complex *rhok;
 };
 
 /* Data structure for particle storage **/
@@ -62,6 +74,8 @@ struct Particle
 	double vx;			/*velocity*/
   double y;
   double vy;
+  double z;
+  double vz;
 };
 
 /* Data structure to hold species information*/
@@ -81,12 +95,13 @@ struct Species
 void ScatterSpecies(struct Species *species, double *nd);
 void ComputeRho(double *rho, struct Species *ions, struct Species *electrons);
 bool SolvePotential(double *phi, double *rho);
+bool PseudospectralSolvePotential(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok);
 void ComputeEF(double *phi, double *efx, double *efy);
 void PushSpecies(struct Species *species, double *efx, double *efy);
 void BorisPushSpecies(struct Species *species, double *efx, double *efy, double B[]);
 double* CrossProduct(double v1[3], double v2[3]);
 void RewindSpecies(struct Species *species, double *efx, double *efy);
-void AddParticle(struct Species *species, double x, double vx, double y, double vy);
+void AddParticle(struct Species *species, double x, double vx, double y, double vy, double z, double vz);
 double XtoL(double pos);
 void scatter(double lx, double ly, double value, double *field);
 double gather(double lx, double ly, double *field);
@@ -127,21 +142,33 @@ int main()
 	domain.yl = (domain.niy-1)*domain.dy;//domain length
 	domain.ymax = domain.y0+domain.yl;	//max position
 
+  domain.niz = NCz+1;			// number of nodes
+	domain.dz = DZ;				// cell spacing
+	domain.z0 = 0;					// origin
+	domain.zl = (domain.niz-1)*domain.dz;//domain length
+	domain.zmax = domain.z0+domain.zl;	//max position
+
 	/*allocate data structures, remember these need to be cleared first in C++*/
-   domain.phi = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
-   domain.rho = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
-   domain.efx = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
-   domain.efy = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
+   domain.phi = (double*) malloc((domain.nix*domain.niy*domain.niz) * sizeof(double));
+   domain.rho = (double*) malloc((domain.nix*domain.niy*domain.niz) * sizeof(double));
+   domain.efx = (double*) malloc((domain.nix*domain.niy*domain.niz) * sizeof(double));
+   domain.efy = (double*) malloc((domain.nix*domain.niy*domain.niz) * sizeof(double));
+   // domain.efz = (double*) malloc((domain.nix*domain.niy*domain.niz) * sizeof(double));
    domain.nde = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
    domain.ndi = (double*) malloc((domain.nix*domain.niy) * sizeof(double));
+   // domain.rhok = (fftw_complex*) malloc((domain.nix*(domain.niy/2+1)) * sizeof(fftw_complex));
+   // domain.phik = (fftw_complex*) malloc((domain.nix*(domain.niy/2+1)) * sizeof(fftw_complex));
 
 	// /*save pointers so we can write phi instead of domain.phi*/
 	double *phi = domain.phi;
 	double *rho = domain.rho;
 	double *efx = domain.efx;
   double *efy = domain.efy;
+  // double *efz = domain.efz;
 	double *nde = domain.nde;
 	double *ndi = domain.ndi;
+  // fftw_complex *phik = domain.phik;
+  // fftw_complex *rhok = domain.rhok;
 
   struct Species ions;
 	struct Species electrons;
@@ -168,13 +195,15 @@ int main()
 	{
     double x = domain.x0 + ((rnd()+rnd()+rnd())/3)*(domain.nix-1)*domain.dx;
 		double vx = sampleVel(ions.temp*EV_TO_K, ions.mass);	/*initially zero x velocity*/
-    double y = domain.x0 + ((rnd()+rnd()+rnd())/3)*(domain.niy-1)*domain.dy;
+    double y = domain.y0 + ((rnd()+rnd()+rnd())/3)*(domain.niy-1)*domain.dy;
 		double vy = sampleVel(ions.temp*EV_TO_K, ions.mass);	/*initially zero y velocity*/
+    double z = 0.0;
+    double vz = 0.0;
     if (x>domain.xl) x = x - domain.xl;
     if (x<0) x = x + domain.xl;
     if (y>domain.yl) y = y - domain.yl;
     if (y<0) y = y + domain.yl;
-		AddParticle(&ions,x,vx,y,vy);
+		AddParticle(&ions,x,vx,y,vy,z,vz);
 	}
 
 	/*now do the same for electrons*/
@@ -185,20 +214,23 @@ int main()
 		double vx = sampleVel(electrons.temp*EV_TO_K, electrons.mass);
     double y = domain.x0 + ((rnd()+rnd()+rnd())/3)*(domain.niy-1)*domain.dy;
 		double vy = sampleVel(electrons.temp*EV_TO_K, electrons.mass);
+    double z = 0.0;
+    double vz = 0.0;
     if (x>domain.xl) x = x - domain.xl;
     if (x<0) x = x + domain.xl;
     if (y>domain.yl) y = y - domain.yl;
     if (y<0) y = y + domain.yl;
-		AddParticle(&electrons,x,vx,y,vy);
+		AddParticle(&electrons,x,vx,y,vy,z,vz);
 	}
 
   ScatterSpecies(&ions,ndi);
 	ScatterSpecies(&electrons,nde);
 
   ComputeRho(rho, &ions, &electrons);
+  // // PseudospectralSolvePotential(phi,rho,phik,rhok);
 	SolvePotential(phi,rho);
 	ComputeEF(phi,efx,efy);
-
+  //
   RewindSpecies(&ions,efx,efy);
 	RewindSpecies(&electrons,efx,efy);
 
@@ -217,22 +249,26 @@ int main()
 		ScatterSpecies(&electrons,nde);
 
 		ComputeRho(rho,&ions, &electrons);
+    // PseudospectralSolvePotential(phi,rho,phik,rhok);
 		SolvePotential(phi,rho);
 		ComputeEF(phi,efx,efy);
 
 		//move particles
+    // PushSpecies(&electrons,efx,efy);
+		// PushSpecies(&ions,efx,efy);
     BorisPushSpecies(&electrons,efx,efy,B);
 		BorisPushSpecies(&ions,efx,efy,B);
 
 
 		//write diagnostics
-		if (ts%100==0)
+		if (ts%10==0)
 		{
-			double max_phi = phi[0*domain.niy+0];
-			for (int i=0;i<domain.nix;i++)
+			double max_phi = phi[(0*domain.niy+0)*domain.niz+0];
+      for (int k=0;k<domain.niz;k++)
       for (int j=0;j<domain.niy;j++)
+			for (int i=0;i<domain.nix;i++)
       {
-        if (phi[i*domain.niy+j]>max_phi) max_phi=phi[i*domain.niy+j];
+        if (phi[(i*domain.niy+j)*domain.niz+k]>max_phi) max_phi=phi[(i*domain.niy+j)*domain.niz+k];
       }
     //
     //
@@ -289,7 +325,7 @@ int main()
 
 
 /*adds new particle to the species*/
-void AddParticle(struct Species *species, double x, double vx, double y, double vy)
+void AddParticle(struct Species *species, double x, double vx, double y, double vy, double z, double vz)
 {
 	/*abort if we ran out of space to store this particle*/
 	if (species->np > species->np_alloc-1)
@@ -302,8 +338,10 @@ void AddParticle(struct Species *species, double x, double vx, double y, double 
 	species->part[species->np].vx = vx;
   species->part[species->np].y = y;
 	species->part[species->np].vy = vy;
+  species->part[species->np].z = z;
+	species->part[species->np].vz = vz;
 
-
+  // printf("%g\t%g\t%g\t%g\t%g\t%g\n", x,vx,y,vy,z,vz);
 	/*increment particle counter*/
 	species->np++;
 }
@@ -334,6 +372,7 @@ void scatter(double lx, double ly, double value, double *field)
   field[(i+1)*domain.niy+j] += value*(di)*(1-dj);
   field[i*domain.niy+j+1] += value*(1-di)*(dj);
   field[(i+1)*domain.niy+j+1] += value*(di)*(dj);
+  // printf("%g \t%g \t%g\n",lx,ly,field[i*domain.niy+j]);
 }
 
 double gather(double lx, double ly, double *field)
@@ -385,6 +424,7 @@ void ScatterSpecies(struct Species *species, double *den)
   for(int j=0; j<domain.niy; j++)
   {
       den[i*domain.niy+j] /=PLASMA_DEN;
+      // printf("%g\t%g\t%g\n",i*domain.dx, j*domain.dy, den[i*domain.niy+j]);
   }
 }
 
@@ -393,22 +433,30 @@ void ComputeRho(double *rho, struct Species *ions, struct Species *electrons)
 {
 	// double *rho = domain.rho;
 
-  for(int i=1; i<domain.nix-1; i++)
-  for(int j=1; j<domain.niy-1; j++){
-      rho[i*domain.niy+j]=(-domain.ndi[i*domain.niy+j] + domain.nde[i*domain.niy+j]);
+    // for(int k=1; k<domain.niz-1; k++)
+    for(int j=1; j<domain.niy-1; j++)
+    for(int i=1; i<domain.nix-1; i++)
+        {
+        rho[(i*domain.niy+j)*domain.niz+0]=(-domain.ndi[i*domain.niy+j] + domain.nde[i*domain.niy+j]);
+        }
+    // for(int k=1; k<domain.niz; k++)
+    for(int j=0; j<domain.niy; j++)
+      {
+      rho[(0*domain.niy+j)*domain.niz+0] += rho[((domain.nix-1)*domain.niy+j)*domain.niz+0];
+      rho[((domain.nix-1)*domain.niy+j)*domain.niz+0]=rho[(0*domain.niy+j)*domain.niz+0];
       }
 
-  for(int j=0; j<domain.niy; j++)
-    {
-    rho[0*domain.niy+j] += rho[(domain.nix-1)*domain.niy+j];
-    rho[(domain.nix-1)*domain.niy+j]=rho[0*domain.niy+j];
-    }
-
-  for(int i=0; i<domain.nix; i++)
-    {
-    rho[i*domain.niy+0] += rho[i*domain.niy+domain.niy-1];
-    rho[i*domain.niy+domain.niy-1] = rho[i*domain.niy+0];
-  }
+    for(int i=0; i<domain.nix; i++)
+      {
+      rho[(i*domain.niy+0)*domain.niz+0] += rho[(i*domain.niy+domain.niy-1)*domain.niz+0];
+      rho[(i*domain.niy+domain.niy-1)*domain.niz+0] = rho[(i*domain.niy+0)*domain.niz+0];
+      }
+    //
+    // for(int j=0; j<domain.niy; j++)
+    // for(int i=0; i<domain.nix; i++)
+    // {
+    //   printf("%g\t%g\t%g\n",i*domain.dx, j*domain.dy, rho[0+domain.niz*(j+domain.niy*i)]);
+    // }
 }
 
 /* solves potential using the Gauss Seidel Method, returns true if converged
@@ -426,72 +474,154 @@ bool SolvePotential(double *phi, double *rho)
 	for (int solver_it=0;solver_it<50000;solver_it++)
 	{
 		/*Gauss Seidel method, phi[i-1]-2*phi[i]+phi[i+1] = -dx^2*rho[i]/eps_0*/
-		for (int i=0;i<domain.nix;i++)
+		for (int k=0;k<domain.niz;k++)
     for (int j=0;j<domain.niy;j++)
+    for (int i=0;i<domain.nix;i++)
 		{
 			int p = i-1; if(p<0) p=domain.nix-2;
 			int q = i+1; if(q>domain.nix-1) q=1;
       int r = j-1; if(r<0) r=domain.niy-2;
       int s = j+1; if(s>domain.niy-1) s=1;
 			// phi[i] = 0.5*(phi[im] + phi[ip] + dx2*rho[i]/EPS_0);
-      double g = 0.5*(1/((1/dx2)+(1/dy2)))*( ((phi[p*domain.niy+j]+phi[q*domain.niy+j])/dx2) + ((phi[i*domain.niy+r]+phi[i*domain.niy+s])/dy2) + (rho[i*domain.niy+j]) );
-      phi[i*domain.niy+j] = phi[i*domain.niy+j] + 1.4*(g - phi[i*domain.niy+j]);
+      double g = 0.5*(1/((1/dx2)+(1/dy2)))*( ((phi[(p*domain.niy+j)*domain.niz+k]+phi[(q*domain.niy+j)*domain.niz+k])/dx2) + ((phi[(i*domain.niy+r)*domain.niz+k]+phi[(i*domain.niy+s)*domain.niz+k])/dy2) + (rho[(i*domain.niy+j)*domain.niz+k]) );
+      phi[(i*domain.niy+j)*domain.niz+k] = phi[(i*domain.niy+j)*domain.niz+k] + 1.4*(g - phi[(i*domain.niy+j)*domain.niz+k]);
     }
 
 		/*check for convergence*/
 		if (solver_it%25==0)
 		{
 			double sum = 0;
-      for (int i=0;i<domain.nix;i++)
+      for (int k=0;k<domain.niz;k++)
       for (int j=0;j<domain.niy;j++)
+      for (int i=0;i<domain.nix;i++)
 			{
         int p = i-1; if(p<0) p=domain.nix-2;
   			int q = i+1; if(q>domain.nix-1) q=1;
         int r = j-1; if(r<0) r=domain.niy-2;
         int s = j+1; if(s>domain.niy-1) s=1;
 				// double R = -rho[i]/EPS_0 - (phi[im] - 2*phi[i] + phi[ip])/dx2;
-        double R = 0.25*(phi[p*domain.niy+j]+phi[q*domain.niy+j]+phi[i*domain.niy+r]+phi[i*domain.niy+s]+(dx2*rho[i*domain.niy+j]))-phi[i*domain.niy+j];
+        double R = 0.25*(phi[(p*domain.niy+j)*domain.niz+k]+phi[(q*domain.niy+j)*domain.niz+k]+phi[(i*domain.niy+r)*domain.niz+k]+phi[(i*domain.niy+s)*domain.niz+k]+(dx2*rho[(i*domain.niy+j)*domain.niz+k]))-phi[(i*domain.niy+j)*domain.niz+k];
 				sum+=R*R;
 			}
 			L2 = sqrt(sum)/(domain.nix*domain.niy);
 			if (L2<1e-5) {return true;}
 		}
+
+    // for(int j=0; j<domain.niy; j++)
+    // for(int i=0; i<domain.nix; i++)
+    // {
+    //   printf("%g\t%g\t%g\n",i*domain.dx, j*domain.dy, phi[0+domain.niz*(j+domain.niy*i)]);
+    // }
 	}
 	printf("Gauss-Seidel solver failed to converge, L2=%.3g!\n",L2);
 	return false;
 }
 
+// bool PseudospectralSolvePotential(double *phi, double *rho, fftw_complex *phik, fftw_complex *rhok)
+// {
+//   int Nx = domain.nix, Ny = domain.niy, Nh = domain.niy/2+1;
+//   int i,j;
+//   fftw_plan f,b;
+//   double Lx = domain.xl, Ly = domain.yl;
+//   double kx, ky;
+//   fftw_complex *rhok_dum, *phik_dum;
+//
+//   rhok_dum = (fftw_complex*) malloc(Nx*Ny * sizeof(fftw_complex));
+//   phik_dum = (fftw_complex*) malloc(Nx*Ny * sizeof(fftw_complex));
+//
+//   f = fftw_plan_dft_r2c_2d(Nx,Ny,&rho[0*Ny+0],&rhok[0*Nh+0],FFTW_ESTIMATE);
+//   fftw_execute(f);
+//   fftw_destroy_plan(f);
+//   fftw_cleanup();
+//
+//   for(i=0; i<Nx; i++)
+//   for(j=0; j<Nh; j++)
+//   {
+//     rhok_dum[i*Nh+j][0] = rhok[i*Nh+j][0];
+//     rhok_dum[i*Nh+j][1] = rhok[i*Nh+j][1];
+//   }
+//
+//   for(j=0; j<Nh; j++)
+//   {
+//     ky = 2.0*PI*j/Ly;
+//     for(i=0; i<Nx/2; i++)
+//     {
+//       kx = 2.0*PI*i/Lx;
+//       phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx + ky*ky);
+//       phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx + ky*ky);
+//     }
+//
+//     for(i=Nx/2+1; i<Nx; i++)
+//     {
+//       kx = 2.0*PI*(Nx-i)/Lx;
+//       phik[i*Nh+j][0] = rhok[i*Nh+j][0]/(kx*kx + ky*ky);
+//       phik[i*Nh+j][1] = rhok[i*Nh+j][1]/(kx*kx + ky*ky);
+//     }
+//   }
+//
+//   phik[0*Nh+0][0] = 0.0;
+//   phik[0*Nh+0][1] = 0.0;
+//
+//
+//   b =fftw_plan_dft_c2r_2d(Nx,Ny,&phik[0*Nh+0],&phi[0*Ny+0],FFTW_ESTIMATE);
+//   fftw_execute(b);
+//   fftw_destroy_plan(b);
+//   fftw_cleanup();
+//
+//   for(i=0; i<Nx; i++)
+//   for(j=0; j<Ny; j++)
+//   {
+//     phi[i*Ny+j] = phi[i*Ny+j]/(Nx*Ny);
+//     // printf("%f\t%f\n",rho[i*Ny+j],phi[i*Ny+j]/(Nx*Ny));
+//   }
+//
+//   fftw_free(phik_dum);
+//   fftw_free(rhok_dum);
+//
+//   return true;
+// }
+
 /* computes electric field by differentiating potential*/
 void ComputeEF(double *phi, double *efx, double *efy)
 {
-  memset(efx,0,sizeof(double)*domain.nix*domain.niy);
-  memset(efy,0,sizeof(double)*domain.nix*domain.niy);
+  memset(efx,0,sizeof(double)*domain.nix*domain.niy*domain.niz);
+  memset(efy,0,sizeof(double)*domain.nix*domain.niy*domain.niz);
 
-  for(int i=1; i<domain.nix-1; i++)
-  for(int j=1; j<domain.niy-1; j++)
+  for(int k=0; k<domain.niz; k++)
   {
-    efx[i*domain.niy+j] = (phi[(i-1)*domain.niy+j]-phi[(i+1)*domain.niy+j])/(2*domain.dx);
-    efy[i*domain.niy+j] = (phi[i*domain.niy+j-1]-phi[i*domain.niy+j+1])/(2*domain.dy);
+    for(int j=1; j<domain.niy-1; j++)
+    for(int i=1; i<domain.nix-1; i++)
+    {
+      efx[(i*domain.niy+j)*domain.niz+k] = (phi[((i-1)*domain.niy+j)*domain.niz+k]-phi[((i+1)*domain.niy+j)*domain.niz+k])/(2*domain.dx);
+      efy[(i*domain.niy+j)*domain.niz+k] = (phi[(i*domain.niy+j-1)*domain.niz+k]-phi[(i*domain.niy+j+1)*domain.niz+k])/(2*domain.dy);
+    }
+
+    /*Apply one sided difference at the boundary nodes*/
+    for(int j=0; j<domain.niy; j++)                                    // calculate electric field at nodes
+   {
+      // efx[0*domain.niy+j] = -(phi[1*domain.niy+j]-phi[(domain.nix-2)*domain.niy+j])/(2*domain.dx);
+      // efx[(domain.nix-1)*domain.niy+j] = efx[0*domain.niy+j];
+      efx[(0*domain.niy+j)*domain.niz+k] = -(phi[(1*domain.niy+j)*domain.niz+k] - phi[(0*domain.niy+j)*domain.niz+k])/(2*domain.dx);
+      efx[((domain.nix-1)*domain.niy+j)*domain.niz+k] = -(phi[((domain.nix-1)*domain.niy+j)*domain.niz+k] - phi[((domain.nix-2)*domain.niy+j)*domain.niz+k])/(2*domain.dx);
+
+   }
+
+   for(int i=0; i<domain.nix; i++)
+   {
+      // efy[i*domain.niy+0] = -(phi[i*domain.niy+1]-phi[i*domain.niy+domain.niy-2])/(2*domain.dy);
+      // efy[i*domain.niy+domain.niy-1] = efy[i*domain.niy+0];
+
+      efy[(i*domain.niy+0)*domain.niz+k] = -(phi[(i*domain.niy+1)*domain.niz+k] - phi[(i*domain.niy+0)*domain.niz+k])/(2*domain.dy);
+      efy[(i*domain.niy+domain.niy-1)*domain.niz+k] = -(phi[(i*domain.niy+domain.niy-1)*domain.niz+k] - phi[(i*domain.niy+domain.niy-2)*domain.niz+k])/(2*domain.dy);
+   }
   }
 
-  /*Apply one sided difference at the boundary nodes*/
-  for(int j=0; j<domain.niy; j++)                                    // calculate electric field at nodes
- {
-    // efx[0*domain.niy+j] = -(phi[1*domain.niy+j]-phi[(domain.nix-2)*domain.niy+j])/(2*domain.dx);
-    // efx[(domain.nix-1)*domain.niy+j] = efx[0*domain.niy+j];
-    efx[0*domain.niy+j] = -(phi[1*domain.niy+j] - phi[0*domain.niy+j])/(2*domain.dx);
-    efx[(domain.nix-1)*domain.niy+j] = -(phi[(domain.nix-1)*domain.niy+j] - phi[(domain.nix-2)*domain.niy+j])/(2*domain.dx);
+  // for(int j=0; j<domain.niy; j++)
+  // for(int i=0; i<domain.nix; i++)
+  // {
+  //   printf("%g\t%g\t%g\t%g\n",i*domain.dx, j*domain.dy, efx[0+domain.niz*(j+domain.niy*i)], efy[0+domain.niz*(j+domain.niy*i)]);
+  // }
 
- }
-
- for(int i=0; i<domain.nix; i++)
- {
-    // efy[i*domain.niy+0] = -(phi[i*domain.niy+1]-phi[i*domain.niy+domain.niy-2])/(2*domain.dy);
-    // efy[i*domain.niy+domain.niy-1] = efy[i*domain.niy+0];
-
-    efy[i*domain.niy+0] = -(phi[i*domain.niy+1] - phi[i*domain.niy+0])/(2*domain.dy);
-    efy[i*domain.niy+domain.niy-1] = -(phi[i*domain.niy+domain.niy-1] - phi[i*domain.niy+domain.niy-2])/(2*domain.dy);
- }
 }
 
 void RewindSpecies(struct Species *species, double *efx, double *efy)
@@ -516,6 +646,7 @@ void RewindSpecies(struct Species *species, double *efx, double *efy)
 		/*advance velocity*/
 		part->vx -= 0.5*(1/(wl*wl))*(qm*Te)*part_efx*DT;
     part->vy -= 0.5*(1/(wl*wl))*(qm*Te)*part_efy*DT;
+    part->vz = 0.0;
 	}
 }
 
@@ -544,10 +675,12 @@ void PushSpecies(struct Species *species, double *efx, double *efy)
 		/*advance velocity*/
 		part->vx += 0.5*(1/(wl*wl))*(qm*Te)*part_efx*DT;
     part->vy += 0.5*(1/(wl*wl))*(qm*Te)*part_efy*DT;
+    part->vz = 0.0;
 
 		/*advance position*/
 		part->x += DT*part->vx;
     part->y += DT*part->vy;
+    part->z = 0.0;
 
 		/*apply periodic boundaries*/
 		if (part->x < domain.x0)	part->x+=domain.xl;
@@ -621,6 +754,8 @@ void BorisPushSpecies(struct Species *species, double *efx, double *efy, double 
     part->x += DT*part->vx;
     part->vy = v_plus[1] + (Te/(wl*wl))*qm*part_efy*0.5*DT;
     part->y += DT*part->vy;
+    part->vz = v_plus[2];
+    part->z += DT*part->vz;
 
     /*apply periodic boundaries*/
 		if (part->x < domain.x0)	part->x+=domain.xl;
@@ -651,12 +786,13 @@ double* CrossProduct(double v1[3], double v2[3])
 void WriteResults(int ts)
 {
 	//fprintf(file_res,"ZONE I=%d T=ZONE_%06d\n",domain.nix,ts);
-	for (int i=0;i<domain.nix;i++)
+  for (int k=0;k<domain.niz;k++)
   for (int j=0;j<domain.niy;j++)
+  for (int i=0;i<domain.nix;i++)
 	{
-		fprintf(file_res,"%g %g %g %g %g %g %g  %g\n",i*domain.dx, j*domain.dy,
+		fprintf(file_res,"%g %g %g %g %g %g %g %g %g\n",i*domain.dx, j*domain.dy, k*domain.dz,
 									domain.nde[i*domain.niy+j],domain.ndi[i*domain.niy+j],
-									domain.rho[i*domain.niy+j],domain.phi[i*domain.niy+j],domain.efx[i*domain.niy+j],domain.efy[i*domain.niy+j]);
+									domain.rho[(i*domain.niy+j)*domain.niz+k],domain.phi[(i*domain.niy+j)*domain.niz+k],domain.efx[(i*domain.niy+j)*domain.niz+k],domain.efy[(i*domain.niy+j)*domain.niz+k]);
 	}
 
 	fflush(file_res);
@@ -687,7 +823,6 @@ double rnd()
 
 void Write_Particle(FILE *file, int ts, struct Species *species)
 {
-    fprintf(file,"x \ty \tvx \tvy\n");
     for(int p=0; p<species->np;p++)
     {
         fprintf(file,"%g \t %g \t %g \t %g\n",species->part[p].x, species->part[p].y, species->part[p].vx, species->part[p].vy);
@@ -697,7 +832,6 @@ void Write_Particle(FILE *file, int ts, struct Species *species)
 
 void Write_density(FILE *file, int ts)
 {
-    fprintf(file,"x \ty \tnde \tndi\n");
   for (int i=0;i<domain.nix;i++)
   for (int j=0;j<domain.niy;j++)
     {
