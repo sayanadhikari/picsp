@@ -5,36 +5,71 @@
 #include <time.h>
 #include <stdbool.h>
 #include <fftw3.h>
+#include "iniparser.h"
+
+/***************** INIPARSER ***************/
+int  parse_ini_file(char * ini_name);
+
+/********* UNIVERSAL CONSTANTS *************/
+const double EPS = 8.85418782E-12;    // Vacuum permittivity
+const double K = 1.38065E-23;            // Boltzmann Constant
+const double EV_TO_K = 11604.52;         // Conversion of EV to K
+const double PI = 3.14159265359;
 
 
-/*constants*/
-#define PI 3.14159
-#define EPS_0 8.85418782e-12  	// F/m, vacuum permittivity
-#define K	1.38065e-23			// J/K, Boltzmann constant
-#define ME 9.10938215e-31		// kg, electron mass
-#define QE 1.602176565e-19		// C, electron charge
-#define AMU  1.660538921e-27	// kg, atomic mass unit
-#define Te 1.0 // in eV
-#define Ti 0.026 // in eV
 
-/*simulation parameters, these could come from an input file*/
-#define PLASMA_DEN	1e14		// plasma density to load
-#define NUM_IONS 5000		// number of ions
-#define NUM_ELECTRONS 5000	    // number of electrons
-#define DX 1e-1					// x cell spacing
-#define DY 1e-1					// y cell spacing
-#define DZ 1e-1
-#define NCx 64				// number of cells along x
-#define NCy 64				// number of cells along y
-#define NCz 0
-#define NUM_TS	500			// number of time steps
-#define DT 1e-2				// time step size
-#define EV_TO_K 11604.52 // conversion from eV to K
+/*************** USER CHOICE ******************/
+short int solverType; // Poisson SOlver
+short int loadType;   // Particle and velocity sampling
+short int TSI;        // Two stream instability
+/************ VARIABLE INITIALIZATION **********/
+int nParticlesI;      // Number of simulation ions
+int nParticlesE; // Number of simulation electrons
 
-double v_te = sqrt(2*K*Te*EV_TO_K/ME);
-double Lambda_D = sqrt((EPS_0*Te*EV_TO_K)/(QE*QE*PLASMA_DEN));
-double omega_pe = sqrt((QE*QE*PLASMA_DEN)/(ME*EPS_0));
-double B[3] = {0.0, 0.0, 0.0};
+int numxCells;             // Total number of cells alonx x
+int numyCells;             // Total number of cells alonx y
+int nTimeSteps;          // Total time steps (default)
+int dumpPeriod;         // Data dump period
+double massI;           // Ion mass
+double massE;            // Electron mass
+double chargeE;         // Electron charge
+// int probLoc;  //VDF end location
+double driftE;          // TODO
+double driftI;
+// double EPS;
+double offsetE;
+double offsetI;
+int E_per_cell;
+int I_per_cell;
+
+
+/* Simulation Parameters*/
+double density;  // Plasma Density
+double ion_spwt;
+double electron_spwt;
+double stepSize;          // Cell Spacing
+double timeStep;        // Time steps
+
+double TE; // electron temperature in eV
+double TI;  // ion temperature in eV
+double v_te; // electron thermal velocity
+
+double Lambda_D;
+double omega_pe;
+double Bx,By,Bz;
+double B[3];
+
+// double massE 9.10938215e-31		// kg, electron mass
+// #define chargeE 1.602176565e-19		// C, electron charge
+// #define massI 1.660538921e-27	// kg, atomic mass unit
+// #define TE 1.0 // in eV
+// #define TI 0.026 // in eV
+
+
+
+// double Lambda_D = sqrt((EPS_0*TE*EV_TO_K)/(chargeE*chargeE*density));
+// double omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS_0));
+
 
 /* Data structure to hold domain information*/
 struct Domain
@@ -120,30 +155,139 @@ FILE *f1;
 FILE *f2;
 FILE *f3;
 FILE *f4;
+
+
+/*Parsing Input file*/
+int parse_ini_file(char * ini_name)
+{
+    dictionary  *   ini ;
+
+    ini = iniparser_load(ini_name);
+    if (ini==NULL) {
+        fprintf(stderr, "cannot parse file: %s\n", ini_name);
+        return -1 ;
+    }
+    // iniparser_dump(ini, stderr); // Comment out to fix issues with iniparser
+
+    /*Get Simulation Parameters */
+    nTimeSteps  = iniparser_getint(ini,"time:nTimeSteps",-1);
+    timeStep    = iniparser_getdouble(ini,"time:timeStep",-1.0);
+    stepSize    = iniparser_getdouble(ini,"grid:stepSize",-1.0);
+    numxCells   = iniparser_getint(ini,"grid:numxCells",-1);
+    numyCells   = iniparser_getint(ini,"grid:numyCells",-1);
+
+    /* SPECIES INFO */
+    nParticlesI = iniparser_getint(ini,"population:nParticlesI",-1);
+    nParticlesE = iniparser_getint(ini,"population:nParticlesE",-1);
+    massI    = iniparser_getdouble(ini,"population:massI",-1.0);
+    massE    = iniparser_getdouble(ini,"population:massE",-1.0);
+    chargeE  = iniparser_getdouble(ini,"population:chargeE",-1.0);
+    density  = iniparser_getdouble(ini,"population:density",-1.0);
+    TE     = iniparser_getdouble(ini,"population:TE",-1.0);
+    TI     = iniparser_getdouble(ini,"population:TI",-1.0);
+    driftE   = iniparser_getdouble(ini,"population:driftE",-1.0);
+    driftI   = iniparser_getdouble(ini,"population:driftI",-1.0);
+    offsetE  = iniparser_getdouble(ini,"population:offsetE",-1.0);
+    offsetI  = iniparser_getdouble(ini,"population:offsetI",-1.0);
+
+    Bx  = iniparser_getdouble(ini,"field:Bx",-1.0);
+    By  = iniparser_getdouble(ini,"field:By",-1.0);
+    Bz  = iniparser_getdouble(ini,"field:Bz",-1.0);
+
+    B[0]  = Bx;
+    B[1]  = By;
+    B[2]  = Bz;
+
+    /* DIAGNOSTICS */
+    // probLoc = iniparser_getint(ini,"diagnostics:probLoc",-1);
+    dumpPeriod            = iniparser_getint(ini,"diagnostics:dumpPeriod",-1);
+
+    /* USER CHOICE */
+    solverType            = iniparser_getint(ini,"solver:solverType",-1);
+    loadType              = iniparser_getint(ini,"population:loadType",-1);
+    TSI                   = iniparser_getint(ini,"population:TSI",-1);
+
+    /* Normalization */ //TO BE ADDED AS A SEPERATE FUNCTION
+    // EPS             = EPS_un;//EPS_un;
+    v_te     = sqrt(2*K*TE*EV_TO_K/massE); // electron thermal vel
+    omega_pe = sqrt((chargeE*chargeE*density)/(massE*EPS));
+    Lambda_D = sqrt((EPS*K*TE*EV_TO_K)/(density*chargeE*chargeE));
+
+
+    printf("********** IMPORTANT PLASMA QUANTITIES ***********\n");
+    printf("omega_pe: %f\n",omega_pe);
+    printf("Lambda_D: %f\n",Lambda_D);
+
+    printf("*************** Input Sanity Check ***************\n");
+    bool SFLAG = true;
+    if (stepSize >= 1) {
+      printf("ERROR, stepSize is bigger than Debye length.\n");
+      SFLAG = false;
+    }
+    if (timeStep > 0.5) {
+      printf("ERROR, timeStep is too big. The recommended value: <%f s\n",(0.5/omega_pe));
+      SFLAG = false;
+    }
+    if (solverType != 1 && solverType != 2) {
+      printf("ERROR, Wrong Solver Type. The recommended value: 1 or 2\n");
+      printf("solverType: %d",solverType);
+      SFLAG = false;
+    }
+    if (loadType != 1 && loadType != 2 && loadType !=3) {
+      printf("ERROR, Wrong Load Type. The recommended value: 1 or 2\n");
+      printf("loadType: %d\n",loadType);
+      SFLAG = false;
+    }
+    if (SFLAG==true) {
+      printf("STATUS, Input parameters are compatible.\n");
+    }
+    else {
+      printf("ERROR, Input parameters are incompatible.\n");
+      exit (EXIT_FAILURE);
+    }
+
+
+    iniparser_freedict(ini);
+    return 0;
+}
+
+
+
+
+
+
 /* --------- main -------------*/
 
-int main()
+int main(int argc, char *argv[])
 {
+  /************* INIPARSER ********************/
+  if(argc<2) {
+    printf("ERROR, at least one argument expected (the input file).\n");
+    exit (EXIT_FAILURE);
+  }
+  parse_ini_file(argv[1]);
+
+
 	int i,p;
 	int ts;						// time step
   srand(time(NULL));
 	clock_t start = clock();	// grab starting clock time
 
 	/*---1) initialize domain---*/
-	domain.nix = NCx+1;			// number of nodes
-	domain.dx = DX;				// cell spacing
+	domain.nix = numxCells+1;			// number of nodes
+	domain.dx = stepSize;				// cell spacing
 	domain.x0 = 0;					// origin
 	domain.xl = (domain.nix-1)*domain.dx;//domain length
 	domain.xmax = domain.x0+domain.xl;	//max position
 
-  domain.niy = NCy+1;			// number of nodes
-	domain.dy = DY;				// cell spacing
+  domain.niy = numxCells+1;			// number of nodes
+	domain.dy = stepSize;				// cell spacing
 	domain.y0 = 0;					// origin
 	domain.yl = (domain.niy-1)*domain.dy;//domain length
 	domain.ymax = domain.y0+domain.yl;	//max position
 
-  domain.niz = NCz+1;			// number of nodes
-	domain.dz = DZ;				// cell spacing
+  domain.niz = numxCells+1;			// number of nodes
+	domain.dz = stepSize;				// cell spacing
 	domain.z0 = 0;					// origin
 	domain.zl = (domain.niz-1)*domain.dz;//domain length
 	domain.zmax = domain.z0+domain.zl;	//max position
@@ -174,24 +318,24 @@ int main()
 	struct Species electrons;
 
 	/*set material data*/
-	ions.mass = AMU;
-	ions.charge = QE;
-	ions.spwt = PLASMA_DEN*(domain.xl*domain.yl)/NUM_IONS;
-  ions.temp = Ti;
+	ions.mass = massI;
+	ions.charge = chargeE;
+	ions.spwt = density*(domain.xl*domain.yl)/nParticlesI;
+  ions.temp = TI;
 	ions.np = 0;
-	ions.np_alloc = NUM_IONS;
-	ions.part = (struct Particle*)malloc(NUM_IONS * sizeof(struct Particle));
+	ions.np_alloc = nParticlesI;
+	ions.part = (struct Particle*)malloc(nParticlesI * sizeof(struct Particle));
 
-	electrons.mass = ME;	// electrons
-	electrons.charge = -QE;
-	electrons.spwt = PLASMA_DEN*(domain.xl*domain.yl)/NUM_ELECTRONS;
-  electrons.temp = Te;
+	electrons.mass = massE;	// electrons
+	electrons.charge = -chargeE;
+	electrons.spwt = density*(domain.xl*domain.yl)/nParticlesE;
+  electrons.temp = TE;
 	electrons.np = 0;
-	electrons.np_alloc = NUM_ELECTRONS;
-	electrons.part = (struct Particle*)malloc(NUM_ELECTRONS * sizeof(struct Particle));
+	electrons.np_alloc = nParticlesE;
+	electrons.part = (struct Particle*)malloc(nParticlesE * sizeof(struct Particle));
 
-  double delta_ions = domain.xl/NUM_IONS;
-	for (p=0;p<NUM_IONS;p++)
+  double delta_ions = domain.xl/nParticlesI;
+	for (p=0;p<nParticlesI;p++)
 	{
     double x = domain.x0 + ((rnd()+rnd()+rnd())/3)*(domain.nix-1)*domain.dx;
 		double vx = sampleVel(ions.temp*EV_TO_K, ions.mass);	/*initially zero x velocity*/
@@ -207,8 +351,8 @@ int main()
 	}
 
 	/*now do the same for electrons*/
-	double delta_electrons = domain.xl/NUM_ELECTRONS;
-	for (p=0;p<NUM_ELECTRONS;p++)
+	double delta_electrons = domain.xl/nParticlesE;
+	for (p=0;p<nParticlesE;p++)
 	{
 		double x = domain.x0 + ((rnd()+rnd()+rnd())/3)*(domain.nix-1)*domain.dx;
 		double vx = sampleVel(electrons.temp*EV_TO_K, electrons.mass);
@@ -242,7 +386,7 @@ int main()
   char Name[50];
 
 
-  for (ts = 1; ts<=NUM_TS; ts++)
+  for (ts = 1; ts<=nTimeSteps; ts++)
 	{
 		//compute number density
 		ScatterSpecies(&ions,ndi);
@@ -281,7 +425,7 @@ int main()
     // for(int i=0; i<domain.nix; i++)
     // for(int j=0; j<domain.niy; j++)
     // {
-    //   fprintf(file_pot, "%g \t %g\n", DT*ts, phi[i]);
+    //   fprintf(file_pot, "%g \t %g\n", timeStep*ts, phi[i]);
     // }
 
       sprintf(Name,"i%d.dat",ts);
@@ -423,7 +567,7 @@ void ScatterSpecies(struct Species *species, double *den)
   for(int i=0; i<domain.nix; i++)
   for(int j=0; j<domain.niy; j++)
   {
-      den[i*domain.niy+j] /=PLASMA_DEN;
+      den[i*domain.niy+j] /=density;
       // printf("%g\t%g\t%g\n",i*domain.dx, j*domain.dy, den[i*domain.niy+j]);
   }
 }
@@ -644,8 +788,8 @@ void RewindSpecies(struct Species *species, double *efx, double *efy)
     double wl = Lambda_D*omega_pe;
 
 		/*advance velocity*/
-		part->vx -= 0.5*(1/(wl*wl))*(qm*Te)*part_efx*DT;
-    part->vy -= 0.5*(1/(wl*wl))*(qm*Te)*part_efy*DT;
+		part->vx -= 0.5*(1/(wl*wl))*(qm*TE)*part_efx*timeStep;
+    part->vy -= 0.5*(1/(wl*wl))*(qm*TE)*part_efy*timeStep;
     part->vz = 0.0;
 	}
 }
@@ -673,13 +817,13 @@ void PushSpecies(struct Species *species, double *efx, double *efy)
     double wl = Lambda_D*omega_pe;
 
 		/*advance velocity*/
-		part->vx += 0.5*(1/(wl*wl))*(qm*Te)*part_efx*DT;
-    part->vy += 0.5*(1/(wl*wl))*(qm*Te)*part_efy*DT;
+		part->vx += 0.5*(1/(wl*wl))*(qm*TE)*part_efx*timeStep;
+    part->vy += 0.5*(1/(wl*wl))*(qm*TE)*part_efy*timeStep;
     part->vz = 0.0;
 
 		/*advance position*/
-		part->x += DT*part->vx;
-    part->y += DT*part->vy;
+		part->x += timeStep*part->vx;
+    part->y += timeStep*part->vy;
     part->z = 0.0;
 
 		/*apply periodic boundaries*/
@@ -724,7 +868,7 @@ void BorisPushSpecies(struct Species *species, double *efx, double *efy, double 
 
     for(dim=0; dim<3; dim++)
     {
-      t[dim] = qm*B[dim]*0.5*DT;
+      t[dim] = qm*B[dim]*0.5*timeStep;
       t_mag2 += t[dim]*t[dim];
     }
 
@@ -733,8 +877,8 @@ void BorisPushSpecies(struct Species *species, double *efx, double *efy, double 
       s[dim] = 2*t[dim]/(1+t_mag2);
     }
 
-    v_minus[0] = part->vx + (Te/(wl*wl))*qm*part_efx*0.5*DT;
-    v_minus[1] = part->vy + (Te/(wl*wl))*qm*part_efy*0.5*DT;
+    v_minus[0] = part->vx + (TE/(wl*wl))*qm*part_efx*0.5*timeStep;
+    v_minus[1] = part->vy + (TE/(wl*wl))*qm*part_efy*0.5*timeStep;
     v_minus[2] = 0.0;
 
     double *v_minus_cross_t = CrossProduct(v_minus,t);
@@ -750,12 +894,12 @@ void BorisPushSpecies(struct Species *species, double *efx, double *efy, double 
     v_plus[2] = 0.0;
 
     /*advance velocity and position*/
-    part->vx = v_plus[0] + (Te/(wl*wl))*qm*part_efx*0.5*DT;
-    part->x += DT*part->vx;
-    part->vy = v_plus[1] + (Te/(wl*wl))*qm*part_efy*0.5*DT;
-    part->y += DT*part->vy;
+    part->vx = v_plus[0] + (TE/(wl*wl))*qm*part_efx*0.5*timeStep;
+    part->x += timeStep*part->vx;
+    part->vy = v_plus[1] + (TE/(wl*wl))*qm*part_efy*0.5*timeStep;
+    part->y += timeStep*part->vy;
     part->vz = v_plus[2];
-    part->z += DT*part->vz;
+    part->z += timeStep*part->vz;
 
     /*apply periodic boundaries*/
 		if (part->x < domain.x0)	part->x+=domain.xl;
@@ -808,8 +952,8 @@ double ComputeKE(struct Species *species)
 	/*we now have sum of v^2, multiply by 0.5*mass*/
 	ke *= 0.5*(species->spwt*species->mass);
 
-	/*convert to electron volts, 1eV=QE joules*/
-	ke /=QE;
+	/*convert to electron volts, 1eV=chargeE joules*/
+	ke /=chargeE;
 
 	return ke;
 }

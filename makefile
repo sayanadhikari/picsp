@@ -6,15 +6,15 @@
 
 
 ####### UBUNTU ##########
-INCHDF	:=
-LIBHDF  :=
-OS := $(shell lsb_release -si)
-ifeq ($(OS),Ubuntu)
-  INCHDF    = -I /usr/include/hdf5/serial/
-  LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
-endif
+# INCHDF	:=
+# LIBHDF  :=
+# OS := $(shell lsb_release -si)
+# ifeq ($(OS),Ubuntu)
+#   INCHDF    = -I /usr/include/hdf5/serial/
+#   LIBHDF    = -L /usr/lib/x86_64-linux-gnu/hdf5/serial/
+# endif
 ###############################
-CXX		= g++
+CXX		= gcc
 
 CXXLOCAL = -Ilib/iniparser/src
 LLOCAL = -Ilib/iniparser/src
@@ -33,8 +33,8 @@ HFLAGS = -lhdf5 -lhdf5_cpp
 
 EXEC	= picsp
 
-CXXFLAGS = -g -std=c++11 -Wall $(CXXLOCAL) $(INC) $(INCHDF) # Flags for compiling
-LFLAGS	=  -g -std=c++11 -Wall $(LLOCAL) $(LIB) $(LIBHDF) # Flags for linking
+CXXFLAGS = -g -Wall $(CXXLOCAL) $(INC) $(INCHDF) # Flags for compiling
+LFLAGS	=  -g -Wall $(LLOCAL) $(LIB) $(LIBHDF) # Flags for linking
 
 SDIR	= src
 ODIR	= src/obj
@@ -43,7 +43,7 @@ LDIR	= lib
 OUTDIR  = output
 
 SRC_ 	= # Additional CPP files
-OBJ_	= $(SRC_:.cpp=.o)
+OBJ_	= $(SRC_:.c=.o)
 
 SRC = $(patsubst %,$(SDIR)/%,$(SRC_))
 OBJ = $(patsubst %,$(ODIR)/%,$(OBJ_))
@@ -63,7 +63,7 @@ $(EXEC): $(ODIR)/main.o $(OBJ) $(LIBOBJ)
 	@$(CXX) $^ -o $@ $(LFLAGS) $(INC) $(LIB) $(FFLAGS) $(HFLAGS)
 	@echo "PICSP is built"
 
-$(ODIR)/%.o: $(SDIR)/%.cpp
+$(ODIR)/%.o: $(SDIR)/%.c
 	@echo "Compiling $<"
 	@mkdir -p $(ODIR)
 	@mkdir -p $(OUTDIR)
