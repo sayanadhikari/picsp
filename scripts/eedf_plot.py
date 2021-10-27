@@ -3,9 +3,9 @@ import numpy as np
 import seaborn as sns
 from pylab import *
 # numerical data file
-filename="../output/phase_space/e0.dat"
+filename="../output/phase_space/e150.dat"
 
-data1,data2 = np.loadtxt(filename, unpack=True)
+i,data1,data2 = np.loadtxt(filename, unpack=True)
 # disp(data_act.shape)
 
 
