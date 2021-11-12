@@ -7,6 +7,8 @@
 
 **PICSP** is an open source scientific program for simulating plasmas using the *Particle-In-Cell* (PIC) method on a 2D structured mesh. The field quantities are solved using *Spectral Solver*, *Direct Solver* and *Gauss-Siedel solver*. The focus is to simulate bounded as well as periodic plasma system.
 
+![configspace_v4_3](https://user-images.githubusercontent.com/39854040/141596731-c973ab56-6bc8-4180-9a06-aa1bb0deb5f5.gif)
+
 
 ## Contributors
 
