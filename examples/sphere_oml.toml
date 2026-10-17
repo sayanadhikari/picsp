@@ -1,0 +1,49 @@
+# Floating potential of a small conducting sphere (R = lambda_D / 2) in a
+# Maxwellian plasma: validation against orbit-motion-limited (OML) theory.
+# Reduced ion mass (m_i = 100 m_e) to shorten the run. OML predicts V_f ~ -1.42 V.
+title = "Floating sphere (OML validation)"
+seed = 3
+
+[grid]
+cells = [40, 40, 40]
+dx_debye = 0.2
+centered = true
+
+[time]
+dt_wpe = 0.1
+steps = 3000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e12
+temperature = 1.0
+ppc = 8
+
+[[species]]
+name = "ion"
+charge = 1
+mass_me = 100
+density = 1e12
+temperature = 1.0
+ppc = 8
+
+[[objects]]
+name = "sphere"
+shape = "sphere"
+center = [0.0, 0.0, 0.0]
+radius = 3.717e-3        # 0.5 lambda_D
+bias = "floating"
+
+[output]
+dir = "output_sphere_oml"
+history_every = 10
+fields_every = 1000
+surface_every = 1000
+particles_every = 3000
+particle_stride = 50
+status_every = 250

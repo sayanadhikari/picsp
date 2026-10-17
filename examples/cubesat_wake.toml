@@ -1,0 +1,95 @@
+# 3U CubeSat in a flowing, magnetised ionospheric-like O+ plasma.
+#   * spacecraft bus imported from STL (overlapping shells: rails, camera, antenna)
+#     plus deployable solar panels (thin plates) and a boom (CSG union)
+#   * Langmuir probe sphere on the boom, electrically isolated (separate conductor)
+#   * mesothermal ram flow (Mach ~4) along +x  -> ion wake
+#   * background B along z, motional E = -v x B in the spacecraft frame
+#   * photoemission (sun direction below) and Sternglass secondary emission
+# Generate the STL first:  python3 geometry/make_cubesat_stl.py geometry/cubesat_3u.stl
+title = "3U CubeSat charging and wake"
+seed = 11
+
+[grid]
+cells = [64, 48, 48]
+dx = 0.02
+origin = [-0.60, -0.48, -0.48]
+
+[time]
+dt_wpe = 0.2
+steps = 3500
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[fields]
+B0 = [0.0, 0.0, 3.0e-5]                 # tesla
+frame_velocity = [-7500.0, 0.0, 0.0]    # spacecraft velocity: adds E0 = -v x B
+
+[sun]
+direction = [0.3, -1.0, 0.5]            # pointing from the spacecraft towards the sun
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 5e9
+temperature = 0.5
+ppc = 8
+
+[[species]]
+name = "O+"
+charge = 1
+mass_amu = 16
+density = 5e9
+temperature = 0.1
+drift = [7500.0, 0.0, 0.0]              # plasma flows past the spacecraft (ram along -x)
+ppc = 8
+subcycle = 5
+
+[[species]]
+name = "photoelectron"
+charge = -1
+mass_me = 1
+density = 0                             # created by photoemission and SEE only
+
+[[objects]]
+name = "spacecraft"
+bias = "floating"
+emit_species = "photoelectron"
+photoemission = { current_density = 20e-6, temperature = 1.5 }
+see = { model = "sternglass", delta_max = 1.5, e_max = 300.0, temperature = 2.0 }
+  [[objects.parts]]
+  shape = "stl"
+  file = "geometry/cubesat_3u.stl"
+  [[objects.parts]]                     # solar panel +y
+  shape = "plate"
+  size = [0.30, 0.20, 0.004]
+  center = [0.0, 0.15, 0.0]
+  [[objects.parts]]                     # solar panel -y
+  shape = "plate"
+  size = [0.30, 0.20, 0.004]
+  center = [0.0, -0.15, 0.0]
+  [[objects.parts]]                     # boom towards the ram direction
+  shape = "cylinder"
+  radius = 0.004
+  length = 0.20
+  axis = [1.0, 0.0, 0.0]
+  center = [-0.27, 0.0, 0.0]
+
+[[objects]]
+name = "probe"
+shape = "sphere"
+center = [-0.395, 0.0, 0.0]
+radius = 0.025
+bias = "floating"
+emit_species = "photoelectron"
+photoemission = { current_density = 20e-6, temperature = 1.5 }
+
+[output]
+dir = "output_cubesat"
+fields_every = 250
+surface_every = 250
+particles_every = 500
+particle_stride = 40
+history_every = 10
+status_every = 100

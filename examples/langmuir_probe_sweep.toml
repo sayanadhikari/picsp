@@ -1,0 +1,53 @@
+# Spherical Langmuir probe I-V characteristic in a weakly magnetised plasma.
+# The probe bias is ramped linearly from -8 V to +4 V (relative to the grounded
+# outer boundary = plasma potential); the collected current versus bias is written to
+# history.csv. Analyse with examples/analysis/probe_iv.py (electron temperature from
+# the exponential retardation region, ion/electron saturation currents).
+title = "Langmuir probe sweep"
+seed = 7
+
+[grid]
+cells = [48, 48, 48]
+dx_debye = 0.25
+centered = true
+
+[time]
+dt_wpe = 0.15
+steps = 24000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[fields]
+B0 = [0.0, 0.0, 2e-3]
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e13
+temperature = 2.0
+ppc = 12
+
+[[species]]
+name = "H+"
+charge = 1
+mass_amu = 1.007
+density = 1e13
+temperature = 0.2
+ppc = 12
+subcycle = 4
+
+[[objects]]
+name = "probe"
+shape = "sphere"
+radius = 1.66e-3             # ~ lambda_D / 2: orbit-motion-limited regime
+bias = "fixed"
+potential = -8.0
+ramp = 3.0e5                 # V/s  ->  +4 V after 24000 steps
+
+[output]
+dir = "output_probe"
+history_every = 20
+fields_every = 4000
+status_every = 500

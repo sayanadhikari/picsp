@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, picsp3d]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake libopenmpi-dev openmpi-bin libomp-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPICSP_NATIVE=OFF -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+      - name: Build
+        run: cmake --build build -j 2
+      - name: Test
+        env:
+          OMPI_MCA_rmaps_base_oversubscribe: 1
+        run: ctest --test-dir build --output-on-failure
+      - name: Example smoke test
+        run: |
+          cd examples
+          OMP_NUM_THREADS=1 mpirun -np 2 ../build/picsp3d cubesat_wake.toml --check --output /tmp/check
+          OMP_NUM_THREADS=2 mpirun -np 1 --bind-to none ../build/picsp3d langmuir.toml --steps 100 --output /tmp/langmuir
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e python
+      - run: python -c "import picsp_post; print(picsp_post.__version__)"

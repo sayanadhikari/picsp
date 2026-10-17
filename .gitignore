@@ -27,3 +27,18 @@ src/version.h
 src/h5group.cpp
 **inputCalc.py
 .DS_Store
+
+# PICSP3D
+build/
+build-*/
+output*/
+test_output*/
+*.pvd
+*.pvti
+*.pvtp
+*.vti
+*.vtp
+python/*.egg-info/
+__pycache__/
+examples/geometry/*.stl
+!examples/geometry/cubesat_3u.stl

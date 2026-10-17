@@ -1,0 +1,66 @@
+# Negatively biased disk electrode in a weakly ionised argon plasma with Monte Carlo
+# electron-neutral elastic scattering and resonant Ar+/Ar charge exchange.
+# Side walls are reflecting/Neumann, the end walls are grounded open boundaries.
+title = "Biased electrode in collisional argon plasma"
+seed = 21
+
+[grid]
+cells = [64, 32, 32]
+dx_debye = 0.5
+origin = [0.0, 0.0, 0.0]
+
+[time]
+dt_wpe = 0.2
+steps = 6000
+
+[boundaries]
+default = { field = "neumann", particle = "reflect" }
+x = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e15
+temperature = 3.0
+ppc = 10
+
+[[species]]
+name = "Ar+"
+charge = 1
+mass_amu = 39.95
+density = 1e15
+temperature = 0.03
+ppc = 10
+subcycle = 8
+
+[collisions]
+neutral_density = 3e21          # ~ 12 Pa at 300 K
+neutral_temperature = 0.026
+neutral_mass_amu = 39.95
+  [[collisions.process]]
+  species = "electron"
+  type = "elastic"
+  cross_section = 1.0e-19
+  [[collisions.process]]
+  species = "Ar+"
+  type = "charge_exchange"
+  cross_section = 5.0e-19
+
+[[objects]]
+name = "electrode"
+shape = "cylinder"
+axis = [1.0, 0.0, 0.0]
+radius = 2.0e-3
+length = 0.4e-3
+center = [8.0e-3, 3.2e-3, 3.2e-3]
+bias = "fixed"
+potential = -30.0
+see = { model = "constant", yield = 0.0, ion_yield = 0.1, temperature = 2.0 }
+
+[output]
+dir = "output_electrode"
+history_every = 20
+fields_every = 1000
+surface_every = 1000
+status_every = 250

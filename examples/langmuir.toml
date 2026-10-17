@@ -1,0 +1,42 @@
+# Langmuir (plasma) oscillation in a fully periodic box.
+# A small sinusoidal density perturbation makes the electrons oscillate at w_pe;
+# the electrostatic field energy oscillates at 2 w_pe.
+title = "Langmuir oscillation"
+seed = 1
+
+[grid]
+cells = [32, 8, 8]
+dx_debye = 0.5            # cell size in units of the reference Debye length
+
+[time]
+dt_wpe = 0.05             # time step in units of 1/w_pe
+duration_wpe = 60
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e14
+temperature = 0.05
+ppc = 32
+load = "quiet"
+perturbation = { axis = "x", amplitude = 0.02, mode = 1 }
+
+[[species]]
+name = "ion"
+charge = 1
+mass_amu = 1e6            # effectively immobile background
+density = 1e14
+temperature = 0.0
+distribution = "cold"
+ppc = 32
+load = "quiet"
+
+[output]
+dir = "output_langmuir"
+history_every = 1
+fields_every = 200
+status_every = 200

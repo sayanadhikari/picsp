@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "picsp-post"
+version = "3.0.0"
+description = "Post-processing and visualisation for PICSP3D (VTK fields, particles, object surfaces, histories)"
+requires-python = ">=3.9"
+dependencies = ["numpy", "matplotlib", "pyvista>=0.40", "imageio", "imageio-ffmpeg"]
+
+[project.scripts]
+picsp-post = "picsp_post.cli:main"
+
+[tool.setuptools]
+packages = ["picsp_post"]
