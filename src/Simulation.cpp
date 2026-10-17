@@ -52,6 +52,7 @@ void Simulation::initialise() {
   ps_.setup(cfg_, d_, g_, scene_, fs_, &rng_);
   om_.setup(cfg_, d_, g_, scene_, fs_, ps_, &rng_);
   mcc_.setup(cfg_, ps_, d_, &rng_);
+  coulomb_.setup(cfg_, ps_, d_, &rng_);
   vtk_.init(cfg_.output.dir, d_, cfg_.output.float32);
 
   bool restarted = false;
@@ -80,7 +81,9 @@ void Simulation::initialise() {
     hist_.open(path, append ? std::ios::app : std::ios::trunc);
     if (!append) {
       hist_ << "step,time";
-      for (auto& s : ps_.species) hist_ << ",N_" << s.name() << ",KE_" << s.name();
+      for (auto& s : ps_.species)
+        hist_ << ",N_" << s.name() << ",KE_" << s.name() << ",T_" << s.name() << ",Tx_" << s.name() << ",Ty_" << s.name()
+              << ",Tz_" << s.name() << ",ux_" << s.name() << ",uy_" << s.name() << ",uz_" << s.name();
       hist_ << ",E_field,E_total";
       for (auto& c : fs_.conductors()) hist_ << ",V_" << c.name << ",Q_" << c.name;
       for (int o = 0; o < no; ++o) {
@@ -88,7 +91,7 @@ void Simulation::initialise() {
         hist_ << ",Iemit_" << cfg_.objects[o].name;
       }
       for (auto& s : ps_.species) hist_ << ",Iwall_" << s.name();
-      hist_ << ",solver_iters,collisions,wall_s\n";
+      hist_ << ",solver_iters,collisions,ionizations,wall_s\n";
     }
   }
   // write the initial state
@@ -97,6 +100,7 @@ void Simulation::initialise() {
     if (cfg_.output.particles_every > 0) write_particles();
     if (cfg_.output.surface_every > 0 && !om_.empty()) write_surface();
     if (cfg_.output.history_every > 0) history_line();
+    if (cfg_.output.track_every > 0 && cfg_.output.track_count > 0) write_tracks();
   }
   wall_last_status_ = MPI_Wtime();
   step_last_status_ = step_;
@@ -122,8 +126,12 @@ void Simulation::advance() {
     ps_.boundaries_and_migrate(step_);
   }
   if (mcc_.enabled()) {
-    ScopedTimer t(timers_, "collisions");
+    ScopedTimer t(timers_, "collisions (MCC)");
     mcc_.collide(step_);
+  }
+  if (coulomb_.enabled()) {
+    ScopedTimer t(timers_, "collisions (Coulomb)");
+    coulomb_.collide(step_);
   }
   if (cfg_.sort_every > 0 && step_ % cfg_.sort_every == 0) {
     ScopedTimer t(timers_, "sort");
@@ -160,6 +168,7 @@ void Simulation::advance() {
   if (oc.surface_every > 0 && step_ % oc.surface_every == 0 && !om_.empty()) write_surface();
   if (oc.checkpoint_every > 0 && step_ % oc.checkpoint_every == 0) checkpoint();
   if (oc.status_every > 0 && step_ % oc.status_every == 0) status_line();
+  if (oc.track_every > 0 && oc.track_count > 0 && step_ % oc.track_every == 0) write_tracks();
 }
 
 void Simulation::run() {
@@ -199,9 +208,11 @@ void Simulation::history_line() {
   const int no = int(cfg_.objects.size()), ns = int(ps_.species.size());
   std::vector<long long> N(ns);
   std::vector<double> KE(ns);
+  std::vector<Vec3> U(ns), TT(ns);
   for (int s = 0; s < ns; ++s) {
     N[s] = ps_.count_global(s);
     KE[s] = ps_.kinetic_energy(s);
+    ps_.velocity_moments(s, U[s], TT[s]);
   }
   double EF = fs_.field_energy();
   if (d_.rank == 0 && hist_.is_open()) {
@@ -209,7 +220,8 @@ void Simulation::history_line() {
     hist_ << step_ << "," << std::setprecision(10) << time_;
     hist_ << std::setprecision(8);
     for (int s = 0; s < ns; ++s) {
-      hist_ << "," << N[s] << "," << KE[s];
+      hist_ << "," << N[s] << "," << KE[s] << "," << (TT[s].x + TT[s].y + TT[s].z) / 3 << "," << TT[s].x << ","
+            << TT[s].y << "," << TT[s].z << "," << U[s].x << "," << U[s].y << "," << U[s].z;
       tot += KE[s];
     }
     hist_ << "," << EF << "," << tot;
@@ -220,7 +232,8 @@ void Simulation::history_line() {
       hist_ << "," << hist_emit_[o] / T;
     }
     for (int s = 0; s < ns; ++s) hist_ << "," << hist_wall_[s] / T;
-    hist_ << "," << last_solve_.iterations << "," << mcc_.collisions_last_step() << "," << (MPI_Wtime() - wall_start_)
+    hist_ << "," << last_solve_.iterations << "," << mcc_.collisions_last_step() << "," << mcc_.ionizations_last_step()
+          << "," << (MPI_Wtime() - wall_start_)
           << "\n";
     hist_.flush();
   }
@@ -230,9 +243,28 @@ void Simulation::history_line() {
   hist_time_ = 0;
 }
 
+// Trajectories of the first `track_count` particles of every species (rank 0's local
+// particles; intended for test-particle studies on one rank with sort_every = 0).
+void Simulation::write_tracks() {
+  if (d_.rank != 0) return;
+  if (!tracks_.is_open()) {
+    tracks_.open(cfg_.output.dir + "/tracks.csv", step_ <= cfg_.output.track_every ? std::ios::trunc : std::ios::app);
+    tracks_ << "step,time,species,index,x,y,z,vx,vy,vz\n";
+  }
+  tracks_ << std::setprecision(9);
+  for (auto& sp : ps_.species) {
+    const ParticleArray& p = sp.p;
+    for (std::size_t i = 0; i < p.size() && i < std::size_t(cfg_.output.track_count); ++i)
+      tracks_ << step_ << "," << time_ << "," << sp.id << "," << i << "," << p.x[i] << "," << p.y[i] << "," << p.z[i]
+              << "," << p.vx[i] << "," << p.vy[i] << "," << p.vz[i] << "\n";
+  }
+  tracks_.flush();
+}
+
 void Simulation::write_fields() {
   std::vector<NamedScalar> sc = {{"phi", &fs_.phi}, {"rho", &fs_.rho}};
   std::vector<NamedVector> vec = {{"E", &fs_.Ex, &fs_.Ey, &fs_.Ez}};
+  if (fs_.B_varies()) vec.push_back({"B", &fs_.Bx, &fs_.By, &fs_.Bz});
   Field3D obj;
   if (!scene_.empty()) {
     obj.init(g_, FieldSolver::kGhosts);

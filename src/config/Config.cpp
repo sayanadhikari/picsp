@@ -2,7 +2,9 @@
 
 #include <cmath>
 #include <cstdio>
+#include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <sstream>
 
 #define TOML_EXCEPTIONS 1
@@ -280,6 +282,34 @@ Config Config::load(const std::string& path) {
       Vec3 v = get_vec3((*f)["frame_velocity"], "fields.frame_velocity", {});
       c.E0 += -1.0 * cross(v, c.B0);
     }
+    c.electrostatic = get_bool((*f)["self_consistent"], true);
+    if (auto arr = (*f)["magnet"].as_array()) {
+      for (auto& el : *arr) {
+        const table& mt = *el.as_table();
+        MagnetSource m;
+        std::string ty = get_str(mt["type"], "dipole");
+        if (ty == "dipole") m.type = MagnetSource::Dipole;
+        else if (ty == "loop" || ty == "coil") m.type = MagnetSource::Loop;
+        else if (ty == "wire" || ty == "line") m.type = MagnetSource::Wire;
+        else if (ty == "solenoid") m.type = MagnetSource::Solenoid;
+        else if (ty == "mirror") m.type = MagnetSource::Mirror;
+        else fatal("unknown magnet type '" + ty + "' (dipole|loop|wire|solenoid|mirror)");
+        m.center = get_vec3(mt["center"], "fields.magnet.center", {0, 0, 0});
+        m.axis = normalized(get_vec3(mt["axis"], "fields.magnet.axis", {0, 0, 1}));
+        m.moment = get_vec3(mt["moment"], "fields.magnet.moment", {0, 0, 0});
+        m.radius = get_num(mt["radius"], "fields.magnet.radius", 0.0);
+        m.current = get_num(mt["current"], "fields.magnet.current", 0.0);
+        m.length = get_num(mt["length"], "fields.magnet.length", 0.0);
+        m.separation = get_num(mt["separation"], "fields.magnet.separation", 0.0);
+        m.loops = (int)get_num(mt["loops"], "fields.magnet.loops", 0.0);
+        if ((m.type == MagnetSource::Loop || m.type == MagnetSource::Mirror || m.type == MagnetSource::Solenoid) &&
+            m.radius <= 0)
+          fatal("loop / mirror / solenoid magnets need radius > 0");
+        if (m.type == MagnetSource::Mirror && m.separation <= 0) fatal("mirror magnet needs separation > 0");
+        if (m.type == MagnetSource::Solenoid && m.length <= 0) fatal("solenoid magnet needs length > 0");
+        c.magnets.push_back(m);
+      }
+    }
   }
   if (auto s = root["sun"].as_table()) c.sun_dir = normalized(get_vec3((*s)["direction"], "sun.direction", {1, 0, 0}));
 
@@ -362,9 +392,67 @@ Config Config::load(const std::string& path) {
         CollisionProcess p;
         p.species = get_str(pt["species"], "");
         std::string ty = get_str(pt["type"], "elastic");
-        p.type = (ty == "cx" || ty == "charge_exchange") ? CollisionProcess::ChargeExchange : CollisionProcess::Elastic;
+        if (ty == "elastic") p.type = CollisionProcess::Elastic;
+        else if (ty == "cx" || ty == "charge_exchange") p.type = CollisionProcess::ChargeExchange;
+        else if (ty == "excitation") p.type = CollisionProcess::Excitation;
+        else if (ty == "ionization" || ty == "ionisation") p.type = CollisionProcess::Ionization;
+        else fatal("unknown collision type '" + ty + "' (elastic|charge_exchange|excitation|ionization)");
         p.cross_section = get_num(pt["cross_section"], "collisions.process.cross_section", 0.0);
+        p.threshold = get_num(pt["threshold"], "collisions.process.threshold", 0.0);
+        p.product = get_str(pt["product"], "");
+        p.secondary = get_str(pt["secondary"], "");
+        std::string model = get_str(pt["model"], p.threshold > 0 ? "step" : "constant");
+        if (model == "constant") p.model = CollisionProcess::Constant;
+        else if (model == "step") p.model = CollisionProcess::Step;
+        else if (model == "lotz") p.model = CollisionProcess::Lotz;
+        else if (model == "table") p.model = CollisionProcess::Table;
+        else fatal("unknown cross-section model '" + model + "' (constant|step|lotz|table)");
+        if (p.model == CollisionProcess::Table) {
+          if (auto tb = pt["table"].as_array()) {
+            for (auto& row : *tb) {
+              auto* r = row.as_array();
+              if (!r || r->size() != 2) fatal("collision table rows must be [energy_eV, sigma_m2]");
+              p.table.emplace_back(*(*r)[0].value<double>(), *(*r)[1].value<double>());
+            }
+          } else if (pt["file"]) {
+            std::string fn = get_str(pt["file"], "");
+            if (std::filesystem::path(fn).is_relative()) fn = (base / fn).string();
+            std::ifstream tf(fn);
+            if (!tf) fatal("cannot read cross-section file " + fn);
+            std::string line;
+            while (std::getline(tf, line)) {
+              auto h = line.find_first_of("#%");
+              if (h != std::string::npos) line = line.substr(0, h);
+              std::istringstream ls(line);
+              double e, sg;
+              if (ls >> e >> sg) p.table.emplace_back(e, sg);
+            }
+          }
+          if (p.table.size() < 2) fatal("cross-section table needs at least two rows (table = [[E, sigma], ...] or file)");
+          std::sort(p.table.begin(), p.table.end());
+        }
+        if ((p.type == CollisionProcess::Excitation || p.type == CollisionProcess::Ionization) && p.threshold <= 0)
+          fatal("excitation / ionization processes need threshold > 0 (eV)");
+        if (p.type == CollisionProcess::Ionization && p.product.empty())
+          fatal("ionization process needs 'product' (the ion species created)");
         n.processes.push_back(p);
+      }
+  }
+
+  // ---------------- Coulomb collisions ---------------------------------------------------
+  if (auto cc = root["coulomb"].as_table()) {
+    auto& C = c.coulomb;
+    C.enabled = get_bool((*cc)["enabled"], true);
+    if ((*cc)["coulomb_log"]) {
+      if ((*cc)["coulomb_log"].is_string()) C.auto_log = get_str((*cc)["coulomb_log"], "") == "auto";
+      else C.log_lambda = get_num((*cc)["coulomb_log"], "coulomb.coulomb_log", 10.0);
+    }
+    C.every = std::max(1, (int)get_num((*cc)["every"], "coulomb.every", 1));
+    if (auto pr = (*cc)["pairs"].as_array())
+      for (auto& el : *pr) {
+        auto* r = el.as_array();
+        if (!r || r->size() != 2) fatal("coulomb.pairs entries must be [species_a, species_b]");
+        C.pairs.emplace_back(*(*r)[0].value<std::string>(), *(*r)[1].value<std::string>());
       }
   }
 
@@ -407,6 +495,8 @@ Config Config::load(const std::string& path) {
     oc.history_every = (int)get_num((*o)["history_every"], "", oc.history_every);
     oc.checkpoint_every = (int)get_num((*o)["checkpoint_every"], "", oc.checkpoint_every);
     oc.status_every = (int)get_num((*o)["status_every"], "", oc.status_every);
+    oc.track_every = (int)get_num((*o)["track_every"], "", oc.track_every);
+    oc.track_count = (int)get_num((*o)["track_count"], "", oc.track_count);
     oc.moments = get_bool((*o)["moments"], oc.moments);
     oc.float32 = get_bool((*o)["float32"], oc.float32);
     if (oc.particle_stride < 1) oc.particle_stride = 1;
@@ -426,6 +516,11 @@ void Config::print_summary() const {
   if (ref_wpe > 0) log0(" reference : w_p = %.4g rad/s (dt*w_p = %.3f)\n", ref_wpe, dt * ref_wpe);
   if (ref_debye > 0) log0("             lambda_D = %.4g m (dx/lambda_D = %.3f)\n", ref_debye, dx[0] / ref_debye);
   log0(" B0        : (%.3g, %.3g, %.3g) T,  E0 = (%.3g, %.3g, %.3g) V/m\n", B0.x, B0.y, B0.z, E0.x, E0.y, E0.z);
+  if (!magnets.empty()) log0(" magnets   : %zu spatially varying field source(s)\n", magnets.size());
+  if (!electrostatic) log0(" fields    : self-consistent field solve OFF (test-particle mode)\n");
+  if (coulomb.enabled)
+    log0(" coulomb   : binary collisions every %d step(s), ln(Lambda) = %s\n", coulomb.every,
+         coulomb.auto_log ? "auto" : std::to_string(coulomb.log_lambda).c_str());
   const char* fn[6] = {"x_lo", "x_hi", "y_lo", "y_hi", "z_lo", "z_hi"};
   for (int i = 0; i < 6; ++i)
     log0(" %-9s : field=%-9s (%.3g V)  particles=%s\n", fn[i], to_string(faces[i].field), faces[i].value,

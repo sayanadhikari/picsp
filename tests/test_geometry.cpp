@@ -27,7 +27,13 @@ static int failures = 0;
     }                                        \
   } while (0)
 
+// rank 0 writes, everybody waits (all ranks read the file afterwards)
+static void write_stl_impl(const std::string& path, const std::vector<Triangle>& tris);
 static void write_stl(const std::string& path, const std::vector<Triangle>& tris) {
+  if (world_rank() == 0) write_stl_impl(path, tris);
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+static void write_stl_impl(const std::string& path, const std::vector<Triangle>& tris) {
   std::ofstream f(path, std::ios::binary);
   char header[80] = "picsp3d test";
   f.write(header, 80);

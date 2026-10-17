@@ -61,6 +61,8 @@ class ParticleSystem {
 
   long long count_global(int s) const;
   double kinetic_energy(int s) const;  // global [J]
+  // global velocity moments: mean velocity [m/s] and directional temperatures [eV]
+  void velocity_moments(int s, Vec3& mean, Vec3& temp) const;
   double dt_species(int s) const { return dt_ * species[s].cfg.subcycle; }
   int find_species(const std::string& name) const;
   // true if p lies inside an object (cheap near-surface cell test first)

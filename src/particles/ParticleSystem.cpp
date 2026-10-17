@@ -1,6 +1,7 @@
 #include "particles/ParticleSystem.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <cmath>
 #include <functional>
 #include <numeric>
@@ -233,6 +234,33 @@ double ParticleSystem::kinetic_energy(int s) const {
   return 0.5 * species[s].m * allreduce_sum(e, d_->comm);
 }
 
+void ParticleSystem::velocity_moments(int s, Vec3& mean, Vec3& temp) const {
+  const ParticleArray& p = species[s].p;
+  double b[7] = {0, 0, 0, 0, 0, 0, 0};
+  const std::size_t n = p.size();
+  double w = 0, mx = 0, my = 0, mz = 0, sx = 0, sy = 0, sz = 0;
+#pragma omp parallel for reduction(+ : w, mx, my, mz, sx, sy, sz) schedule(static)
+  for (std::size_t i = 0; i < n; ++i) {
+    w += p.w[i];
+    mx += p.w[i] * p.vx[i];
+    my += p.w[i] * p.vy[i];
+    mz += p.w[i] * p.vz[i];
+    sx += p.w[i] * p.vx[i] * p.vx[i];
+    sy += p.w[i] * p.vy[i] * p.vy[i];
+    sz += p.w[i] * p.vz[i] * p.vz[i];
+  }
+  b[0] = w; b[1] = mx; b[2] = my; b[3] = mz; b[4] = sx; b[5] = sy; b[6] = sz;
+  double o[7];
+  MPI_Allreduce(b, o, 7, MPI_DOUBLE, MPI_SUM, d_->comm);
+  if (o[0] <= 0) {
+    mean = temp = Vec3{0, 0, 0};
+    return;
+  }
+  mean = Vec3{o[1], o[2], o[3]} / o[0];
+  const double m = species[s].m / constants::qe;
+  temp = Vec3{m * (o[4] / o[0] - mean.x * mean.x), m * (o[5] / o[0] - mean.y * mean.y), m * (o[6] / o[0] - mean.z * mean.z)};
+}
+
 // ------------------------------------------------------------------------------------
 // Push (Boris) + object collision detection
 // ------------------------------------------------------------------------------------
@@ -244,6 +272,7 @@ void ParticleSystem::push_impl(Species& sp, double dt, std::vector<Hit>& hits) {
   const auto& n = fs_->Ex.size();
   const std::size_t sy = n[0], sz = std::size_t(n[0]) * n[1];
   const double* E3 = fs_->E3.data();
+  const double* B3 = fs_->B_varies() ? fs_->B3.data() : nullptr;
   const double ox = arr_lo_[0], oy = arr_lo_[1], oz = arr_lo_[2];
   const double ix = inv_dx_[0], iy = inv_dx_[1], iz = inv_dx_[2];
   const double h = 0.5 * sp.qm * dt;
@@ -299,12 +328,37 @@ void ParticleSystem::push_impl(Species& sp, double dt, std::vector<Hit>& hits) {
         }
       double vx = VX[i] + h * ex, vy = VY[i] + h * ey, vz = VZ[i] + h * ez;
       // Boris rotation (t = 0 reduces to the identity)
-      double px = vx + (vy * tz - vz * ty);
-      double py = vy + (vz * tx - vx * tz);
-      double pz = vz + (vx * ty - vy * tx);
-      vx += py * szz - pz * syy;
-      vy += pz * sx - px * szz;
-      vz += px * syy - py * sx;
+      double Tx = tx, Ty = ty, Tz = tz, Sx = sx, Sy = syy, Sz = szz;
+      if (B3) {  // spatially varying B: gather with the same weights as E
+        double bx = 0, by = 0, bz = 0;
+#pragma GCC unroll 3
+        for (int c = 0; c < S::n; ++c)
+#pragma GCC unroll 3
+          for (int b = 0; b < S::n; ++b) {
+            const double* e = B3 + 3 * (std::size_t(i0) + sy * std::size_t(j0 + b) + sz * std::size_t(k0 + c));
+            const double wbc = wy[b] * wz[c];
+#pragma GCC unroll 3
+            for (int a = 0; a < S::n; ++a) {
+              const double ww = wx[a] * wbc;
+              bx += ww * e[3 * a];
+              by += ww * e[3 * a + 1];
+              bz += ww * e[3 * a + 2];
+            }
+          }
+        Tx = h * bx;  // node B already includes B0
+        Ty = h * by;
+        Tz = h * bz;
+        const double f = 2.0 / (1.0 + Tx * Tx + Ty * Ty + Tz * Tz);
+        Sx = f * Tx;
+        Sy = f * Ty;
+        Sz = f * Tz;
+      }
+      double px = vx + (vy * Tz - vz * Ty);
+      double py = vy + (vz * Tx - vx * Tz);
+      double pz = vz + (vx * Ty - vy * Tx);
+      vx += py * Sz - pz * Sy;
+      vy += pz * Sx - px * Sz;
+      vz += px * Sy - py * Sx;
       vx += h * ex;
       vy += h * ey;
       vz += h * ez;
@@ -450,15 +504,48 @@ void ParticleSystem::boundaries_and_migrate(long long step) {
     }
     std::vector<std::size_t> out;
     for (auto& v : tl) out.insert(out.end(), v.begin(), v.end());
-    // (2) move all leavers into a packed buffer (descending: swap-removal keeps indices valid)
+    // (2) resolve what can be done in place (walls, periodic wrap on a single-rank axis) so
+    //     that particle order is preserved; move absorbed and migrating particles out
+    //     (descending indices keep swap-removal valid)
     std::sort(out.begin(), out.end(), std::greater<std::size_t>());
-    std::vector<double> buf(out.size() * K);
-    for (std::size_t k = 0; k < out.size(); ++k) {
-      p.pack(out[k], &buf[k * K]);
-      p.remove(out[k]);
+    std::vector<double> buf;
+    buf.reserve(out.size() * K);
+    double lost = 0;
+    for (std::size_t i : out) {
+      double q[ParticleArray::kPacked];
+      p.pack(i, q);
+      int status = 0;  // 0 keep, 1 absorbed, 2 migrate
+      for (int a = 0; a < 3 && status != 1; ++a) {
+        if (q[a] >= llo[a] && q[a] < lhi[a]) continue;
+        int side = q[a] < llo[a] ? 0 : 1;
+        bool wall = side == 0 ? d.wall_lo(a) : d.wall_hi(a);
+        if (wall) {
+          ParticleBC bc = cfg_.faces[2 * a + side].particle;
+          if (bc == ParticleBC::Reflect) {
+            double r = side == 0 ? 2 * dlo[a] - q[a] : 2 * dhi[a] - q[a];
+            q[a] = std::clamp(r, dlo[a], std::nextafter(dhi[a], dlo[a]));
+            q[3 + a] = -q[3 + a];
+          } else {
+            status = 1;
+          }
+        } else if (d.periodic[a] && d.dims[a] == 1) {
+          const double L = dhi[a] - dlo[a];
+          q[a] = dlo[a] + std::fmod(std::fmod(q[a] - dlo[a], L) + L, L);
+          if (q[a] >= dhi[a]) q[a] = dlo[a];
+        } else {
+          status = 2;
+        }
+      }
+      if (status == 0) {
+        p.x[i] = q[0]; p.y[i] = q[1]; p.z[i] = q[2];
+        p.vx[i] = q[3]; p.vy[i] = q[4]; p.vz[i] = q[5];
+      } else {
+        if (status == 1) lost += q[6];
+        else buf.insert(buf.end(), q, q + K);
+        p.remove(i);
+      }
     }
     // (3) per axis: walls, periodic wrap and neighbour exchange on the buffer only
-    double lost = 0;
     for (int a = 0; a < 3; ++a) {
       const double L = dhi[a] - dlo[a];
       const ParticleBC bc[2] = {cfg_.faces[2 * a].particle, cfg_.faces[2 * a + 1].particle};
@@ -489,6 +576,10 @@ void ParticleSystem::boundaries_and_migrate(long long step) {
         if (d.periodic[a]) {
           if (side == 0 && d.coords[a] == 0) q[a] += L;
           if (side == 1 && d.coords[a] == d.dims[a] - 1) q[a] -= L;
+          if (d.dims[a] == 1) {  // robust wrap (moves longer than the box)
+            q[a] = dlo[a] + std::fmod(std::fmod(q[a] - dlo[a], L) + L, L);
+            if (q[a] >= dhi[a]) q[a] = dlo[a];
+          }
         }
         if (d.nbr[a][side] == d.rank) {
           keep.insert(keep.end(), q, q + K);
@@ -510,8 +601,21 @@ void ParticleSystem::boundaries_and_migrate(long long step) {
         buf.insert(buf.end(), recvbuf_[dir].begin(), recvbuf_[dir].end());
       }
     }
-    // (4) whatever remains is inside the local box: append back
-    for (std::size_t k = 0; k < buf.size(); k += K) p.push_packed(&buf[k]);
+    // (4) whatever remains is inside the local box: append back. Particles still outside
+    //     moved more than one sub-domain in a step (CFL violation) and are dropped.
+    long long dropped = 0;
+    for (std::size_t k = 0; k < buf.size(); k += K) {
+      const double* q = &buf[k];
+      bool in = q[0] >= llo.x && q[0] < lhi.x && q[1] >= llo.y && q[1] < lhi.y && q[2] >= llo.z && q[2] < lhi.z;
+      if (in) p.push_packed(q);
+      else ++dropped;
+    }
+    if (dropped) {
+      static int warned = 0;
+      if (warned++ < 5)
+        std::fprintf(stderr, "WARNING [rank %d] %lld %s particle(s) moved more than one sub-domain in one step "
+                     "and were removed: reduce dt\n", d.rank, dropped, sp.name().c_str());
+    }
     sp.stats.absorbed_wall_charge += lost * sp.q;
   }
 }

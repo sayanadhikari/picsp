@@ -121,7 +121,11 @@ int main(int argc, char** argv) {
     c.neutrals.mass = 40 * amu;
     c.neutrals.temperature = type == 0 ? 0.0 : 1e-6;
     double sigma = 1e-19;
-    c.neutrals.processes.push_back({sp.name, type == 0 ? CollisionProcess::Elastic : CollisionProcess::ChargeExchange, sigma});
+    CollisionProcess cp;
+    cp.species = sp.name;
+    cp.type = type == 0 ? CollisionProcess::Elastic : CollisionProcess::ChargeExchange;
+    cp.cross_section = sigma;
+    c.neutrals.processes.push_back(cp);
     double nu = c.neutrals.density * sigma * v0;
     c.dt = 0.01 / nu;
     c.steps = 100;

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "collisions/Coulomb.hpp"
 #include "collisions/MCC.hpp"
 #include "config/Config.hpp"
 #include "fields/FieldSolver.hpp"
@@ -31,6 +32,7 @@ class Simulation {
   FieldSolver& fields() { return fs_; }
   ParticleSystem& particles() { return ps_; }
   ObjectManager& objects() { return om_; }
+  const Config& config() const { return cfg_; }
   const Decomposition& decomposition() const { return d_; }
 
  private:
@@ -40,6 +42,8 @@ class Simulation {
   void history_line();
   void status_line();
   void checkpoint();
+  void write_tracks();
+  std::ofstream tracks_;
   bool restart(const std::string& dir);
 
   Config cfg_;
@@ -50,6 +54,7 @@ class Simulation {
   ParticleSystem ps_;
   ObjectManager om_;
   MonteCarloCollisions mcc_;
+  CoulombCollisions coulomb_;
   VtkWriter vtk_;
   std::vector<Rng> rng_;
   Timers timers_;

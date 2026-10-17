@@ -102,8 +102,35 @@ struct ObjectConfig {
 
 struct CollisionProcess {
   std::string species;
-  enum Type { Elastic, ChargeExchange } type = Elastic;
-  double cross_section = 0;  // [m^2], constant
+  enum Type { Elastic, ChargeExchange, Excitation, Ionization } type = Elastic;
+  // cross-section model: constant, step (sigma above threshold), lotz (ionisation),
+  // or table (energy [eV], sigma [m^2] pairs, linear interpolation)
+  enum Model { Constant, Step, Lotz, Table } model = Constant;
+  double cross_section = 0;   // [m^2] constant / step value; Lotz: coefficient a [m^2 eV^2]
+  double threshold = 0;       // [eV] excitation / ionisation energy
+  std::vector<std::pair<double, double>> table;  // (E [eV], sigma [m^2])
+  std::string product;        // ionisation: ion species created
+  std::string secondary;      // ionisation: electron species of the secondary (default: same)
+};
+
+struct CoulombConfig {
+  bool enabled = false;
+  double log_lambda = 10.0;   // Coulomb logarithm (constant)
+  bool auto_log = false;      // compute ln(Lambda) from the reference plasma
+  int every = 1;              // collide every N steps with N dt
+  std::vector<std::pair<std::string, std::string>> pairs;  // empty = all charged pairs
+};
+
+struct MagnetSource {
+  enum Type { Dipole, Loop, Wire, Solenoid, Mirror } type = Dipole;
+  Vec3 center{0, 0, 0};
+  Vec3 axis{0, 0, 1};       // loop / solenoid / mirror axis, wire direction
+  Vec3 moment{0, 0, 0};     // dipole moment [A m^2]
+  double radius = 0;        // coil radius [m]
+  double current = 0;       // [A] (ampere-turns per coil)
+  double length = 0;        // solenoid length [m]
+  double separation = 0;    // mirror coil separation [m]
+  int loops = 0;            // solenoid: number of discrete loops
 };
 
 struct NeutralConfig {
@@ -124,6 +151,8 @@ struct OutputConfig {
   int history_every = 10;
   int checkpoint_every = 0;
   int status_every = 50;
+  int track_every = 0;    // trajectories of the first track_count particles per species
+  int track_count = 0;
   bool moments = true;     // per-species n, flux, T
   bool float32 = true;     // write field data as float32 to save space
 };
@@ -160,6 +189,9 @@ struct Config {
   // external fields
   Vec3 B0{0, 0, 0};
   Vec3 E0{0, 0, 0};
+  std::vector<MagnetSource> magnets;  // spatially varying magnetic field sources (added to B0)
+  bool electrostatic = true;          // false: no self-consistent field (test-particle mode)
+  CoulombConfig coulomb;
   Vec3 sun_dir{1, 0, 0};  // unit vector pointing toward the sun
 
   std::vector<SpeciesConfig> species;

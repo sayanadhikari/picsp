@@ -53,6 +53,10 @@ class FieldSolver {
 
   Field3D phi, rho, Ex, Ey, Ez;
   std::vector<double> E3;  // interleaved (Ex,Ey,Ez) per node for particle gathers
+  // static external magnetic field on the nodes (only when spatially varying)
+  bool B_varies() const { return B_varies_; }
+  Field3D Bx, By, Bz;
+  std::vector<double> B3;  // interleaved (Bx,By,Bz)
 
  private:
   void compute_E();
@@ -86,6 +90,7 @@ class FieldSolver {
   std::vector<Link> links_;
   std::vector<double> C_;  // nc x nc capacitance matrix (row-major)
   bool charges_initialised_ = false;
+  bool B_varies_ = false;
   std::array<std::vector<double>, 3> volf_;  // wall volume factors per axis
 };
 

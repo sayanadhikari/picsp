@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 
+#include "fields/MagneticField.hpp"
 #include "util/Constants.hpp"
 #include "util/Log.hpp"
 
@@ -39,6 +40,38 @@ void FieldSolver::setup(const Config& cfg, const GridGeom& g, const Scene& scene
   cfg_ = cfg;
   g_ = &g;
   for (Field3D* f : {&phi, &rho, &Ex, &Ey, &Ez, &phi0_, &lift_}) f->init(g, kGhosts);
+
+  // static magnetic field on the nodes (only when spatially varying)
+  B_varies_ = !cfg.magnets.empty();
+  if (B_varies_) {
+    for (Field3D* f : {&Bx, &By, &Bz}) f->init(g, kGhosts);
+    const auto& n = Bx.size();
+    const double rmin = 0.5 * std::min(g.dx[0], std::min(g.dx[1], g.dx[2]));
+    double bmin = 1e300, bmax = 0;
+#pragma omp parallel for collapse(2) reduction(min : bmin) reduction(max : bmax) schedule(static)
+    for (int k = 0; k < n[2]; ++k)
+      for (int j = 0; j < n[1]; ++j)
+        for (int i = 0; i < n[0]; ++i) {
+          Vec3 p{g.origin.x + (g.c0[0] + i - kGhosts) * g.dx[0], g.origin.y + (g.c0[1] + j - kGhosts) * g.dx[1],
+                 g.origin.z + (g.c0[2] + k - kGhosts) * g.dx[2]};
+          Vec3 B = total_magnetic_field(cfg, p, rmin);
+          std::size_t q = Bx.idx(i, j, k);
+          Bx[q] = B.x;
+          By[q] = B.y;
+          Bz[q] = B.z;
+          double b = norm(B);
+          bmin = std::min(bmin, b);
+          bmax = std::max(bmax, b);
+        }
+    B3.resize(3 * Bx.total());
+    for (std::size_t q = 0; q < Bx.total(); ++q) {
+      B3[3 * q] = Bx[q];
+      B3[3 * q + 1] = By[q];
+      B3[3 * q + 2] = Bz[q];
+    }
+    log0(" magnetic field: |B| in [%.4g, %.4g] T (spatially varying)\n", allreduce_min(bmin, g.comm),
+         allreduce_max(bmax, g.comm));
+  }
 
   eb_.build(cfg, g, kGhosts, scene);
   long long nobj = allreduce_sum(eb_.count_object_nodes(), g.comm);
@@ -198,6 +231,13 @@ double FieldSolver::conductor_charge(const Field3D& f, const Field3D* rho, int k
 
 SolveStats FieldSolver::solve(double time) {
   const GridGeom& g = *g_;
+  if (!cfg_.electrostatic) {  // test-particle mode: only external fields
+    phi.fill(0.0);
+    compute_E();
+    SolveStats st;
+    st.converged = true;
+    return st;
+  }
   const int nc = int(cond_.size());
   // lift for phi_0: Dirichlet walls at their values, conductors grounded
   lift_.fill(0.0);
