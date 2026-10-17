@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sayanadhikari/picsp/actions/workflows/ci.yml"><img src="https://github.com/sayanadhikari/picsp/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+</p>
+
+<p align="center">
   <b>A parallel 3D3V electrostatic particle-in-cell code for plasma-object interaction</b><br>
   MPI + OpenMP &nbsp;·&nbsp; embedded objects from primitives and STL &nbsp;·&nbsp; floating-conductor charging &nbsp;·&nbsp;
   static and spatially varying B &nbsp;·&nbsp; Monte Carlo and Coulomb collisions &nbsp;·&nbsp; VTK output
@@ -92,7 +96,8 @@ CMake options: `PICSP_NATIVE` (default `ON`, compiles with `-march=native`) and 
 Post-processing needs Python ≥ 3.9:
 
 ```bash
-pip install -e python            # numpy, matplotlib, pyvista, imageio[-ffmpeg]
+pip install -e python               # numpy, matplotlib, pyvista, imageio[-ffmpeg]
+pip install -e "python[examples]"   # + scipy, for the feature examples
 ```
 
 ## Running

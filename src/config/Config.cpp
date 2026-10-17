@@ -19,7 +19,6 @@ namespace {
 using toml::node_view;
 using toml::table;
 
-std::string ctx(const std::string& where, const std::string& key) { return where.empty() ? key : where + "." + key; }
 
 template <typename NV>
 double get_num(const NV& n, const std::string& where, double def) {

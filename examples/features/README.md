@@ -11,7 +11,8 @@ python3 run_example.py all
 ```
 
 Runs use one MPI rank with two OpenMP threads by default (see `_common.simulate`). The
-post-processing needs the `picsp_post` package (`pip install -e ../../python`).
+post-processing needs the `picsp_post` package with the example extras
+(`pip install -e "../../python[examples]"`, which adds SciPy for some theory curves).
 
 | # | Feature | Typical cost (2 cores) |
 |---|---|---|

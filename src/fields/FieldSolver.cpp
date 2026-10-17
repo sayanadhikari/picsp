@@ -36,7 +36,6 @@ bool dense_solve(std::vector<double> A, std::vector<double> b, std::vector<doubl
 }
 
 void FieldSolver::setup(const Config& cfg, const GridGeom& g, const Scene& scene) {
-  using constants::eps0;
   cfg_ = cfg;
   g_ = &g;
   for (Field3D* f : {&phi, &rho, &Ex, &Ey, &Ez, &phi0_, &lift_}) f->init(g, kGhosts);
