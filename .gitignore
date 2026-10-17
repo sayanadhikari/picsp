@@ -19,6 +19,9 @@ local.mk
 **.mp4
 **.pyc
 **.txt
+!CMakeLists.txt
+!**/CMakeLists.txt
+!requirements*.txt
 **.nfs*
 **.eps
 *.html
