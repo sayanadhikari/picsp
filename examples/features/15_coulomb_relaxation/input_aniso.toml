@@ -1,0 +1,35 @@
+# Feature: Coulomb isotropisation of an anisotropic (bi-Maxwellian) electron population.
+title = "Temperature isotropisation"
+seed = 16
+
+[grid]
+cells = [6, 6, 4]
+length = [1.2e-4, 1.2e-4, 0.8e-4]
+
+[time]
+dt = 5e-12
+steps = 1800
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e20
+distribution = "bimaxwellian"
+aniso_axis = [0.0, 0.0, 1.0]
+t_par = 3.0
+t_perp = 1.0
+ppc = 400
+
+[coulomb]
+coulomb_log = 10.0
+
+[output]
+history_every = 50
+status_every = 2000

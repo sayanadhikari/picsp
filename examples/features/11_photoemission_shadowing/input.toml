@@ -1,0 +1,67 @@
+# Feature: photoemission from sunlit surfaces with self-shadowing in a tenuous plasma.
+# A solar panel with a mast (electrically connected, group = 1) charges positive because
+# the photoelectron current exceeds the ambient electron current; the mast casts a shadow
+# on the panel where no photoelectrons are emitted.
+title = "Photoemission and shadowing"
+seed = 11
+
+[grid]
+cells = [48, 48, 48]
+dx = 0.05
+centered = true
+
+[time]
+dt = 5e-9
+steps = 7000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[sun]
+direction = [0.55, 0.25, 0.8]
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 2e7
+temperature = 5.0
+ppc = 8
+
+[[species]]
+name = "ion"
+charge = 1
+mass_me = 100
+density = 2e7
+temperature = 1.0
+ppc = 8
+
+[[species]]
+name = "photoelectron"
+charge = -1
+mass_me = 1
+density = 0
+
+[[objects]]
+name = "panel"
+shape = "plate"
+size = [1.0, 0.6, 0.02]
+center = [0.0, 0.0, -0.2]
+group = 1
+emit_species = "photoelectron"
+photoemission = { current_density = 20e-6, temperature = 1.5 }
+
+[[objects]]
+name = "mast"
+shape = "box"
+size = [0.15, 0.15, 0.6]
+center = [-0.15, 0.0, 0.11]
+group = 1
+emit_species = "photoelectron"
+photoemission = { current_density = 20e-6, temperature = 1.5 }
+
+[output]
+history_every = 20
+fields_every = 7000
+surface_every = 7000
+status_every = 1000

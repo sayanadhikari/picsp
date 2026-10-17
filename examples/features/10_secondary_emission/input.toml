@@ -1,0 +1,72 @@
+# Feature: secondary electron emission (Sternglass yield law). Two identical, isolated
+# floating plates sit in a plasma crossed by a 100 eV electron beam. Without SEE a plate
+# keeps charging negatively to repel the beam; with a peak yield delta_max > 1 secondary emission
+# balances the collected current and the plate floats close to the plasma potential.
+title = "Secondary electron emission"
+seed = 10
+
+[grid]
+cells = [48, 32, 32]
+dx = 5e-3
+origin = [-0.12, -0.08, -0.08]
+
+[time]
+dt = 3.4e-10
+steps = 3000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e12
+temperature = 2.0
+ppc = 6
+
+[[species]]
+name = "ion"
+charge = 1
+mass_me = 100
+density = 1e12
+temperature = 0.2
+ppc = 6
+
+[[species]]
+name = "beam"
+charge = -1
+mass_me = 1
+density = 2e11
+temperature = 1.0
+drift = [5.93e6, 0.0, 0.0]       # 100 eV along +x
+ppc = 2
+
+[[species]]
+name = "secondary"
+charge = -1
+mass_me = 1
+density = 0
+weight = 1e5
+
+[[objects]]
+name = "plate_noSEE"
+shape = "plate"
+size = [0.006, 0.05, 0.05]
+center = [0.0, -0.04, 0.0]
+bias = "floating"
+
+[[objects]]
+name = "plate_SEE"
+shape = "plate"
+size = [0.006, 0.05, 0.05]
+center = [0.0, 0.04, 0.0]
+bias = "floating"
+emit_species = "secondary"
+see = { model = "sternglass", delta_max = 1.6, e_max = 100.0, temperature = 2.0 }
+
+[output]
+history_every = 5
+fields_every = 3000
+surface_every = 3000
+status_every = 500

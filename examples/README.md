@@ -1,5 +1,8 @@
 # PICSP3D examples
 
+For one small, analysed example per feature see [`features/`](features). The inputs below are
+larger production-style cases.
+
 Run from this directory, e.g.
 
 ```bash

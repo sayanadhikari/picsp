@@ -154,7 +154,11 @@ def plot_slice(run: Run, name: str = "phi", axis: str = "z", pos=None, index: in
             norm = plt.Normalize(lo, hi)
     elif log:
         vv = v[v > 0]
-        norm = LogNorm(vmin=vmin or (vv.min() if vv.size else 1), vmax=vmax or (vv.max() if vv.size else 10))
+        hi_ = vmax or (vv.max() if vv.size else 10)
+        # default floor: 4 decades below the maximum; zeros are clipped to it (no masked holes)
+        lo_ = vmin or (max(vv.min(), hi_ * 1e-4) if vv.size else 1)
+        norm = LogNorm(vmin=lo_, vmax=hi_)
+        v = np.clip(np.nan_to_num(v, nan=lo_), lo_, None)
     else:
         norm = plt.Normalize(vmin if vmin is not None else np.nanmin(v), vmax if vmax is not None else np.nanmax(v))
     im = ax.pcolormesh(x1, x2, v.T, shading="gouraud", cmap=cmap, norm=norm, rasterized=True)

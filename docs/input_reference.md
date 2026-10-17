@@ -50,6 +50,33 @@ Periodic must be set on both faces of an axis, for fields and particles.
 | `B0 = [Bx, By, Bz]` | uniform background magnetic field (T) |
 | `E0 = [Ex, Ey, Ez]` | uniform external electric field (V/m) |
 | `frame_velocity = [vx, vy, vz]` | velocity of the simulation frame (e.g. a spacecraft); adds the motional field E = -v x B0 |
+| `self_consistent` | `true`; `false` switches off the Poisson solve (test-particle mode: only E0, motional E and B act) |
+
+### `[[fields.magnet]]`: spatially varying magnetic field
+
+Any number of analytic sources can be added; their fields are superposed on `B0` and evaluated
+once on the grid nodes (ghost layers included). Particles gather B with the same shape function as E.
+
+| `type` | keys | field |
+|---|---|---|
+| `dipole` | `center`, `moment = [mx, my, mz]` (A m²) | point dipole μ0/4π (3(m·r̂)r̂ − m)/r³ |
+| `loop` (alias `coil`) | `center`, `axis`, `radius`, `current` | exact circular loop (complete elliptic integrals) |
+| `solenoid` | `center`, `axis`, `radius`, `current`, `length`, `loops` | finite solenoid as `loops` coaxial loops |
+| `mirror` | `center`, `axis`, `radius`, `current`, `separation` | two coaxial loops `separation` apart (magnetic bottle) |
+| `wire` (alias `line`) | `center` (a point on the wire), `axis`, `current` | infinite straight wire μ0 I/(2π ρ) |
+
+Points closer than half a cell to a singular source (dipole centre, wire, loop conductor) are
+evaluated at that distance.
+
+```toml
+[[fields.magnet]]
+type = "mirror"
+center = [0.5, 0.5, 0.5]
+axis = [0, 0, 1]
+radius = 0.12
+current = 2.0e4
+separation = 0.8
+```
 
 ## `[sun]`
 
@@ -127,7 +154,39 @@ conductor sheets in the field solve and exactly for particle collisions.
 | `neutral_temperature` | neutral temperature (eV) |
 | `neutral_mass_amu` | neutral mass |
 | `neutral_drift` | neutral drift velocity (m/s) |
-| `[[collisions.process]]` | `species`, `type = "elastic" \| "charge_exchange"`, `cross_section` (m²) |
+| `[[collisions.process]]` | one table per process, see below |
+
+Each process acts on one species against the neutral background (null-collision Monte Carlo):
+
+| key | meaning |
+|---|---|
+| `species` | colliding species |
+| `type` | `elastic`, `charge_exchange` (`cx`), `excitation`, `ionization` (`ionisation`) |
+| `model` | `constant` (default), `step` (σ above `threshold`), `lotz`, `table` |
+| `cross_section` | σ (m²) for `constant`/`step`; the Lotz coefficient a (m² eV²) for `lotz`: σ = a ln(E/I)/(E I) |
+| `threshold` | energy loss / threshold I (eV) for excitation and ionisation |
+| `table = [[E, sigma], ...]` or `file = "..."` | tabulated σ(E) (eV, m²), linear interpolation; files hold two columns, `#` comments allowed |
+| `product` | ionisation: ion species created (required) |
+| `secondary` | ionisation: species of the secondary electron (default: the colliding species) |
+
+Energies are centre-of-mass energies. Ionisation subtracts the threshold, shares the remaining
+energy randomly between the primary and the secondary electron and creates an ion with the
+neutral's velocity; new particles carry the primary's weight.
+
+## `[coulomb]`
+
+Binary Coulomb collisions between charged macro-particles in the same cell (Takizuka-Abe).
+
+| key | default | meaning |
+|---|---|---|
+| `enabled` | true (if the table exists) | |
+| `coulomb_log` | 10 | number, or `"auto"`: ln(12π n λ_D³) of the reference plasma (first negative species with a density) |
+| `every` | 1 | collide every N steps with an N-times longer time step |
+| `pairs = [["a", "b"], ...]` | all pairs | species pairs to collide (`["e", "e"]` for intra-species) |
+
+Unequal weights are handled with the Nanbu-Yonemura acceptance rule (momentum and energy are
+conserved on average; exactly for equal weights). The scattering variance requires ν dt ≪ 1;
+larger values are clamped to isotropic scattering.
 
 ## `[solver]`
 
@@ -165,3 +224,4 @@ least 3 cells per axis.
 | `history_every` | 10 | rows in `history.csv` (currents averaged over the interval) |
 | `checkpoint_every` | 0 | checkpoints (always one at the end if > 0) |
 | `status_every` | 50 | console status lines |
+| `track_every`, `track_count` | 0, 8 | write `tracks.csv` with the trajectories of the first `track_count` particles of each species (rank 0) |

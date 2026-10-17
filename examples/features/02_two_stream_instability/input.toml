@@ -1,0 +1,53 @@
+# Feature: kinetic instability; two counter-streaming electron beams (cold-beam growth
+# rate gamma = w_b / 2 for the box mode) and the formation of phase-space vortices.
+title = "Two-stream instability"
+seed = 5
+reference_species = "beam+"
+
+[grid]
+cells = [64, 4, 4]
+length = [0.0186, 0.00116, 0.00116]
+
+[time]
+dt_wpe = 0.05
+duration_wpe = 50
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[[species]]
+name = "beam+"
+charge = -1
+mass_me = 1
+density = 5e13
+temperature = 0.1
+drift = [1.0e6, 0.0, 0.0]
+ppc = 64
+load = "quiet"
+perturbation = { axis = "x", amplitude = 1e-3, mode = 1 }
+
+[[species]]
+name = "beam-"
+charge = -1
+mass_me = 1
+density = 5e13
+temperature = 0.1
+drift = [-1.0e6, 0.0, 0.0]
+ppc = 64
+load = "quiet"
+
+[[species]]
+name = "ion"
+charge = 1
+mass_amu = 1e6
+density = 1e14
+distribution = "cold"
+ppc = 16
+load = "quiet"
+
+[output]
+history_every = 2
+particles_every = 20
+particle_stride = 3
+moments = false
+status_every = 200

@@ -1,0 +1,45 @@
+# Feature: flowing plasma, open boundaries with drifting-Maxwellian injection, ion wake
+# behind an absorbing body (mesothermal flow: v_i,th << u << v_e,th). Reduced ion mass.
+title = "Mesothermal wake behind a sphere"
+seed = 8
+
+[grid]
+cells = [64, 32, 32]
+dx_debye = 0.5
+origin = [-0.06, -0.0595, -0.0595]
+
+[time]
+dt_wpe = 0.2
+steps = 1600
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e12
+temperature = 1.0
+ppc = 12
+
+[[species]]
+name = "ion"
+charge = 1
+mass_me = 100
+density = 1e12
+temperature = 0.1
+drift = [1.26e5, 0.0, 0.0]      # 3 c_s
+ppc = 12
+
+[[objects]]
+name = "sphere"
+shape = "sphere"
+center = [0.0, 0.0, 0.0]
+radius = 0.0149                  # 2 lambda_D
+bias = "floating"
+
+[output]
+fields_every = 50
+history_every = 10
+status_every = 200

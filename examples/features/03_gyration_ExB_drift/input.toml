@@ -1,0 +1,50 @@
+# Feature: Boris push in uniform B with an external (motional) electric field.
+# Test-particle mode (no self-consistent field). Electrons and positive "heavy" particles
+# gyrate in opposite senses with different Larmor radii but E x B-drift together.
+title = "Gyration and E x B drift"
+seed = 3
+reference_species = "electron"
+
+[grid]
+cells = [16, 16, 16]
+length = [0.4, 0.4, 0.4]
+centered = true
+
+[time]
+dt = 2.5e-9
+steps = 3200
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+B0 = [0.0, 0.0, 2.0e-4]
+E0 = [0.0, 20.0, 0.0]          # E x B drift: v_d = E/B = 1e5 m/s along +x
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e6
+temperature = 0.3
+ppc = 60
+region = { min = [-0.15, -0.02, -0.02], max = [-0.14, 0.02, 0.02] }
+
+[[species]]
+name = "heavy+"
+charge = 1
+mass_me = 16
+density = 1e6
+temperature = 0.3
+ppc = 60
+region = { min = [-0.15, -0.02, -0.02], max = [-0.14, 0.02, 0.02] }
+
+[numerics]
+sort_every = 0
+
+[output]
+track_every = 2
+track_count = 3
+history_every = 0
+status_every = 400

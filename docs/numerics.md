@@ -94,12 +94,61 @@ Shadowing for photoemission is computed by sphere tracing from every panel towar
 * Emitted particles (photo, secondary) are drawn from a flux-weighted half-Maxwellian about the local
   surface normal.
 
+## Spatially varying magnetic field
+
+Analytic sources (`[[fields.magnet]]`) are summed with the uniform B0 and stored once per node
+(three arrays for output plus an interleaved copy for the pusher). The circular loop uses the
+exact off-axis expressions with complete elliptic integrals K(k) and E(k),
+
+    B_z = μ0 I / (2π √((a+ρ)² + z²)) [K + (a² − ρ² − z²) / ((a−ρ)² + z²) E]
+    B_ρ = μ0 I z / (2π ρ √((a+ρ)² + z²)) [−K + (a² + ρ² + z²) / ((a−ρ)² + z²) E]
+
+(checked against direct Biot-Savart quadrature to 1e-13). Solenoids and mirrors are sums of
+loops, the dipole and the straight wire use their closed forms. The Boris rotation vectors
+t = qB dt/2m and s = 2t/(1+t²) are then formed per particle from the gathered B, which preserves
+the magnetic moment in slowly varying fields (the mirror test conserves μ to 0.3% over a bounce).
+
+With `self_consistent = false` the Poisson solve is skipped and particles move in the external
+fields only (test-particle mode), which is useful for orbit studies, collision benchmarks and
+swarm simulations.
+
 ## Monte Carlo collisions
 
-Null-collision method with a maximum collision frequency ν_max = n_g σ_tot g_max. For each
-candidate a neutral partner is sampled from the (drifting) Maxwellian background. Elastic
-collisions scatter isotropically in the centre-of-mass frame; charge exchange swaps the ion
-velocity with the neutral's.
+Null-collision method: ν_max = n_g max_g [g Σ σ_k(½ μ g²)] is found by sampling the total
+cross section on 4000 relative speeds up to the largest particle speed (plus a margin for the
+neutral thermal speed), multiplied by 1.05. A fraction 1 − exp(−ν_max dt) of the particles are
+candidates; for each, a neutral partner is drawn from the (drifting) Maxwellian background and
+a process is chosen with probability n_g σ_k(E) g / ν_max (the remainder is the null process).
+
+* elastic: isotropic scattering in the centre-of-mass frame
+* charge exchange: the ion takes the neutral's velocity
+* excitation: the centre-of-mass energy is reduced by the threshold, then isotropic scattering
+* ionisation: the energy above the threshold is split randomly between the scattered primary and
+  a new secondary electron, an ion is created with the neutral's velocity; both inherit the
+  primary's weight. New particles are buffered per thread and appended after the loop.
+
+Cross sections are constant, a step at a threshold, the Lotz form a ln(E/I)/(E I), or a table
+with linear interpolation (inline or from a file).
+
+## Coulomb collisions
+
+Binary collisions in the Takizuka-Abe (1977) formulation. Each species is indexed by cell
+(counting sort). Within a cell, intra-species collisions pair shuffled particles; an odd count
+forms one triplet whose three pairs collide with half the time step. For a species pair the
+more numerous population is traversed once and partners are taken cyclically from the other.
+For a pair with relative velocity u the scattering angle follows from
+
+    tan(θ/2) = δ,   δ ~ N(0, ⟨δ²⟩),   ⟨δ²⟩ = q_a² q_b² n lnΛ dt / (8π ε0² μ² u³)
+
+with n the smaller of the two densities in the cell, and the azimuth uniformly random. The
+relative velocity is rotated and both velocities are updated about the centre of mass, which
+conserves momentum and energy exactly for equal weights. For unequal weights each particle of
+the pair is updated with probability w_other / max(w_a, w_b) (Nanbu-Yonemura), conserving them
+on average. If ⟨δ²⟩ exceeds one the pair is scattered isotropically.
+
+Accuracy: for the e-e and e-i relaxation benchmarks the measured rates lie 5 to 10% below the
+Spitzer rates at practical time steps (ν dt ≈ 0.01 to 0.05), a known property of the binary
+method at finite time step; the energy drift is at round-off level.
 
 ## Parallelisation
 

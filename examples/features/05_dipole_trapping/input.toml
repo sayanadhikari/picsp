@@ -1,0 +1,43 @@
+# Feature: particle trapping in a dipole magnetic field (radiation-belt physics in a
+# scaled "planet"). Protons show the three adiabatic motions: gyration, bounce between
+# mirror points, and gradient-curvature drift around the dipole.
+title = "Dipole trapping"
+seed = 9
+
+[grid]
+cells = [40, 40, 40]
+length = [10.0, 10.0, 10.0]
+centered = true
+
+[time]
+dt = 2e-9
+steps = 280000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "absorb" }
+
+[fields]
+self_consistent = false
+  [[fields.magnet]]
+  type = "dipole"
+  center = [0.0, 0.0, 0.0]
+  moment = [0.0, 0.0, -8.1e7]   # A m^2 (Earth-like orientation): B = 0.3 T at r = 3 m
+
+[[species]]
+name = "proton"
+charge = 1
+mass_amu = 1.007
+density = 1e6
+temperature = 2000.0
+ppc = 1
+weight = 50.0
+region = { min = [2.95, -0.05, -0.05], max = [3.05, 0.05, 0.05] }
+
+[numerics]
+sort_every = 0
+
+[output]
+track_every = 40
+track_count = 3
+history_every = 0
+status_every = 10000

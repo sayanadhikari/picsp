@@ -1,0 +1,64 @@
+# Feature: electron-impact ionisation and excitation (energy-dependent cross sections).
+# An electron swarm in argon driven by a strong field (E/N = 150 Td) multiplies
+# exponentially (Townsend avalanche); each ionisation creates an electron-ion pair.
+title = "Ionisation avalanche in argon"
+seed = 14
+
+[grid]
+cells = [4, 4, 4]
+length = [0.004, 0.004, 0.004]
+
+[time]
+dt = 2e-11
+steps = 1100
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+E0 = [1.5e4, 0.0, 0.0]
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e12
+temperature = 2.0
+ppc = 20
+
+[[species]]
+name = "Ar+"
+charge = 1
+mass_amu = 39.95
+density = 0
+weight = 1.0
+
+[collisions]
+neutral_density = 1e22          # ~ 41 Pa at 300 K
+neutral_temperature = 0.026
+neutral_mass_amu = 39.95
+  [[collisions.process]]
+  species = "electron"
+  type = "elastic"
+  cross_section = 1.0e-19
+  [[collisions.process]]
+  species = "electron"
+  type = "excitation"
+  model = "step"
+  threshold = 11.55
+  cross_section = 6.0e-20
+  [[collisions.process]]
+  species = "electron"
+  type = "ionization"
+  model = "lotz"
+  threshold = 15.76
+  cross_section = 2.0e-17       # Lotz coefficient a [m^2 eV^2]: sigma = a ln(E/I) / (E I)
+  product = "Ar+"
+
+[output]
+history_every = 10
+particles_every = 1100
+particle_stride = 4
+moments = false
+status_every = 500

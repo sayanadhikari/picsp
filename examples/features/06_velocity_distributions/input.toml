@@ -1,0 +1,76 @@
+# Feature: velocity-space sampling. Five species with different distribution functions are
+# loaded (test-particle mode, nothing evolves) and their sampled distributions are compared
+# with the analytic forms: drifting Maxwellian, bi-Maxwellian (about B), kappa, ring, beam.
+title = "Velocity distributions"
+seed = 6
+
+[grid]
+cells = [6, 6, 6]
+length = [0.06, 0.06, 0.06]
+
+[time]
+dt = 1e-12
+steps = 1
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+B0 = [0.0, 0.0, 1e-3]          # defines the anisotropy axis for bi-Maxwellian and ring
+
+[[species]]
+name = "maxwellian"
+charge = -1
+mass_me = 1
+density = 1e10
+temperature = 1.0
+drift = [3e5, 0.0, 0.0]
+ppc = 1500
+
+[[species]]
+name = "bimaxwellian"
+charge = -1
+mass_me = 1
+density = 1e10
+distribution = "bimaxwellian"
+t_par = 4.0
+t_perp = 0.5
+ppc = 1500
+
+[[species]]
+name = "kappa"
+charge = -1
+mass_me = 1
+density = 1e10
+distribution = "kappa"
+kappa = 2.5
+temperature = 1.0
+ppc = 1500
+
+[[species]]
+name = "ring"
+charge = -1
+mass_me = 1
+density = 1e10
+distribution = "ring"
+ring_speed = 1.2e6
+t_perp = 0.05
+t_par = 0.2
+ppc = 1500
+
+[[species]]
+name = "beam"
+charge = -1
+mass_me = 1
+density = 1e10
+distribution = "maxwellian"
+temperature = 0.05
+drift = [0.0, 0.0, 1.5e6]
+ppc = 1500
+
+[output]
+particles_every = 1
+particle_stride = 1
+history_every = 0
+moments = false

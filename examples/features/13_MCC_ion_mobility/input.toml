@@ -1,0 +1,45 @@
+# Feature: Monte Carlo collisions with a neutral background. Ar+ ions drift in a uniform
+# electric field through cold argon with resonant charge exchange (constant cross section,
+# constant mean free path lambda = 1/(n sigma)). The steady drift velocity and the
+# half-Gaussian velocity distribution follow v_d = sqrt(2 e E lambda / (pi M)).
+title = "Ion mobility with charge exchange"
+seed = 13
+
+[grid]
+cells = [6, 6, 6]
+length = [0.06, 0.06, 0.06]
+
+[time]
+dt = 1e-8
+steps = 1500
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+E0 = [1000.0, 0.0, 0.0]
+
+[[species]]
+name = "Ar+"
+charge = 1
+mass_amu = 39.95
+density = 1e10
+temperature = 0.026
+ppc = 200
+
+[collisions]
+neutral_density = 3e21
+neutral_temperature = 1e-4
+neutral_mass_amu = 39.95
+  [[collisions.process]]
+  species = "Ar+"
+  type = "charge_exchange"
+  cross_section = 5e-19
+
+[output]
+history_every = 5
+particles_every = 1500
+particle_stride = 1
+moments = false
+status_every = 500

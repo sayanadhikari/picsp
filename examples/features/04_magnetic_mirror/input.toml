@@ -1,0 +1,47 @@
+# Feature: spatially varying magnetic field. A magnetic bottle made of two coaxial
+# current loops traps electrons whose pitch angle lies outside the loss cone
+# sin^2(alpha_lc) = B_min / B_max; the others stream out through the absorbing ends.
+title = "Magnetic mirror trapping"
+seed = 4
+
+[grid]
+cells = [16, 16, 64]
+length = [0.4, 0.4, 1.0]
+centered = true
+
+[time]
+dt = 5e-11
+steps = 40000
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "absorb" }
+
+[fields]
+self_consistent = false
+  [[fields.magnet]]
+  type = "mirror"
+  center = [0.0, 0.0, 0.0]
+  axis = [0.0, 0.0, 1.0]
+  radius = 0.25
+  separation = 0.8
+  current = 2000.0              # ampere-turns per coil
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e10
+temperature = 10.0
+ppc = 400
+region = { min = [-0.04, -0.04, -0.06], max = [0.04, 0.04, 0.06] }
+
+[numerics]
+sort_every = 0
+
+[output]
+history_every = 100
+particles_every = 1000
+particle_stride = 4
+fields_every = 40000
+moments = false
+status_every = 5000

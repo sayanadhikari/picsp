@@ -1,0 +1,43 @@
+# Feature: Coulomb collisions (binary Takizuka-Abe method). Hot electrons and cold ions
+# (reduced mass ratio m_i = 100 m_e) relax towards a common temperature; the evolution is
+# compared with the Spitzer / NRL energy-exchange rates.
+title = "Electron-ion temperature relaxation"
+seed = 15
+
+[grid]
+cells = [6, 6, 4]
+length = [1.2e-4, 1.2e-4, 0.8e-4]
+
+[time]
+dt = 1e-11
+steps = 30000
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[fields]
+self_consistent = false
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e20
+temperature = 4.0
+ppc = 250
+
+[[species]]
+name = "ion"
+charge = 1
+mass_me = 100
+density = 1e20
+temperature = 0.5
+ppc = 250
+
+[coulomb]
+coulomb_log = 10.0
+every = 2
+
+[output]
+history_every = 100
+status_every = 5000

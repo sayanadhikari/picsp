@@ -1,0 +1,42 @@
+# Feature: electrostatic plasma oscillations (Langmuir waves) in a periodic box
+# A sinusoidal density perturbation (mode 1 along x) of a warm electron plasma over an
+# immobile ion background oscillates at the Bohm-Gross frequency
+#   w^2 = w_pe^2 + 3 k^2 v_th^2
+title = "Langmuir oscillation"
+seed = 1
+
+[grid]
+cells = [64, 4, 4]
+dx_debye = 0.5
+
+[time]
+dt_wpe = 0.05
+duration_wpe = 40
+
+[boundaries]
+default = { field = "periodic", particle = "periodic" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e14
+temperature = 0.5
+ppc = 200
+load = "quiet"
+perturbation = { axis = "x", amplitude = 0.05, mode = 2 }
+
+[[species]]
+name = "ion"
+charge = 1
+mass_amu = 1e9
+density = 1e14
+distribution = "cold"
+ppc = 50
+load = "quiet"
+
+[output]
+history_every = 1
+fields_every = 10
+moments = true
+status_every = 200
