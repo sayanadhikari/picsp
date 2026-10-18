@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/logo/picsp3d_logo.png" alt="PICSP3D" width="640">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/picsp3d_logo_on_dark.png">
+    <img src="docs/logo/picsp3d_logo.png" alt="PICSP3D" width="640">
+  </picture>
 </p>
 
 <p align="center">

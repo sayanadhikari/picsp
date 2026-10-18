@@ -112,6 +112,8 @@ def main():
     files = {}
     files["picsp3d_logo.svg"] = svg(1200, 360, emblem(125, 150, 180, False) + wordmark(300, 200, 150, False))
     files["picsp3d_logo_dark.svg"] = svg(1200, 360, emblem(125, 150, 180, True) + wordmark(300, 200, 150, True), NAVY)
+    # transparent version with light lettering for dark pages (GitHub dark mode)
+    files["picsp3d_logo_on_dark.svg"] = svg(1200, 360, emblem(125, 150, 180, True) + wordmark(300, 200, 150, True))
     files["picsp3d_icon.svg"] = svg(512, 512, emblem(170, 256, 262, True), NAVY)
     import cairosvg
     for name, text in files.items():

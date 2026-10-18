@@ -48,8 +48,11 @@ def simulate(example_dir, ranks=1, threads=2, extra=()):
 
 
 def media(name):
-    os.makedirs(MEDIA, exist_ok=True)
-    return os.path.join(MEDIA, name)
+    """Path for a published figure: docs/media, or $PICSP_MEDIA_DIR when set (e.g. to render
+    high-resolution versions without touching the documentation media)."""
+    d = os.environ.get("PICSP_MEDIA_DIR", MEDIA)
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, name)
 
 
 def save(fig, example_dir, name, publish=True):
@@ -60,15 +63,40 @@ def save(fig, example_dir, name, publish=True):
     print("wrote", name)
 
 
+class _FrameWriter:
+    """GIF writer that also keeps every frame as a lossless PNG (for video editing)."""
+
+    def __init__(self, path, fps):
+        import imageio.v2 as imageio
+        self.gif = imageio.get_writer(path, mode="I", duration=1.0 / fps, loop=0)
+        self.dir = os.path.splitext(path)[0] + "_frames"
+        os.makedirs(self.dir, exist_ok=True)
+        self.n = 0
+
+    def append_data(self, rgb):
+        import imageio.v2 as imageio
+        self.gif.append_data(rgb)
+        imageio.imwrite(os.path.join(self.dir, f"{self.n:04d}.png"), rgb)
+        self.n += 1
+
+    def close(self):
+        self.gif.close()
+
+
 def gif_writer(path, fps=12):
+    """Animated GIF writer. With PICSP_FRAMES=1 every frame is also saved as a PNG in
+    <name>_frames/ next to the GIF."""
+    if os.environ.get("PICSP_FRAMES"):
+        return _FrameWriter(path, fps)
     import imageio.v2 as imageio
     return imageio.get_writer(path, mode="I", duration=1.0 / fps, loop=0)
 
 
 def fig_to_rgb(fig):
+    """Rasterise a figure (animation frame). PICSP_ANIM_DPI overrides the figure resolution."""
     import io
     import imageio.v2 as imageio
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=fig.dpi)
+    fig.savefig(buf, format="png", dpi=float(os.environ.get("PICSP_ANIM_DPI", fig.dpi)))
     buf.seek(0)
     return imageio.imread(buf)[..., :3]
