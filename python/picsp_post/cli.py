@@ -1,4 +1,7 @@
-"""Command line interface:  python -m picsp_post <command> <output_dir> [options]"""
+"""Command line interface:  python -m picsp_post <command> <output_dir> [options]
+
+Geometry import:  python -m picsp_post mesh {info,import} <file.stl> [options]
+"""
 from __future__ import annotations
 
 import argparse
@@ -60,7 +63,12 @@ def main(argv=None):
     common(p)
     p.add_argument("-s", "--species", default="0")
 
+    from . import mesh as _mesh
+    _mesh.add_parser(sub)
+
     a = ap.parse_args(argv)
+    if a.cmd == "mesh":
+        return _mesh.run_cli(a)
     from .io import Run
     run = Run(a.run)
     if a.cmd == "info":

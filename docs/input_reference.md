@@ -139,11 +139,15 @@ An object is either a single shape (shape keys directly in the object table) or 
 | `torus` | `center`, `axis`, `radius` (major), `radius2` (minor) |
 | `ellipsoid` | `center`, `size` (full axes) |
 | `halfspace` | `center` (point on plane), `axis` (outward normal) |
-| `stl` | `file`, `scale` (e.g. `1e-3` for mm), `center` (translation) |
+| `stl` (alias `mesh`) | `file`, `units` (`m`, `cm`, `mm`, `um`, `in`, `ft`), `scale`, `fit`, `anchor` (`origin`, `center`, `centroid`, `min`, `bottom`), `center` (position of the anchor) |
 
-Every part can be rotated with `rotate = [ax, ay, az]` (degrees) about its centre.
+Every part can be rotated with `rotate = [ax, ay, az]` (degrees, about x then y then z) about its
+`center`; on a single-shape object `rotate` turns the shape once about its `center`.
 STL files may be ASCII or binary; overlapping shells and inconsistent orientation are handled by the
-generalised winding number. Features thinner than a cell (panels, booms) are resolved as one-node-thick
+generalised winding number. `anchor` selects the mesh point placed at `center` (`origin` keeps the
+CAD coordinates), `units` converts the file units and `fit` rescales the mesh to a given largest
+extent in metres. See [`geometry_import.md`](geometry_import.md) for the import workflow and the
+`picsp-post mesh` tool that generates these blocks from a CAD file. Features thinner than a cell (panels, booms) are resolved as one-node-thick
 conductor sheets in the field solve and exactly for particle collisions.
 
 ## `[collisions]`

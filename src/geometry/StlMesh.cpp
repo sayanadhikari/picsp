@@ -80,6 +80,7 @@ bool StlMesh::load(const std::string& path, double scale) {
     }
   }
   // remove degenerate triangles
+  const std::size_t n_read = tris_.size();
   tris_.erase(std::remove_if(tris_.begin(), tris_.end(),
                              [](const Triangle& t) { return norm(cross(t.b - t.a, t.c - t.a)) < 1e-300; }),
               tris_.end());
@@ -102,12 +103,64 @@ bool StlMesh::load(const std::string& path, double scale) {
         edges[key(t.c, t.a)]++;
       }
       closed_ = true;
+      std::size_t open = 0;
       for (auto& kv : edges)
-        if (kv.second % 2) { closed_ = false; break; }
+        if (kv.second % 2) ++open;
+      closed_ = open == 0;
+      stats_.open_edges = open;
+      stats_.edges_checked = true;
     }
   }
+  stats_.degenerate_removed = n_read - tris_.size();
   build_bvh();
+  compute_stats();
   return !tris_.empty();
+}
+
+void StlMesh::compute_stats() {
+  stats_.triangles = tris_.size();
+  double A = 0, V = 0, emin = 1e300, emax = 0;
+  Vec3 cV{0, 0, 0}, cA{0, 0, 0};
+  for (const auto& t : tris_) {
+    Vec3 cr = cross(t.b - t.a, t.c - t.a);
+    double a = 0.5 * norm(cr);
+    double v = dot(t.a, cross(t.b, t.c)) / 6.0;  // signed tetrahedron volume with the origin
+    A += a;
+    V += v;
+    cV += (t.a + t.b + t.c) * (v / 4.0);
+    cA += (t.a + t.b + t.c) * (a / 3.0);
+    for (double e : {norm(t.b - t.a), norm(t.c - t.b), norm(t.a - t.c)}) {
+      emin = std::min(emin, e);
+      emax = std::max(emax, e);
+    }
+  }
+  stats_.area = A;
+  stats_.volume = std::fabs(V);
+  // the volume centroid is meaningful for closed meshes with a non-negligible volume
+  const double scale = std::max(1e-300, norm(bounds_.hi - bounds_.lo));
+  stats_.centroid = (closed_ && std::fabs(V) > 1e-9 * scale * scale * scale) ? cV / V : (A > 0 ? cA / A : bounds_.center());
+  stats_.min_edge = tris_.empty() ? 0 : emin;
+  stats_.max_edge = emax;
+}
+
+void StlMesh::place(const std::string& anchor, double fit) {
+  if (tris_.empty()) return;
+  Vec3 ext = bounds_.hi - bounds_.lo;
+  double s = 1.0;
+  if (fit > 0) s = fit / std::max(ext.x, std::max(ext.y, ext.z));
+  Vec3 a{0, 0, 0};
+  if (anchor == "center") a = bounds_.center();
+  else if (anchor == "centroid") a = stats_.centroid;
+  else if (anchor == "min") a = bounds_.lo;
+  else if (anchor == "bottom") a = Vec3{0.5 * (bounds_.lo.x + bounds_.hi.x), 0.5 * (bounds_.lo.y + bounds_.hi.y), bounds_.lo.z};
+  if (s == 1.0 && a.x == 0 && a.y == 0 && a.z == 0) return;
+  for (auto& t : tris_) {
+    t.a = (t.a - a) * s;
+    t.b = (t.b - a) * s;
+    t.c = (t.c - a) * s;
+  }
+  build_bvh();
+  compute_stats();
 }
 
 void StlMesh::build_bvh() {

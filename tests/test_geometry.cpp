@@ -148,6 +148,72 @@ int main(int argc, char** argv) {
     CHECK(wrong == 0, "STL inside/outside classification");
     CHECK(maxerr < 2e-3, "STL distance accuracy");
   }
+  // 2b. mesh import: units, anchor placement, fit, statistics (a "CAD" sphere in mm, off-centre)
+  {
+    const double Rmm = 40.0;
+    auto tris = icosphere(Rmm, 4);
+    const Vec3 off{100, 200, 300};  // mm
+    for (auto& t : tris) {
+      t.a += off;
+      t.b += off;
+      t.c += off;
+    }
+    write_stl("test_cad_mm.stl", tris);
+    PartConfig pc;
+    pc.shape = ShapeKind::STL;
+    pc.file = "test_cad_mm.stl";
+    pc.scale = 1e-3;  // units = "mm"
+    pc.anchor = "center";
+    pc.center = {0.5, 0.5, 0.5};
+    Part centred(pc);
+    const double R = Rmm * 1e-3;
+    double e_in = std::fabs(centred.sdf({0.5, 0.5, 0.5}, 1e300) + R), e_out = std::fabs(centred.sdf({0.5 + 2 * R, 0.5, 0.5}, 1e300) - R);
+    pc.anchor = "bottom";
+    pc.center = {0, 0, 0};
+    Part bottom(pc);
+    Aabb bb = bottom.bounds();
+    pc.anchor = "centroid";
+    pc.fit = 0.5;  // largest extent -> 0.5 m
+    Part fitted(pc);
+    Aabb bf = fitted.bounds();
+    StlMesh m;
+    m.load("test_cad_mm.stl", 1e-3);
+    const MeshStats& st = m.stats();
+    double vexact = 4.0 / 3.0 * constants::pi * R * R * R, aexact = 4 * constants::pi * R * R;
+    log0("[mesh     ] mm + anchor=center: sdf err %.1e / %.1e m; bottom z = %.2e; fit extent %.4f m; "
+         "area %.4f (%.4f), volume %.3e (%.3e), centroid (%.4f %.4f %.4f), open edges %zu\n",
+         e_in, e_out, bb.lo.z, bf.hi.x - bf.lo.x, st.area, aexact, st.volume, vexact, st.centroid.x, st.centroid.y,
+         st.centroid.z, st.open_edges);
+    CHECK(e_in < 1e-3 * R * 20 && e_out < 1e-3 * R * 20, "units + anchor=center place the mesh at center");
+    CHECK(std::fabs(bb.lo.z) < 1e-12 && std::fabs(0.5 * (bb.lo.x + bb.hi.x)) < 1e-12, "anchor=bottom");
+    CHECK(std::fabs(bf.hi.x - bf.lo.x - 0.5) < 1e-9 && std::fabs(0.5 * (bf.lo.y + bf.hi.y)) < 1e-3, "fit + anchor=centroid");
+    CHECK(std::fabs(st.area / aexact - 1) < 0.01 && std::fabs(st.volume / vexact - 1) < 0.02, "mesh area and volume");
+    CHECK(norm(st.centroid - off * 1e-3) < 1e-6 && st.open_edges == 0 && st.edges_checked, "mesh centroid and watertightness");
+  }
+  // 2c. input parsing: single-part `rotate` turns the shape once, about its centre;
+  //     STL `units` / `anchor` keys from the input file
+  {
+    if (world_rank() == 0) {
+      std::ofstream f("test_rotate.toml");
+      f << "[grid]\ncells = [8, 8, 8]\nlength = [2.0, 2.0, 2.0]\n"
+           "[time]\ndt = 1e-9\nsteps = 1\n[[species]]\nname = \"electron\"\ncharge = -1\nmass_me = 1\ndensity = 1e12\ntemperature = 1.0\n"
+           "[[objects]]\nname = \"bar\"\nshape = \"box\"\nsize = [1.0, 0.2, 0.2]\ncenter = [1.0, 1.0, 1.0]\n"
+           "rotate = [0.0, 0.0, 90.0]\n"
+           "[[objects]]\nname = \"cad\"\nshape = \"stl\"\nfile = \"test_cad_mm.stl\"\nunits = \"mm\"\n"
+           "anchor = \"center\"\ncenter = [0.5, 1.5, 1.0]\n";
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    Config c = Config::load("test_rotate.toml");
+    Scene sc;
+    sc.build(c.objects);
+    const auto& bar = sc.object(0);
+    bool along_y = bar.sdf({1.0, 1.4, 1.0}) < 0 && bar.sdf({1.4, 1.0, 1.0}) > 0;
+    double d_cad = sc.object(1).sdf({0.5, 1.5, 1.0});
+    log0("[input    ] rotate=[0,0,90] bar along y: %s; STL (units=mm, anchor=center) sdf at center %.4f m\n",
+         along_y ? "yes" : "NO", d_cad);
+    CHECK(along_y, "single-part rotate applied once about the centre");
+    CHECK(std::fabs(d_cad + 0.04) < 1e-3, "STL units/anchor from input");
+  }
   // 3. overlapping closed shells (ray parity would fail in the overlap)
   {
     auto t1 = cube({-1, -1, -1}, {0.5, 1, 1});

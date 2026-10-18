@@ -18,7 +18,7 @@ static void usage() {
        "  --restart DIR   continue from a checkpoint directory (same number of MPI ranks)\n"
        "  --steps N       override time.steps\n"
        "  --output DIR    override output.dir\n"
-       "  --check         parse input, set up geometry and solver, then exit\n");
+       "  --check         parse input, set up geometry and solver, write the geometry (VTK) and exit\n");
 }
 
 int main(int argc, char** argv) {
@@ -53,7 +53,8 @@ int main(int argc, char** argv) {
     cfg.print_summary();
     Simulation sim(cfg, MPI_COMM_WORLD);
     sim.initialise();
-    if (!check) sim.run();
+    if (check) sim.write_geometry();
+    else sim.run();
   }
   MPI_Finalize();
   return rc;

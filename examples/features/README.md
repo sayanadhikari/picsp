@@ -31,3 +31,4 @@ post-processing needs the `picsp_post` package with the example extras
 | 13 | Ion mobility: MCC charge exchange | seconds |
 | 14 | Ionisation avalanche: ionisation, excitation | seconds |
 | 15 | Coulomb relaxation: Takizuka-Abe collisions | ~3 min |
+| 16 | CAD import: `mesh import` tool, STL units / anchor / rotate, `--check` | ~1 min |

@@ -41,6 +41,25 @@ void EmbeddedBoundary::build(const Config& cfg, const GridGeom& g, int G, const 
       if (g.periodic[a] && (ob.bounds().lo[a] < lo || ob.bounds().hi[a] > hi))
         warn0("object '%s' crosses a periodic boundary; its periodic image is not represented\n", ob.name().c_str());
     }
+    // placement report: extent in cells and clearance from the domain boundaries
+    {
+      const Aabb& bb = ob.bounds();
+      log0(" object %-10s spans [%.4g %.4g %.4g] .. [%.4g %.4g %.4g] m = %.1f x %.1f x %.1f cells\n",
+           ob.name().c_str(), bb.lo.x, bb.lo.y, bb.lo.z, bb.hi.x, bb.hi.y, bb.hi.z, (bb.hi.x - bb.lo.x) / g.dx[0],
+           (bb.hi.y - bb.lo.y) / g.dx[1], (bb.hi.z - bb.lo.z) / g.dx[2]);
+      const char* ax = "xyz";
+      for (int a = 0; a < 3; ++a) {
+        if (g.periodic[a]) continue;
+        double lo = g.origin[a], hi = g.origin[a] + g.N[a] * g.dx[a];
+        double gap = std::min(bb.lo[a] - lo, hi - bb.hi[a]) / g.dx[a];
+        if (gap < 0)
+          warn0("object '%s' extends outside the domain along %c (bounding box; check center/anchor/units)\n",
+                ob.name().c_str(), ax[a]);
+        else if (gap < 3)
+          warn0("object '%s' is only %.1f cells from the %c boundary; the sheath needs more room\n",
+                ob.name().c_str(), gap, ax[a]);
+      }
+    }
     if (ob.min_feature() < 2 * hmin)
       log0(" note: object '%s' has features thinner than 2 cells (%.3g m); thin parts are\n"
            "       resolved as one-node-thick conductor sheets in the field solve\n",

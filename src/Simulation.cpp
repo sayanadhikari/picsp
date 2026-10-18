@@ -261,6 +261,14 @@ void Simulation::write_tracks() {
   tracks_.flush();
 }
 
+void Simulation::write_geometry() {
+  if (!initialised_) initialise();
+  if (cfg_.output.fields_every <= 0) write_fields();
+  if (!om_.empty() && cfg_.output.surface_every <= 0) write_surface();
+  log0(" geometry written to %s/ (fields.pvd: object_id, sdf, phi; surface.pvd: object panels)\n",
+       cfg_.output.dir.c_str());
+}
+
 void Simulation::write_fields() {
   std::vector<NamedScalar> sc = {{"phi", &fs_.phi}, {"rho", &fs_.rho}};
   std::vector<NamedVector> vec = {{"E", &fs_.Ex, &fs_.Ey, &fs_.Ez}};

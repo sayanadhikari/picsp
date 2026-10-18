@@ -64,7 +64,9 @@ struct PartConfig {
   Vec3 rotate_deg{0, 0, 0};                    // extra rotation of this part
   double rounding = 0;                         // rounded edges for boxes
   std::string file;                            // STL path
-  double scale = 1.0;                          // STL scale factor (e.g. 1e-3 for mm)
+  double scale = 1.0;                          // STL scale factor (units factor included, e.g. 1e-3 for mm)
+  std::string anchor = "origin";               // STL point placed at `center`: origin|center|centroid|min|bottom
+  double fit = 0.0;                            // > 0: rescale the STL so its largest extent is `fit` metres
 };
 
 struct SeeConfig {

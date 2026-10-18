@@ -117,6 +117,15 @@ jobs:
         run: python -m compileall -q python examples
       - name: Import
         run: python -c "import picsp_post; print(picsp_post.__version__)"
+      - name: Unit tests (mesh import tool)
+        run: |
+          pip install pytest
+          python -m pytest -q tests/python
+      - name: Mesh tool smoke test
+        run: |
+          python -m picsp_post mesh info examples/geometry/cubesat_3u.stl
+          python -m picsp_post mesh import examples/geometry/cubesat_3u.stl --anchor bottom \
+            --cells-across 20 -o /tmp/obj.toml --preview /tmp/preview.png
 
   examples:
     name: feature examples (run + analyse)
@@ -150,6 +159,14 @@ jobs:
             python run_example.py "$e"
             echo "::endgroup::"
           done
+      - name: CAD import and geometry check
+        run: |
+          cd examples/features/16_mesh_import
+          python cad/make_cad_export.py
+          python -m picsp_post mesh import cad/cubesat_mm.stl --units mm --anchor center --rotate 0 0 -30 \
+            --cells-across 24 --margin 0.6 -o /tmp/object.toml
+          OMP_NUM_THREADS=2 mpirun -np 1 --bind-to none ../../../build/picsp3d input.toml --check --output /tmp/geometry_check
+          test -f /tmp/geometry_check/surface.pvd
       - name: CLI post-processing
         run: python -m picsp_post info examples/features/13_MCC_ion_mobility/output
       - name: Upload figures

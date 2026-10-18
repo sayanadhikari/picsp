@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <filesystem>
+#include <map>
 #include <fstream>
 #include <sstream>
 
@@ -358,6 +359,19 @@ Config Config::load(const std::string& path) {
         p.rotate_deg = get_vec3(pt["rotate"], w + ".rotate", {0, 0, 0});
         p.rounding = get_num(pt["rounding"], w + ".rounding", 0.0);
         p.scale = get_num(pt["scale"], w + ".scale", 1.0);
+        if (pt["units"]) {
+          const std::string u = get_str(pt["units"], "m");
+          static const std::map<std::string, double> unit = {{"m", 1.0}, {"cm", 1e-2}, {"mm", 1e-3}, {"um", 1e-6},
+                                                             {"in", 0.0254}, {"inch", 0.0254}, {"ft", 0.3048}};
+          auto it = unit.find(u);
+          if (it == unit.end()) fatal(w + ".units: unknown unit '" + u + "' (m, cm, mm, um, in, ft)");
+          p.scale *= it->second;
+        }
+        p.anchor = get_str(pt["anchor"], "origin");
+        if (p.anchor != "origin" && p.anchor != "center" && p.anchor != "centroid" && p.anchor != "min" &&
+            p.anchor != "bottom")
+          fatal(w + ".anchor must be origin, center, centroid, min or bottom (got '" + p.anchor + "')");
+        p.fit = get_num(pt["fit"], w + ".fit", 0.0);
         p.file = get_str(pt["file"], "");
         if (!p.file.empty() && std::filesystem::path(p.file).is_relative()) p.file = (base / p.file).string();
         if (p.shape == ShapeKind::STL && p.file.empty()) fatal(w + ": STL part needs 'file'");
@@ -371,6 +385,9 @@ Config Config::load(const std::string& path) {
       } else {
         PartConfig p;  // single-part shorthand: shape keys directly on the object
         parse_part(ot, p);
+        // `rotate` was read both as object and part rotation; apply it once, about the part's
+        // `center` (for STL meshes: about the anchor point)
+        o.rotate_deg = {0, 0, 0};
         o.parts.push_back(p);
       }
       c.objects.push_back(o);

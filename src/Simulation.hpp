@@ -26,6 +26,9 @@ class Simulation {
   // single steps (for tests / embedding)
   void initialise();
   void advance();
+  // write the step-0 fields (object_id, sdf, phi) and the object surface triangulation, used
+  // by `--check` to inspect geometry on the grid (skips files initialise() already wrote)
+  void write_geometry();
   long long step() const { return step_; }
   double time() const { return time_; }
 

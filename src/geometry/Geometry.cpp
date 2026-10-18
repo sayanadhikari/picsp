@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 #include <mutex>
+#include <tuple>
 
 #include "util/Log.hpp"
 
@@ -62,21 +63,34 @@ double sd_ellipsoid(const Vec3& p, const Vec3& r) {
   return k0 * (k0 - 1.0) / k1;
 }
 
-// STL meshes are cached so that multiple objects/parts referencing the same file
-// share one BVH.
-std::shared_ptr<StlMesh> load_mesh_cached(const std::string& file, double scale) {
-  static std::map<std::pair<std::string, double>, std::shared_ptr<StlMesh>> cache;
+// STL meshes are cached so that multiple objects/parts referencing the same file (with the
+// same scale and placement) share one BVH.
+std::shared_ptr<StlMesh> load_mesh_cached(const PartConfig& pc) {
+  static std::map<std::tuple<std::string, double, std::string, double>, std::shared_ptr<StlMesh>> cache;
   static std::mutex mtx;
   std::lock_guard<std::mutex> lock(mtx);
-  auto key = std::make_pair(file, scale);
+  auto key = std::make_tuple(pc.file, pc.scale, pc.anchor, pc.fit);
   auto it = cache.find(key);
   if (it != cache.end()) return it->second;
   auto m = std::make_shared<StlMesh>();
-  if (!m->load(file, scale)) fatal("cannot read STL file '" + file + "'");
-  if (!m->is_closed())
-    log0(" note: STL '%s' has open edges or overlapping shells; using generalised winding numbers\n", file.c_str());
-  log0(" loaded STL %s: %zu triangles, bbox [%.3g %.3g %.3g]-[%.3g %.3g %.3g] m\n", file.c_str(), m->size(),
-       m->bounds().lo.x, m->bounds().lo.y, m->bounds().lo.z, m->bounds().hi.x, m->bounds().hi.y, m->bounds().hi.z);
+  if (!m->load(pc.file, pc.scale)) fatal("cannot read STL file '" + pc.file + "'");
+  m->place(pc.anchor, pc.fit);
+  const MeshStats& st = m->stats();
+  const Aabb& b = m->bounds();
+  const Vec3 ext = b.hi - b.lo;
+  log0(" mesh %s\n", pc.file.c_str());
+  log0("      %zu triangles", st.triangles);
+  if (st.degenerate_removed) log0(" (%zu degenerate removed)", st.degenerate_removed);
+  if (!st.edges_checked) log0(", watertightness not checked (> 200k triangles)\n");
+  else if (st.open_edges == 0) log0(", watertight\n");
+  else log0(", %zu open edges (handled by generalised winding numbers)\n", st.open_edges);
+  log0("      size %.4g x %.4g x %.4g m, area %.4g m^2, volume %.4g m^3, edges %.3g .. %.3g m\n", ext.x, ext.y,
+       ext.z, st.area, st.volume, st.min_edge, st.max_edge);
+  log0("      local bbox [%.4g %.4g %.4g] .. [%.4g %.4g %.4g] m (anchor '%s'%s)\n", b.lo.x, b.lo.y, b.lo.z, b.hi.x,
+       b.hi.y, b.hi.z, pc.anchor.c_str(), pc.fit > 0 ? ", rescaled by fit" : "");
+  if (std::max(ext.x, std::max(ext.y, ext.z)) > 1e3 || std::max(ext.x, std::max(ext.y, ext.z)) < 1e-6)
+    warn0("mesh '%s' is %.3g m across: check units/scale (CAD exports are often in mm: units = \"mm\")\n",
+          pc.file.c_str(), std::max(ext.x, std::max(ext.y, ext.z)));
   cache[key] = m;
   return m;
 }
@@ -95,7 +109,7 @@ Aabb transform_box(const Aabb& b, const Mat3& R, const Vec3& t) {
 Part::Part(const PartConfig& cfg) : cfg_(cfg) {
   R_ = Mat3::from_euler_deg(cfg.rotate_deg);
   Rt_ = R_.transposed();
-  if (cfg.shape == ShapeKind::STL) mesh_ = load_mesh_cached(cfg.file, cfg.scale);
+  if (cfg.shape == ShapeKind::STL) mesh_ = load_mesh_cached(cfg);
   auto bad = [&](const char* what) { fatal(std::string("object part: ") + what); };
   switch (cfg.shape) {
     case ShapeKind::Sphere: if (cfg.radius <= 0) bad("sphere needs radius > 0"); break;
@@ -150,7 +164,13 @@ Aabb Part::bounds() const {
     case ShapeKind::Cone: sym(std::sqrt(std::pow(std::max(cfg_.radius, cfg_.radius2), 2) + 0.25 * cfg_.length * cfg_.length)); break;
     case ShapeKind::Torus: sym(cfg_.radius + cfg_.radius2); break;
     case ShapeKind::HalfSpace: sym(1e30); break;
-    case ShapeKind::STL: b = mesh_->bounds(); break;
+    case ShapeKind::STL: {
+      // exact box of the rotated vertices (rotating the local box would overestimate it)
+      Aabb w;
+      for (const auto& t : mesh_->triangles())
+        for (const Vec3* v : {&t.a, &t.b, &t.c}) w.expand(R_ * *v + cfg_.center);
+      return w;
+    }
   }
   return transform_box(b, R_, cfg_.center);
 }

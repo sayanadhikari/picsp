@@ -30,9 +30,25 @@ struct Triangle {
   Vec3 a, b, c;
 };
 
+// Summary of a loaded mesh (after scaling and placement), for the setup report
+struct MeshStats {
+  std::size_t triangles = 0, degenerate_removed = 0, open_edges = 0;
+  double area = 0, volume = 0;          // [m^2], [m^3] (volume from the divergence theorem)
+  double min_edge = 0, max_edge = 0;    // [m]
+  Vec3 centroid{0, 0, 0};               // volume centroid (area centroid for open meshes)
+  bool edges_checked = false;           // open-edge count is only computed below 200k triangles
+};
+
 class StlMesh {
  public:
   bool load(const std::string& path, double scale = 1.0);
+  // place the mesh: optional rescale so that the largest bounding-box extent equals `fit`
+  // (fit <= 0: keep), then translate so that the `anchor` point lies at the origin.
+  // anchor: "origin" (keep file coordinates), "center" (bounding-box centre),
+  // "centroid" (volume centroid), "min" (bounding-box minimum corner),
+  // "bottom" (centre of the bounding-box face at minimum z)
+  void place(const std::string& anchor, double fit);
+  const MeshStats& stats() const { return stats_; }
   void build_bvh();
   std::size_t size() const { return tris_.size(); }
   const Aabb& bounds() const { return bounds_; }
@@ -59,6 +75,8 @@ class StlMesh {
     double r = 0;               // radius of the node's triangles about c
   };
   void build_moments(int node);
+  void compute_stats();
+  MeshStats stats_;
   int build(int first, int count, int depth);
   int ray_crossings(const Vec3& o, const Vec3& d) const;
   std::vector<Triangle> tris_;

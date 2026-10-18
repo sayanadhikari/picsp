@@ -1,0 +1,54 @@
+# Feature: importing CAD geometry. The [grid] and [[objects]] blocks below were generated with
+#
+#   python -m picsp_post mesh import cad/cubesat_mm.stl --units mm --anchor center \
+#          --rotate 0 0 -30 --name cubesat --cells-across 24 --margin 0.6 -o object.toml
+#
+# from a CAD-style export (millimetres, arbitrary origin, rotated 30 degrees). The solver applies
+# the same units, anchor and rotation, so the spacecraft sits centred and axis-aligned in the
+# domain. The rest of the file sets up a hydrogen plasma in which the spacecraft charges.
+title = "CAD import: floating CubeSat"
+seed = 16
+
+[time]
+dt = 5e-9
+steps = 1200
+
+[boundaries]
+default = { field = "dirichlet", value = 0.0, particle = "open" }
+
+[[species]]
+name = "electron"
+charge = -1
+mass_me = 1
+density = 1e11
+temperature = 1.0
+ppc = 6
+
+[[species]]
+name = "H+"
+charge = 1
+mass_amu = 1.007
+density = 1e11
+temperature = 0.1
+ppc = 6
+
+[output]
+fields_every = 1200
+surface_every = 600
+history_every = 10
+status_every = 200
+
+[grid]
+cells = [56, 36, 36]
+dx = 0.0159167
+origin = [-0.437837, -0.282938, -0.2865]
+
+[[objects]]
+name = "cubesat"
+shape = "stl"
+file = "cad/cubesat_mm.stl"
+units = "mm"
+anchor = "center"
+center = [0, 0, 0]      # where the anchor point is placed [m]
+rotate = [0, 0, -30]      # degrees about x, then y, then z (about the anchor)
+bias = "floating"

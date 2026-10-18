@@ -50,7 +50,7 @@ publication-quality figures, animations and 3D renderings.
 | **Field solver** | Poisson on a uniform node grid; geometric multigrid preconditioned CG with BiCGStab fallback; second-order Shortley-Weller cut cells at object surfaces |
 | **Magnetic fields** | uniform B0 plus any superposition of analytic sources: dipole, exact current loop, solenoid, magnetic mirror, straight wire |
 | **Particle push** | Boris scheme with the local E and B per particle, motional field E = −v × B for moving frames, CIC or TSC shape functions, species sub-cycling |
-| **Objects** | spheres, boxes, cylinders, cones, tori, ellipsoids, plates, half-spaces; CSG union / subtract / intersect; rigid transforms; STL import with BVH and generalised winding numbers; sub-cell thin sheets |
+| **Objects** | spheres, boxes, cylinders, cones, tori, ellipsoids, plates, half-spaces; CSG union / subtract / intersect; rigid transforms; STL import with units, anchor placement and rescaling, BVH and generalised winding numbers; `mesh` import tool; sub-cell thin sheets |
 | **Charging** | fixed or time-ramped bias, floating conductors via the capacitance-matrix method, electrically connected groups, external capacitance and current |
 | **Surface physics** | absorption with per-panel current densities; Sternglass or constant secondary electron emission; ion-induced emission; photoemission with self-shadowing by ray casting |
 | **Boundaries** | per face: periodic, Dirichlet, Neumann for fields; periodic, absorbing, specular reflecting, open with one-sided flux injection for particles |
@@ -108,8 +108,9 @@ mpirun -np 8 --map-by ppr:2:socket:pe=4 build/picsp3d input.toml
 ```
 
 Command line: `picsp3d input.toml [--restart DIR] [--steps N] [--output DIR] [--check]`. The
-`--check` flag builds the geometry, solver and particle populations and exits, which is a quick way
-to validate an input file. The console prints a status line with the step, time, particle counts,
+`--check` flag builds the geometry, solver and particle populations, writes the geometry (object ids,
+signed distance and the object surfaces as VTK) and exits, which is a quick way to validate an input
+file and to inspect imported CAD parts on the grid. The console prints a status line with the step, time, particle counts,
 energies, object potentials, solver iterations and particle pushes per second, and a timer
 breakdown at the end of the run.
 
@@ -235,6 +236,31 @@ booms, thinner than a cell, are resolved as conductor sheets in the field solve 
 particle collision test. Object surfaces are triangulated (marching tetrahedra) into panels that
 carry the current densities.
 
+**Importing CAD parts.** An STL file is placed with the input keys `units` (m, cm, mm, um, in,
+ft), `anchor` (which point of the mesh goes to `center`: the CAD origin, the bounding-box centre,
+the volume centroid, the minimum corner or the base), `fit` (rescale to a given size) and
+`rotate`. At start-up the solver reports every mesh (triangles, watertightness, size, area,
+volume) and every object's extent in cells, and warns about objects that leave the domain or
+crowd a boundary. The `picsp-post mesh` tool does the preparation:
+
+```bash
+python -m picsp_post mesh info   part.stl                       # size, units guess, topology
+python -m picsp_post mesh import part.stl --units mm --anchor center --name probe \
+       --cells-across 24 --margin 1.0 -o probe.toml --preview probe.png
+picsp3d input.toml --check --output geometry_check                  # inspect on the grid
+```
+
+`mesh import` writes a ready-to-paste `[[objects]]` block and a `[grid]` sized around the object,
+plus a three-view preview on the cell grid. The full workflow, including tips for preparing CAD
+files, is in [`docs/geometry_import.md`](docs/geometry_import.md).
+
+<p align="center">
+  <img src="docs/media/16_mesh_import.png" alt="CAD import" width="900"><br>
+  <em>A CAD export in millimetres with an offset origin and a tilt (left) is placed centred and
+  axis-aligned in the domain by <code>units</code>, <code>anchor</code> and <code>rotate</code>
+  (middle; dots are the grid nodes the solver marks inside), and charges in a plasma (right).</em>
+</p>
+
 ### Object charging
 
 Each object is either held at a fixed potential, which may be ramped in time for probe sweeps, or
@@ -318,6 +344,7 @@ python3 run_example.py 04_magnetic_mirror --analyze-only
 | 13 | [Ion mobility](examples/features/13_MCC_ion_mobility) | MCC charge exchange | drift 1017 m/s vs theory 1012 m/s, half-Gaussian distribution |
 | 14 | [Ionisation avalanche](examples/features/14_ionization_avalanche) | ionisation, excitation, Lotz cross section | steady swarm, exponential multiplication ν_i = 1.4 × 10⁸ s⁻¹ |
 | 15 | [Coulomb relaxation](examples/features/15_coulomb_relaxation) | Takizuka-Abe collisions | e-i equilibration and isotropisation follow Spitzer / NRL rates |
+| 16 | [CAD import](examples/features/16_mesh_import) | `mesh import` tool, STL `units` / `anchor` / `rotate`, `--check` | mm export with offset and tilt placed centred and axis-aligned; floats at −2.86 V |
 
 <table>
 <tr>
@@ -382,6 +409,7 @@ python -m picsp_post phase     output -s electron -x x -v vx
 python -m picsp_post render    output --surface J_net --particles
 python -m picsp_post animate   output -f n_electron -a y      # MP4 (or .gif with -o name.gif)
 python -m picsp_post animate   output --scene --orbit         # 3D movie
+python -m picsp_post mesh info part.stl                       # CAD import, see docs/geometry_import.md
 ```
 
 ```python
@@ -412,6 +440,7 @@ The `ctest` suite runs every test serially and on 4 MPI ranks:
 | Ionisation rate coefficient for a Maxwellian | within 2% of the analytic value, one secondary per ion |
 | Coulomb e-e and e-i temperature relaxation | within 10% of Spitzer at practical time steps, energy conserved to 1e-14 |
 | STL import | no sign errors on 20000 random points; overlapping shells handled |
+| Mesh placement (`units`, `anchor`, `fit`, `rotate`) | placement exact to round-off; area and volume of a meshed sphere within 1%; Python tool tests (`pytest tests/python`) |
 | Checkpoint / restart | bit-identical to an uninterrupted run |
 
 ## Performance notes
@@ -439,8 +468,8 @@ src/
   objects/     surface panels, charging, secondary and photoemission
   collisions/  Monte Carlo neutral collisions, Coulomb collisions
   io/          parallel VTK writers
-python/picsp_post   post-processing package
-tests/              verification suite (ctest)
+python/picsp_post   post-processing package and the `mesh` CAD import tool
+tests/              verification suite (ctest) and Python tests (tests/python)
 examples/           production inputs, geometry generator, analysis scripts
 examples/features/  one example per feature with analysis
 docs/               input reference, numerical methods, logo, figures
