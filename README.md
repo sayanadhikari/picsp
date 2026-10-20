@@ -96,6 +96,21 @@ ctest --test-dir build --output-on-failure                           # verificat
 CMake options: `PICSP_NATIVE` (default `ON`, compiles with `-march=native`) and `PICSP_TESTS`
 (default `ON`).
 
+> **Several MPI installations.** Anaconda/conda, Spack and environment modules often put a second
+> MPI (typically MPICH) ahead of the system Open MPI on `PATH`. The code must be compiled and launched
+> with the same implementation: an Open MPI binary started by MPICH's `mpirun` silently runs every
+> process as an independent single-rank job. CMake prints the MPI library and launcher it found and
+> warns if they differ. Pin both explicitly, and launch with the matching `mpirun`:
+>
+> ```bash
+> cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+>       -DMPI_CXX_COMPILER=/usr/bin/mpicxx -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
+> /usr/bin/mpirun -np 4 build/picsp3d input.toml
+> ```
+>
+> A quick check: the start-up banner prints `MPI ranks: N`; if it shows `1` once per process,
+> the launcher and library do not match.
+
 Post-processing needs Python ≥ 3.9:
 
 ```bash

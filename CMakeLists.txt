@@ -15,8 +15,33 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
+set(MPI_DETERMINE_LIBRARY_VERSION ON)   # fills MPI_CXX_LIBRARY_VERSION_STRING, checked below
 find_package(MPI REQUIRED COMPONENTS CXX)
 find_package(OpenMP REQUIRED COMPONENTS CXX)
+
+# Identify the MPI library and the launcher separately: with conda or modules on PATH they can come
+# from different implementations, and an Open MPI binary started by MPICH's mpiexec (or vice versa)
+# runs every rank as rank 0 of 1.
+function(picsp_mpi_impl text out)
+  if(text MATCHES "Open MPI|OpenRTE")
+    set(${out} openmpi PARENT_SCOPE)
+  elseif(text MATCHES "MPICH|HYDRA|Intel")
+    set(${out} mpich PARENT_SCOPE)
+  else()
+    set(${out} unknown PARENT_SCOPE)
+  endif()
+endfunction()
+picsp_mpi_impl("${MPI_CXX_LIBRARY_VERSION_STRING}" PICSP_MPILIB_IMPL)
+execute_process(COMMAND ${MPIEXEC_EXECUTABLE} --version OUTPUT_VARIABLE _mpiexec_version
+                ERROR_VARIABLE _mpiexec_version RESULT_VARIABLE _mpiexec_result TIMEOUT 10)
+picsp_mpi_impl("${_mpiexec_version}" PICSP_MPIEXEC_IMPL)
+message(STATUS "MPI library: ${PICSP_MPILIB_IMPL} (${MPI_CXX_COMPILER}), launcher: ${PICSP_MPIEXEC_IMPL} (${MPIEXEC_EXECUTABLE})")
+if(NOT PICSP_MPILIB_IMPL STREQUAL "unknown" AND NOT PICSP_MPIEXEC_IMPL STREQUAL "unknown"
+   AND NOT PICSP_MPILIB_IMPL STREQUAL PICSP_MPIEXEC_IMPL)
+  message(WARNING "The MPI library (${PICSP_MPILIB_IMPL}) and mpiexec (${PICSP_MPIEXEC_IMPL}) come from "
+                  "different MPI implementations. Point both at the same installation, e.g. "
+                  "-DMPI_CXX_COMPILER=/usr/bin/mpicxx -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun")
+endif()
 
 file(GLOB_RECURSE PICSP_SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp)
 list(REMOVE_ITEM PICSP_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
