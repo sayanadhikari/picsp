@@ -4,20 +4,22 @@
 
 Standard leapfrog: positions at integer and velocities at half-integer time levels. Each step:
 
-1. gather **E** at the particles and advance velocities with the Boris scheme (uniform **B**),
-   then positions; particles whose start or end cell is flagged as near a surface are tested for
+1. gather **E** (and **B** when it varies in space) at the particles and advance velocities with
+   the Boris scheme, then positions; particles whose start or end cell is flagged as near a surface are tested for
    segment / surface intersection by sphere tracing the signed distance function;
 2. absorbed particles charge their conductor and are attributed to the nearest surface panel;
    secondary electrons are emitted (Sternglass or constant yield, ion-induced emission);
 3. photoemission from sunlit, unshadowed panels;
 4. injection through open boundaries, then outer boundary conditions and MPI migration
    (dimension by dimension, so diagonal moves need no extra messages);
-5. Monte Carlo collisions (null-collision method);
-6. charge deposition (thread-private buffers, ghost-layer summation across ranks);
-7. Poisson solve, conductor potentials, **E** = -∇φ + **E**₀.
+5. Monte Carlo collisions with the neutral background (null-collision method), then binary
+   Coulomb collisions;
+6. counting sort of the particles by cell (every `sort_every` steps);
+7. charge deposition (thread-private buffers, ghost-layer summation across ranks);
+8. Poisson solve, conductor potentials, **E** = -∇φ + **E**₀.
 
-Heavy species can be sub-cycled (pushed every N steps with N Δt). Particles are counting-sorted by
-cell periodically to keep gathers and deposits cache friendly.
+Heavy species can be sub-cycled (pushed every N steps with N Δt). The periodic cell sort keeps
+gathers and deposits cache friendly.
 
 ## Poisson equation with embedded conductors
 
@@ -39,12 +41,15 @@ Conjugate gradients preconditioned by one geometric multigrid V(2,2) cycle:
 * red-black Gauss-Seidel smoothing (symmetric ordering), cut-cell coefficients on the finest level;
 * full-weighting restriction R = Pᵀ/8 and trilinear prolongation P;
 * rediscretised coarse operators with injected Dirichlet masks;
-* coarsening as long as every rank keeps at least two cells per axis; the coarsest level is
-  solved with a number of sweeps proportional to its size.
+* a level is coarsened only if every rank owns an even number of at least four cells per axis (and
+  the global and per-rank cell ranges are even), so each rank keeps at least two cells per axis on
+  the coarser level; the coarsest level is solved with min(`mg_coarse_sweeps`, max(4, n²/4))
+  smoothing sweeps, n being its largest cell count per axis.
 
 The Shortley-Weller operator is mildly non-symmetric; CG converges well in practice and the solver
-switches automatically to BiCGStab if it stalls. Typical cost: 7 to 8 iterations for a 1e-8
-relative residual, independent of the grid size; with warm starts from the previous step.
+switches automatically to BiCGStab if it stalls. The iteration count is independent of the grid
+size: 8 iterations to a relative residual of 1e-10 in the manufactured-solution tests, and 6 to 7
+per step at the default 1e-8 in the scaling runs, which start from the previous step's potential.
 
 ### Floating conductors (capacitance matrix)
 

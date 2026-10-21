@@ -47,3 +47,6 @@ examples/geometry/*.stl
 !examples/geometry/cubesat_3u.stl
 benchmarks/scaling/results/*/work/
 gmon.out
+
+# Private manuscript (separate git repository synced with Overleaf)
+docs/paper/

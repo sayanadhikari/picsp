@@ -247,7 +247,8 @@ methods in [`docs/numerics.md`](docs/numerics.md).
 Poisson's equation is solved on the nodes of a uniform Cartesian grid. The default solver is a
 conjugate gradient method preconditioned by a geometric multigrid V-cycle, with BiCGStab as a
 fallback when cut-cell stencils make the operator non-symmetric. The iteration count is essentially
-independent of the grid size (7 to 8 iterations to 1e-10 on manufactured solutions). Object
+independent of the grid size (8 iterations to 1e-10 on manufactured solutions, 6 to 7 per step in
+production runs). Object
 surfaces enter through Shortley-Weller cut-cell stencils using the exact signed distance, which
 makes the boundary condition second order and the surface potential converge at third order. Fully
 periodic problems are handled with a zero-mean projection. In **test-particle mode**
@@ -477,7 +478,7 @@ The `ctest` suite runs every test serially and on 4 MPI ranks:
 
 | Test | Result |
 |---|---|
-| Poisson, manufactured solutions (Dirichlet, periodic, Neumann) | second-order convergence, 7 to 8 MG-PCG iterations to 1e-10 independent of grid size |
+| Poisson, manufactured solutions (Dirichlet, periodic, Neumann) | second-order convergence, 8 MG-PCG iterations to 1e-10 independent of grid size |
 | Concentric-sphere capacitor (CSG cavity) | capacitance error 0.08% with cut cells (−4.6% staircase); potential error converges at third order |
 | Gyration in uniform B | gyro-frequency error 3e-5, speed conserved to round-off |
 | E × B drift across ranks and periodic boundaries | 0.25% |
