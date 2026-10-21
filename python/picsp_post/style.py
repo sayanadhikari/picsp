@@ -136,6 +136,48 @@ def _subscripts(text):
     return text
 
 
+_UNIT = re.compile(r"\[([^\[\]]+)\]")
+_UNIT_WORDS = {"deg": "°", "degrees": "°"}
+_LEAD_WORD = re.compile(r"^([a-z][a-z\-]{2,})(?=[\s,:]|$)")
+# leading words that are units or symbols, not prose: left in lower case
+_KEEP_LOWER = {"ns", "ms", "mm", "eps"}
+
+
+_PER = {"m/s": "m s⁻¹", "A/m²": "A m⁻²", "V/m": "V m⁻¹", "kV/m": "kV m⁻¹", "/s": " s⁻¹"}
+# a leading single-letter quantity ("x (m)", "φ (V)") is set in italics
+_LEAD_SYMBOL = re.compile(r"^([A-Za-z\u03b1-\u03c9])(?=\s|$)")
+
+
+def _unit(m):
+    u = m.group(1).strip()
+    u = _UNIT_WORDS.get(u, u)
+    if u.startswith("1/"):                       # [1/ω_pe] -> (ω_pe⁻¹)
+        u = u[2:] + "⁻¹"
+    for a, b in _PER.items():                    # SI style: m s⁻¹ rather than m/s
+        if u.endswith(a):
+            u = u[: -len(a)] + b
+            break
+    return f"({u.strip()})"
+
+
+def journal_label(text, capitalise=True):
+    """House label -> journal label: units in parentheses ("time [µs]" -> "Time (µs)") and
+    sentence case for labels that start with a word; symbols ("v_x", "φ") are left alone."""
+    if not text:
+        return text
+    # units outside math: [..] -> (..); math segments ($...$) are left as they are
+    parts = text.split("$")
+    parts[::2] = [re.sub(r"(?<![\w$])-(?=\d)", "\u2212", _UNIT.sub(_unit, q).replace("ᐟ", "/")) for q in parts[::2]]
+    text = "$".join(parts)
+    if "$" not in text:
+        text = _LEAD_SYMBOL.sub(lambda m: f"${m.group(1)}$", text)
+    if capitalise:
+        m = _LEAD_WORD.match(text)
+        if m and m.group(1) not in _KEEP_LOWER:
+            text = text[0].upper() + text[1:]
+    return text
+
+
 def _is_colorbar(ax):
     return hasattr(ax, "_colorbar") or ax.get_label() == "<colorbar>"
 
@@ -165,7 +207,7 @@ def journal_layout(fig, width=None):
             sp.set_color(INK)
         ax.tick_params(which="both", labelsize=SMALL, colors=INK, width=0.6, length=2.5, pad=2)
         for lab in (ax.xaxis.label, ax.yaxis.label):
-            lab.set_text(_subscripts(lab.get_text()))
+            lab.set_text(_subscripts(journal_label(lab.get_text())))
             lab.set_fontsize(SIZE)
             lab.set_color(INK)
         for t in ax.texts:
@@ -175,7 +217,7 @@ def journal_layout(fig, width=None):
         if leg is not None:
             leg.get_frame().set_visible(False)
             for t in leg.get_texts():
-                t.set_text(_subscripts(t.get_text()))
+                t.set_text(_subscripts(journal_label(t.get_text())))
                 t.set_fontsize(SMALL)
         for line in ax.get_lines():
             line.set_linewidth(min(line.get_linewidth(), 1.2))
@@ -192,10 +234,18 @@ def journal_layout(fig, width=None):
     for ax in fig.axes:
         cb = getattr(ax, "_colorbar", None)
         if cb is not None and getattr(cb.mappable, "axes", None) is not None:
-            ax.yaxis.label.set_text(_subscripts(ax.yaxis.label.get_text()))
             parent = cb.mappable.axes.get_position()
             pos = ax.get_position()
-            ax.set_position([pos.x0, parent.y0, pos.width, parent.height])
+            # thin bar (about 1.8 mm), as tall as its panel
+            bar_w = min(pos.width, 1.8 * MM / fig.get_size_inches()[0])
+            ax.set_position([pos.x0, parent.y0, bar_w, parent.height])
+            ax.tick_params(length=2, width=0.5)
+            off = ax.yaxis.get_offset_text()          # "×10¹⁰" above the bar, not over the plot
+            off.set_fontsize(SMALL)
+            off.set_horizontalalignment("left")
+            off.set_x(0.0)
+            for sp in ax.spines.values():
+                sp.set_visible(False)
     if multi:
         r = fig.canvas.get_renderer()
         inv = fig.transFigure.inverted()

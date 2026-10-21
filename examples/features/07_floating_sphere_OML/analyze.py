@@ -26,7 +26,7 @@ def analyze(d):
     fig, axs = plt.subplots(1, 3, figsize=(16, 4.4))
     a = axs[0]
     a.plot(h["time"] * 1e6, h["V_sphere"], color=style.series_color(0), label="simulation")
-    a.axhline(V_oml, color=style.series_color(1), ls="--", label=f"OML theory {V_oml:.2f} V")
+    a.axhline(V_oml, color=style.INK, ls="--", lw=0.9, label=f"OML theory, {V_oml:.2f} V")
     a.set_xlabel("time [µs]")
     a.set_ylabel("sphere potential [V]")
     a.set_title("charging to the floating potential")
@@ -41,13 +41,15 @@ def analyze(d):
     for name, col in (("n_electron", 0), ("n_ion", 1)):
         f = r.field_array(-1, name)
         prof = [f[idx == k].mean() for k in range(1, len(bins))]
-        a.plot(rc * 1e3, np.array(prof) / n, color=style.series_color(col), label=name[2:])
+        a.plot(rc * 1e3, np.array(prof) / n, color=style.series_color(col), label=name[2:] + "s")
     phi = r.field_array(-1, "phi")
     pp = [phi[idx == k].mean() for k in range(1, len(bins))]
     a2 = a.twinx()
     a2.plot(rc * 1e3, pp, color=style.INK2, ls=":", label="φ")
     a2.set_ylabel("φ [V]", color=style.INK2)
     a2.grid(False)
+    from matplotlib.ticker import FuncFormatter
+    a2.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v:.1f}$".replace("-0.0", "0.0")))
     a.set_xlabel("r [mm]")
     a.set_ylabel("density / n₀")
     a.set_title("radial sheath structure")

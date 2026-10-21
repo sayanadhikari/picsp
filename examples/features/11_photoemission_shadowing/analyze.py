@@ -13,7 +13,7 @@ def analyze(d):
     h = r.history()
     V = h["V_panel+mast"]
     print(f"floating potential {V[-50:].mean():.2f} V")
-    fig, axs = plt.subplots(1, 2, figsize=(13, 4.4))
+    fig, axs = plt.subplots(1, 2, figsize=(13, 3.9), gridspec_kw={"width_ratios": [0.85, 1]})
     a = axs[0]
     a.plot(h["time"] * 1e6, V, color=style.series_color(0))
     a.set_xlabel("time [µs]")
@@ -28,5 +28,5 @@ def analyze(d):
     p = render_scene(r, -1, None, surface_scalars="J_emit", slice_field=None, window=(1500, 1000), zoom=1.9,
                      show_box=not style.PAPER, title="photoelectron current density: the mast shadows the panel")
     p.camera_position = [(1.6, -2.4, 2.4), (0, 0, -0.1), (0, 0, 1)]
-    render3d(p, d, "11_photoemission_shadow.png", width_mm=120, zoom=0.85)
+    render3d(p, d, "11_photoemission_shadow.png", width_mm=89, zoom=0.85)
     p.close()

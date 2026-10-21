@@ -28,18 +28,18 @@ def analyze(d):
     th2 = (2 * k - 3) / k * vt**2
     fk = G(k) / (np.sqrt(np.pi * k * th2) * G(k - 0.5)) * (1 + x * x / (k * th2)) ** (-k)  # 1D marginal
     a.semilogy(x / 1e6, 1e6 * fk, "--", color=style.INK, lw=1)
-    a.set_ylim(1e-4, 60)
+    a.set_ylim(1e-4, 2e3)
     a.set_xlabel("v_x [10⁶ m/s]")
-    a.set_ylabel("f(v_x)")
+    a.set_ylabel("$f(v_x)$")
     a.set_title("Maxwellian vs kappa tails")
-    a.legend(loc="upper left", fontsize=8, handlelength=1.2)
+    a.legend(loc="upper center", ncol=3, fontsize=8, handlelength=1.2, columnspacing=0.8)
     # (b) bi-Maxwellian, (c) ring: (v_perp, v_par) histograms
     for ax, s, title in ((axs[1], 1, "bi-Maxwellian  T∥ = 4 eV, T⊥ = 0.5 eV"), (axs[2], 3, "ring distribution")):
         v = V[sid == s]
         vperp = np.hypot(v[:, 0], v[:, 1])
         ax.hist2d(v[:, 2] / 1e6, vperp / 1e6, bins=80, cmap=style.CMAP_HOT, range=[[-3, 3], [0, 2]])
-        ax.set_xlabel("v∥ [10⁶ m/s]")
-        ax.set_ylabel("v⊥ [10⁶ m/s]")
+        ax.set_xlabel(r"$v_\parallel$ [10⁶ m/s]")
+        ax.set_ylabel(r"$v_\perp$ [10⁶ m/s]")
         ax.set_title(title)
         ax.grid(False)
     # (d) beam: v_z distribution and moments of all species
@@ -54,7 +54,7 @@ def analyze(d):
     h, e = np.histogram(V[sid == 4, 2] / 1e6, bins=80, density=True)
     ax.plot(0.5 * (e[1:] + e[:-1]), h, color=style.series_color(2))
     ax.set_xlabel("v_z [10⁶ m/s]")
-    ax.set_ylabel("f(v_z)")
+    ax.set_ylabel("$f(v_z)$")
     ax.set_title("cold beam (1.5×10⁶ m/s, 0.05 eV)")
     print("\n".join(rows))
     fig.tight_layout()

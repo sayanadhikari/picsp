@@ -20,7 +20,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator, ScalarFormatter
+from matplotlib.ticker import FixedLocator, FuncFormatter, LogLocator, NullLocator, ScalarFormatter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -32,6 +32,27 @@ MODES = {
     "hybrid": ("hybrid (1 rank per socket x OpenMP)", style.SERIES[1], "s"),
     "openmp": ("OpenMP only (1 rank)", style.SERIES[2], "^"),
 }
+if style.PAPER:   # journal figures: short labels, the layouts are explained in the caption
+    MODES = {"mpi": ("MPI only", style.SERIES[0], "o"), "hybrid": ("hybrid", style.SERIES[1], "s"),
+             "openmp": ("OpenMP only", style.SERIES[2], "^")}
+FORMATS = ["png"]
+
+
+def finish(fig, out, name, dpi):
+    """Save in every requested format; in the journal style (PICSP_STYLE=paper) laid out at the
+    printed width with panel letters, without the machine line (it goes into the caption)."""
+    if style.PAPER:
+        if fig._suptitle is not None:
+            fig._suptitle.set_visible(False)
+        for ax in fig.axes:
+            for line in ax.get_lines():
+                line.set_markersize(3)
+        style.journal_layout(fig, width=style.DOUBLE)
+    else:
+        fig.tight_layout()
+    for fmt in FORMATS:
+        fig.savefig(os.path.join(out, f"{name}.{fmt}"), dpi=dpi)
+    plt.close(fig)
 STAGES = [("t_push", "push"), ("t_deposit", "deposit"), ("t_field_solve", "field solve"),
           ("t_inject_migrate", "migrate"), ("t_sort", "sort"), ("t_other", "other")]
 
@@ -67,7 +88,8 @@ def core_axis(ax, cores, per_socket):
     ax.set_xlabel("cores")
     for s in range(1, 1 + max(cores) // per_socket):
         if s * per_socket < max(cores):
-            ax.axvline(s * per_socket, color=style.GRID, lw=1.2, zorder=0)
+            ax.axvline(s * per_socket, color=style.GRID if not style.PAPER else "0.82",
+                       lw=1.2 if not style.PAPER else 0.5, ls="-" if not style.PAPER else (0, (3, 2)), zorder=0)
 
 
 def subtitle(system):
@@ -81,7 +103,7 @@ def strong(rows, system, out, dpi):
     per_socket = system.get("cores_per_socket", 18)
     t1 = min(r["ms_per_step"] for r in rows if r["cores"] == 1)
     cores = sorted({r["cores"] for r in rows})
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.6))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 3.9))
     a1.plot(cores, cores, color=style.INK2, ls="--", lw=1, label="ideal")
     for m, (label, col, mk) in MODES.items():
         if m not in modes:
@@ -105,15 +127,13 @@ def strong(rows, system, out, dpi):
             f"1 core: {t1 / 1e3:.2f} s/step", transform=a2.transAxes, ha="right", va="top", fontsize=9,
             color=style.INK2)
     fig.suptitle(subtitle(system), fontsize=9, color=style.INK2, y=0.995)
-    fig.tight_layout()
-    fig.savefig(os.path.join(out, "scaling_strong.png"), dpi=dpi)
-    plt.close(fig)
+    finish(fig, out, "scaling_strong", dpi)
 
 
 def breakdown(rows, system, out, dpi):
     modes = by_mode(rows)
     show = [m for m in ("mpi", "hybrid") if m in modes]
-    fig, axes = plt.subplots(1, len(show), figsize=(6 * len(show), 4.6), sharey=True, squeeze=False)
+    fig, axes = plt.subplots(1, len(show), figsize=(6 * len(show), 3.9), sharey=True, squeeze=False)
     for ax, m in zip(axes[0], show):
         rs = modes[m]
         x = np.arange(len(rs))
@@ -129,14 +149,15 @@ def breakdown(rows, system, out, dpi):
         ax.set_xlabel("cores")
         ax.set_title(MODES[m][0])
         ax.grid(axis="x", visible=False)
-    axes[0][0].set_ylabel("ns per particle-step x core")
+        if style.PAPER:
+            ax.text(0.03, 0.97, MODES[m][0][0].upper() + MODES[m][0][1:], transform=ax.transAxes, ha="left", va="top",
+                    fontweight="bold")
+    axes[0][0].set_ylabel("cost per particle-step and core [ns]")
     axes[0][0].set_ylim(0, 1.3 * max(ax.get_ylim()[1] for ax in axes[0]))
-    axes[0][-1].legend(loc="upper left", ncol=2)
+    axes[0][-1].legend(loc="upper left", ncol=2, bbox_to_anchor=(0.0, 0.9) if style.PAPER else None)
     fig.suptitle("Where the time goes (strong scaling; equal bar heights = perfect scaling)\n" + subtitle(system),
                  fontsize=9, color=style.INK2)
-    fig.tight_layout()
-    fig.savefig(os.path.join(out, "scaling_breakdown.png"), dpi=dpi)
-    plt.close(fig)
+    finish(fig, out, "scaling_breakdown", dpi)
 
 
 def weak(rows, system, out, dpi):
@@ -144,7 +165,7 @@ def weak(rows, system, out, dpi):
     per_socket = system.get("cores_per_socket", 18)
     cores = sorted({r["cores"] for r in rows})
     t1 = min(r["ms_per_step"] for r in rows if r["cores"] == 1)
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.6))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 3.9))
     for m, (label, col, mk) in MODES.items():
         if m not in modes:
             continue
@@ -167,14 +188,15 @@ def weak(rows, system, out, dpi):
         a2.plot(c, [r[key] for r in rs], marker="o", ms=4, color=style.series_color(i), label=label)
     a2.set_ylabel("time per step [ms]")
     a2.set_title(f"Weak scaling: stages, {MODES[best][0]}")
+    if style.PAPER:
+        a2.text(0.97, 0.03, f"{MODES[best][0]}, by stage", transform=a2.transAxes, ha="right", va="bottom",
+                color=style.INK2)
     a2.legend(loc="upper left", ncol=2)
     n = rows[0]
     a1.text(0.98, 0.86, f"{round(n['cells'] ** (1 / 3))}³ cells and {n['particles'] / 1e6:.1f} M particles per core",
             transform=a1.transAxes, ha="right", va="top", fontsize=9, color=style.INK2)
     fig.suptitle(subtitle(system), fontsize=9, color=style.INK2, y=0.995)
-    fig.tight_layout()
-    fig.savefig(os.path.join(out, "scaling_weak.png"), dpi=dpi)
-    plt.close(fig)
+    finish(fig, out, "scaling_weak", dpi)
 
 
 def before_after(after, before, tag, system, out, dpi):
@@ -185,7 +207,7 @@ def before_after(after, before, tag, system, out, dpi):
     def total(rows, key):
         return sum(r[key] for r in rows if r[key] != "")
     stage = max(STAGES, key=lambda s: abs(np.log((total(after, s[0]) + 1e-9) / (total(before, s[0]) + 1e-9))))
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 3.9))
     for ax, key, title in ((axes[0], "ms_per_step", "whole step"), (axes[1], stage[0], stage[1])):
         for m, (label, col, mk) in MODES.items():
             if m in a and m in b:
@@ -193,13 +215,21 @@ def before_after(after, before, tag, system, out, dpi):
                 ax.plot([r["cores"] for r in a[m]], [r[key] for r in a[m]], color=col, marker=mk, label=label)
         core_axis(ax, cores, per_socket)
         ax.set_yscale("log")
-        ax.set_ylabel("time per step [ms]")
+        ax.yaxis.set_major_locator(LogLocator(base=10, subs=(1.0, 2.0, 5.0)))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.yaxis.set_minor_formatter(FuncFormatter(lambda v, _: ""))
+        ax.set_ylabel("time per step [ms]" if key == "ms_per_step" else f"{title} time per step [ms]")
         ax.set_title(f"Strong scaling, {title}")
-    axes[0].legend(loc="upper right")
+        if style.PAPER:
+            ax.text(0.03, 0.03, title[0].upper() + title[1:], transform=ax.transAxes, ha="left", va="bottom",
+                    fontweight="bold")
+    from matplotlib.lines import Line2D
+    extra = [Line2D([], [], color=style.INK, ls=":", lw=1, label=f"before ({tag})"),
+             Line2D([], [], color=style.INK, lw=1, label="after")]
+    h_, l_ = axes[0].get_legend_handles_labels()
+    axes[0].legend(h_ + extra, l_ + [e.get_label() for e in extra], loc="upper right")
     fig.suptitle(f"Before (dotted, {tag}) and after (solid)  |  " + subtitle(system), fontsize=9, color=style.INK2, y=0.995)
-    fig.tight_layout()
-    fig.savefig(os.path.join(out, "scaling_before_after.png"), dpi=dpi)
-    plt.close(fig)
+    finish(fig, out, "scaling_before_after", dpi)
 
 
 def main():
@@ -207,7 +237,9 @@ def main():
     ap.add_argument("results", help="directory written by run_scaling.py")
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "media"))
     ap.add_argument("--dpi", type=int, default=300)
+    ap.add_argument("--formats", default="png", help="comma-separated, e.g. png,pdf")
     args = ap.parse_args()
+    FORMATS[:] = [f.strip() for f in args.formats.split(",")]
     with open(os.path.join(args.results, "system.json")) as f:
         system = json.load(f)
     os.makedirs(args.out, exist_ok=True)

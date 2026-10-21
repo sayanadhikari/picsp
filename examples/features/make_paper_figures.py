@@ -11,6 +11,17 @@ For every case an input_hires.toml is written next to input.toml with the grid r
 multiplied, cell size divided, so the domain is unchanged), the time step refined with steps and
 output intervals scaled to cover the same physical time, and more particles per cell. The run goes
 to output_hires/ and the analysis script of the example produces the figures (PNG and PDF).
+
+The figures are laid out in the journal style of picsp_post.style at their printed width (89 mm
+for one column, 183 mm for the page). To change only the layout of existing runs, without Blender
+and without the animations:
+
+    PICSP_REUSE_RENDERS=1 PICSP_NO_ANIM=1 python3 make_paper_figures.py --analyze-only
+
+The scaling figures of the paper come from the benchmark results:
+
+    PICSP_STYLE=paper python3 ../../benchmarks/scaling/plot_scaling.py \
+        ../../benchmarks/scaling/results/xeon-platinum-8354h-4s --out ../../docs/paper/figures --formats pdf
 """
 from __future__ import annotations
 

@@ -31,9 +31,15 @@ def executable():
     return os.environ.get("PICSP_BLENDER") or shutil.which("blender")
 
 
+def reuse_existing():
+    """PICSP_REUSE_RENDERS=1 reuses renders already on disk, so that figure layouts can be
+    changed without Blender; a render is only made when its image is missing."""
+    return os.environ.get("PICSP_REUSE_RENDERS", "") not in ("", "0")
+
+
 def available():
     exe = executable()
-    return bool(exe) and os.path.exists(exe)
+    return reuse_existing() or (bool(exe) and os.path.exists(exe))
 
 
 def _write_ply(path, points, faces, rgba):
@@ -89,6 +95,14 @@ def _colors(mapper, ds, prop):
     return None, None
 
 
+def _mapper_input(mapper):
+    """The data set a mapper draws (GetInputAsDataSet was removed in VTK 9.4)."""
+    if mapper is None:
+        return None
+    get = getattr(mapper, "GetInputAsDataSet", None) or mapper.GetInput
+    return get()
+
+
 def export_plotter(p, workdir, line_radius=None):
     """Write every visible 3D actor of a pyvista Plotter as a PLY and return the scene description."""
     import pyvista as pv
@@ -101,9 +115,10 @@ def export_plotter(p, workdir, line_radius=None):
         if not isinstance(actor, vtk.vtkActor) or not actor.GetVisibility():
             continue
         mapper = actor.GetMapper()
-        if mapper is None or mapper.GetInputAsDataSet() is None:
+        data = _mapper_input(mapper)
+        if data is None:
             continue
-        ds = pv.wrap(mapper.GetInputAsDataSet())
+        ds = pv.wrap(data)
         if ds.n_points == 0:
             continue
         prop = actor.GetProperty()
@@ -190,6 +205,8 @@ def render(p, path, width=3000, samples=256, zoom=1.0, keep=False):
         js = os.path.join(work, "scene.json")
         with open(js, "w") as f:
             json.dump(scene, f)
+        if reuse_existing() and os.path.exists(path):
+            return scene            # PICSP_REUSE_RENDERS: lay out an earlier render again
         cmd = [executable(), "-b", "--factory-startup", "-noaudio", "-P", SCENE_SCRIPT, "--", js]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0 or not os.path.exists(path):

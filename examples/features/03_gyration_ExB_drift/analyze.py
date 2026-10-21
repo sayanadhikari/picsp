@@ -20,7 +20,7 @@ def _blender_panel(ax, tracks, png):
     o = np.array([lo[0], lo[1], hi[2]]) - 0.04 * (hi - lo).max()   # below the orbits, at the +B end
     L = 0.12 * (hi - lo).max()
     labels = []
-    for k, text in ((0, "x"), (1, "E"), (2, "B")):
+    for k, text in ((0, "$x$"), (1, r"$\mathbf{E}$"), (2, r"$\mathbf{B}$")):
         e = np.eye(3)[k]
         p.add_mesh(pv.Arrow(start=o, direction=e, scale=L, tip_length=0.22, tip_radius=0.06, shaft_radius=0.018),
                    color="#3a3a3a")
@@ -40,8 +40,8 @@ def analyze(d):
     paper_3d = style.PAPER and blender.available()
     if paper_3d:
         # the orbits are long along B: the 3D view across the page, the projection below
-        fig = plt.figure(figsize=(12, 9))
-        gs = fig.add_gridspec(2, 1, height_ratios=[1.5, 1])
+        fig = plt.figure(figsize=(12, 6.4))
+        gs = fig.add_gridspec(2, 1, height_ratios=[1.2, 1])
         ax = fig.add_subplot(gs[0])
     else:
         fig = plt.figure(figsize=(12, 4.8))
@@ -49,7 +49,7 @@ def analyze(d):
         ax = fig.add_subplot(gs[0], projection="3d")
     ax2 = fig.add_subplot(gs[1])
     tracks = []
-    names = ["electron", "heavy+ (16 mₑ)"]
+    names = ["electrons", "ions, m = 16 mₑ"]
     for s in (0, 1):
         for i in range(3):
             m = (t["species"] == s) & (t["index"] == i)
@@ -75,7 +75,7 @@ def analyze(d):
     ax2.set_ylabel("y [m]")
     ax2.set_aspect("equal")
     ax2.set_title("projection perpendicular to B (E along +y)")
-    ax2.set_ylim(top=0.2)
+    ax2.set_ylim(top=0.17)
     ax2.legend(loc="upper center", ncol=2)
     fig.tight_layout()
     save(fig, d, "03_gyration_ExB.png")

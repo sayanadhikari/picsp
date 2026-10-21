@@ -33,16 +33,23 @@ def analyze(d):
         if len(pts) > 2:
             p.add_mesh(pv.lines_from_points(pts).tube(radius=0.009), color=cols[i])
     p.camera_position = [(7.5, -10.5, 7.5), (0, 0, 0), (0, 0, 1)]
-    p.add_text("protons trapped in a dipole field: gyration, bounce and drift", position="upper_left", font_size=12,
-               color="#f0efec")
-    render3d(p, d, "05_dipole_trapping.png", width_mm=150, bars=[])
+    if not style.PAPER:
+        p.add_text("protons trapped in a dipole field: gyration, bounce and drift", position="upper_left",
+                   font_size=12, color="#f0efec")
+    render3d(p, d, "05_dipole_trapping.png", width_mm=89, bars=[])
     p.close()
     # latitude and longitude vs time for the first particle
     m = (t["species"] == 0) & (t["index"] == 0)
     x, y, z, tt = t["x"][m], t["y"][m], t["z"][m], t["time"][m]
     r = np.sqrt(x * x + y * y + z * z)
-    fig, (a, b) = plt.subplots(1, 2, figsize=(12, 3.8))
-    a.plot(tt * 1e6, np.degrees(np.arcsin(z / r)), color=style.series_color(0))
+    fig, (a, b) = plt.subplots(1, 2, figsize=(7.0, 3.0))
+    lat = np.degrees(np.arcsin(z / r))
+    # bounce period from the zero crossings of the latitude; the panel shows the first few bounces
+    up = np.nonzero((lat[:-1] < 0) & (lat[1:] >= 0))[0]
+    T_b = np.mean(np.diff(tt[up])) if len(up) > 2 else tt[-1]
+    print(f"bounce period {T_b * 1e6:.2f} us, {len(up)} bounces, mirror latitude {np.abs(lat).max():.2f} deg")
+    show = tt <= min(tt[-1], 4.5 * T_b)
+    a.plot(tt[show] * 1e6, lat[show], color=style.series_color(0))
     a.set_xlabel("time [µs]")
     a.set_ylabel("magnetic latitude [deg]")
     a.set_title("bounce motion between mirror points")

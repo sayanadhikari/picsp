@@ -47,14 +47,18 @@ def analyze(d):
         a.plot([o[0] + q * sp[0]] * 2, [o[1], o[1] + dims[1] * sp[1]], color="0.88", lw=0.4, zorder=0)
     for q in range(dims[1] + 1):
         a.plot([o[0], o[0] + dims[0] * sp[0]], [o[1] + q * sp[1]] * 2, color="0.88", lw=0.4, zorder=0)
-    _draw(a, placed.tris, 0, 1, style.series_color(0))
+    _draw(a, placed.tris, 0, 1, (0.165, 0.47, 0.84, 0.35))
     sdf = r.field_array(-1, "sdf")
     kz = int(round(-o[2] / sp[2]))
     X, Y = np.meshgrid(o[0] + sp[0] * np.arange(dims[0] + 1), o[1] + sp[1] * np.arange(dims[1] + 1), indexing="ij")
     ins = sdf[:, :, kz] <= 0
-    a.plot(X[ins], Y[ins], "o", ms=2.2, color=style.series_color(1), label="grid nodes inside (solver)")
-    a.set_xlim(o[0], o[0] + dims[0] * sp[0])
-    a.set_ylim(o[1], o[1] + dims[1] * sp[1])
+    a.plot(X[ins], Y[ins], "o", ms=1.4, color=style.series_color(1), mew=0, label="grid nodes inside (solver)")
+    # the region around the object, so that the grid nodes inside it can be seen
+    xs_, ys_ = placed.tris[:, :, 0], placed.tris[:, :, 1]
+    cx, cy = 0.5 * (xs_.min() + xs_.max()), 0.5 * (ys_.min() + ys_.max())
+    half = 0.75 * max(xs_.max() - xs_.min(), ys_.max() - ys_.min())
+    a.set_xlim(max(o[0], cx - half), min(o[0] + dims[0] * sp[0], cx + half))
+    a.set_ylim(max(o[1], cy - 0.6 * half), min(o[1] + dims[1] * sp[1], cy + 0.6 * half))
     a.set_title("after import: metres, centred, axis-aligned")
     a.set_xlabel("x [m]")
     a.set_ylabel("y [m]")

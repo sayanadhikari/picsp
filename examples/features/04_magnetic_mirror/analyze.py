@@ -1,7 +1,7 @@
 """Magnetic mirror: trapped fraction vs loss-cone theory, emptying of the loss cone in
 pitch-angle space, and an animation of electrons bouncing in the bottle."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, MU0, out
+from _common import ANIMATE, Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, MU0, out
 
 
 def loop_B(z, a=0.25, I=2000.0, zc=0.0):
@@ -40,7 +40,7 @@ def analyze(d):
     a1.set_ylabel("B on axis [mT]")
     a1.set_title(f"mirror field, R = B_max/B_min = {Bmax / Bmin:.2f}")
     a2.plot(t * 1e6, N / N[0], color=style.series_color(0), label="simulation")
-    a2.axhline(trapped, color=style.series_color(1), ls="--", label=f"loss-cone theory {trapped:.3f}")
+    a2.axhline(trapped, color=style.INK, ls="--", lw=0.9, label=f"loss-cone theory, {trapped:.3f}")
     a2.set_xlabel("time [µs]")
     a2.set_ylabel("fraction of electrons retained")
     a2.set_ylim(0, 1.05)
@@ -60,25 +60,26 @@ def analyze(d):
     fig.tight_layout()
     save(fig, d, "04_mirror.png")
     # animation: electrons in the (z, x) plane, coloured by pitch angle
-    w = gif_writer(media("04_mirror_bounce.gif"), fps=10)
-    for i in range(len(ser)):
-        P, V, pa = pitch(i)
-        f, ax = plt.subplots(figsize=(7.2, 3.2), dpi=90)
-        for zc in (-0.4, 0.4):
-            ax.plot([zc, zc], [0.2, 0.25], color=style.INK, lw=6, solid_capstyle="butt")
-            ax.plot([zc, zc], [-0.25, -0.2], color=style.INK, lw=6, solid_capstyle="butt")
-        sc = ax.scatter(P[:, 2], P[:, 0], c=np.minimum(pa, 180 - pa), cmap="viridis", vmin=0, vmax=90, s=2, lw=0)
-        ax.set_xlim(-0.5, 0.5)
-        ax.set_ylim(-0.25, 0.25)
-        ax.set_xlabel("z [m]")
-        ax.set_ylabel("x [m]")
-        ax.set_title(f"magnetic bottle   t = {ser[i][0] * 1e6:4.2f} µs")
-        cb = f.colorbar(sc, ax=ax, pad=0.01)
-        cb.set_label("pitch angle [deg]")
-        cb.outline.set_visible(False)
-        ax.grid(False)
-        f.tight_layout()
-        w.append_data(fig_to_rgb(f))
-        plt.close(f)
-    w.close()
-    print("wrote 04_mirror_bounce.gif")
+    if ANIMATE:
+        w = gif_writer(media("04_mirror_bounce.gif"), fps=10)
+        for i in range(len(ser)):
+            P, V, pa = pitch(i)
+            f, ax = plt.subplots(figsize=(7.2, 3.2), dpi=90)
+            for zc in (-0.4, 0.4):
+                ax.plot([zc, zc], [0.2, 0.25], color=style.INK, lw=6, solid_capstyle="butt")
+                ax.plot([zc, zc], [-0.25, -0.2], color=style.INK, lw=6, solid_capstyle="butt")
+            sc = ax.scatter(P[:, 2], P[:, 0], c=np.minimum(pa, 180 - pa), cmap="viridis", vmin=0, vmax=90, s=2, lw=0)
+            ax.set_xlim(-0.5, 0.5)
+            ax.set_ylim(-0.25, 0.25)
+            ax.set_xlabel("z [m]")
+            ax.set_ylabel("x [m]")
+            ax.set_title(f"magnetic bottle   t = {ser[i][0] * 1e6:4.2f} µs")
+            cb = f.colorbar(sc, ax=ax, pad=0.01)
+            cb.set_label("pitch angle [deg]")
+            cb.outline.set_visible(False)
+            ax.grid(False)
+            f.tight_layout()
+            w.append_data(fig_to_rgb(f))
+            plt.close(f)
+        w.close()
+        print("wrote 04_mirror_bounce.gif")

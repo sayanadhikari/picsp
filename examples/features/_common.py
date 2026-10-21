@@ -15,6 +15,8 @@ Environment overrides (used by make_paper_figures.py; the defaults reproduce the
   PICSP_FIG_DPI, PICSP_FIG_FORMATS  figure resolution and formats, e.g. 300 and png,pdf
   PICSP_RENDER_SCALE              magnification of 3D renders (1)
   PICSP_STYLE=paper               journal figure style (see picsp_post.style)
+  PICSP_REUSE_RENDERS=1           lay out existing Blender renders again (no Blender needed)
+  PICSP_NO_ANIM=1                 skip the animations (figures only)
 """
 import os
 import subprocess
@@ -39,6 +41,7 @@ MU0 = 1.25663706212e-6
 
 INPUT = os.environ.get("PICSP_INPUT", "input.toml")
 OUTPUT = os.environ.get("PICSP_OUTPUT_DIR", "output")
+ANIMATE = os.environ.get("PICSP_NO_ANIM", "") in ("", "0")
 
 
 def out(example_dir):

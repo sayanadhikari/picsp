@@ -43,7 +43,7 @@ def analyze(d):
         c.axvline(th, color=style.INK2, ls=":", lw=1)
         c.text(th + 0.4, 0.03, lab, rotation=90, va="bottom", color=style.INK2, fontsize=8, transform=c.get_xaxis_transform())
     c.set_xlabel("electron energy [eV]")
-    c.set_ylabel("EEPF  f(ε)/√ε  [eV⁻³ᐟ²]")
+    c.set_ylabel(r"EEPF (eV$^{-3/2}$)")
     c.set_title("electron energy probability function")
     c.legend(loc="upper right")
     fig.tight_layout()

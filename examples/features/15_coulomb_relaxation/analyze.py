@@ -41,7 +41,7 @@ def analyze(d):
         a, b = te[-1], ti[-1]
         te.append(a + spitzer(ME, mi, n, a, b) * (b - a) * dt)
         ti.append(b + spitzer(mi, ME, n, b, a) * (a - b) * dt)
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.2))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 3.7))
     a1.plot(t * 1e9, h["T_electron"], color=style.series_color(0), label="electrons (PIC)")
     a1.plot(t * 1e9, h["T_ion"], color=style.series_color(1), label="ions (PIC)")
     a1.plot(tt * 1e9, te, "--", color=style.INK, lw=1, label="Spitzer rate equations")
@@ -60,8 +60,8 @@ def analyze(d):
             dperp = -nu * (tq[-1] - tp[-1]) * dt
             tq.append(tq[-1] + dperp)
             tp.append(tp[-1] - 2 * dperp)
-        a2.plot(g["time"] * 1e9, g["Tz_electron"], color=style.series_color(0), label="T∥ (PIC)")
-        a2.plot(g["time"] * 1e9, 0.5 * (g["Tx_electron"] + g["Ty_electron"]), color=style.series_color(1), label="T⊥ (PIC)")
+        a2.plot(g["time"] * 1e9, g["Tz_electron"], color=style.series_color(0), label=r"$T_\parallel$ (PIC)")
+        a2.plot(g["time"] * 1e9, 0.5 * (g["Tx_electron"] + g["Ty_electron"]), color=style.series_color(1), label=r"$T_\perp$ (PIC)")
         a2.plot(ts * 1e9, tp, "--", color=style.INK, lw=1, label="NRL isotropisation rate")
         a2.plot(ts * 1e9, tq, "--", color=style.INK, lw=1)
         a2.set_xlim(0, 8)

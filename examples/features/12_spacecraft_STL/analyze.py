@@ -1,6 +1,6 @@
 """3U CubeSat from STL: surface current map, plasma slices and the ion-wake movie."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, out, render3d
+from _common import ANIMATE, Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, out, render3d
 from picsp_post import plots
 
 
@@ -16,7 +16,7 @@ def analyze(d):
                      title="3U CubeSat: net surface current density and O+ density (z = -3 cm)")
     p.camera.azimuth = -35
     p.camera.elevation = 10
-    render3d(p, d, "12_cubesat_render.png", width_mm=183, zoom=0.55)
+    render3d(p, d, "12_cubesat_render.png", width_mm=89, zoom=0.55)
     p.close()
     fig, axs = plt.subplots(2, 2, figsize=(14, 8.4))
     plots.plot_slice(r, "n_O+", "z", 0.03, -1, ax=axs[0, 0], title="O+ density, z = 3 cm (through the bus)")
@@ -27,13 +27,14 @@ def analyze(d):
     save(fig, d, "12_cubesat_slices.png")
     h = r.history()
     print(f"spacecraft {h['V_spacecraft'][-50:].mean():.3f} V, probe {h['V_probe'][-50:].mean():.3f} V")
-    w = gif_writer(media("12_cubesat_wake.gif"), fps=6)
-    for i in range(len(r.series("fields"))):
-        f, ax = plt.subplots(figsize=(7.2, 5.6), dpi=80)
-        plots.plot_slice(r, "n_O+", "z", -0.03, i, ax=ax, vmin=0, vmax=1.0e10,
-                         title=f"O+ density below the panels   t = {r.time('fields', i) * 1e6:5.1f} µs")
-        f.tight_layout()
-        w.append_data(fig_to_rgb(f))
-        plt.close(f)
-    w.close()
-    print("wrote 12_cubesat_wake.gif")
+    if ANIMATE:
+        w = gif_writer(media("12_cubesat_wake.gif"), fps=6)
+        for i in range(len(r.series("fields"))):
+            f, ax = plt.subplots(figsize=(7.2, 5.6), dpi=80)
+            plots.plot_slice(r, "n_O+", "z", -0.03, i, ax=ax, vmin=0, vmax=1.0e10,
+                             title=f"O+ density below the panels   t = {r.time('fields', i) * 1e6:5.1f} µs")
+            f.tight_layout()
+            w.append_data(fig_to_rgb(f))
+            plt.close(f)
+        w.close()
+        print("wrote 12_cubesat_wake.gif")
