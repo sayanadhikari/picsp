@@ -57,7 +57,9 @@ def scale_input(text: str, grid, tf: int, pf: int, longer: int = 1) -> str:
     """Refine an example input. Only top-level keys of [grid], [time], [output] and per-species
     ppc are touched; physical quantities (domain, rates, objects) are unchanged."""
     out, section = [], ""
-    has_length = re.search(r"^\s*length\s*=", text, re.M) is not None
+    # `length` given in [grid] fixes the domain; `length` keys of objects (cylinders) do not count
+    grid_block = re.search(r"^\s*\[grid\][^\n]*\n(.*?)(?=^\s*\[|\Z)", text, re.M | re.S)
+    has_length = bool(grid_block) and re.search(r"^\s*length\s*=", grid_block.group(1), re.M) is not None
     for line in text.splitlines():
         m = re.match(r"^\s*\[\[?([\w.]+)\]?\]", line)
         if m:
