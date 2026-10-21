@@ -76,6 +76,34 @@ jobs:
           path: build/picsp3d
           retention-days: 7
 
+  distros:
+    name: install (${{ matrix.image }})
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ matrix.image }}
+      options: --shm-size=1g   # Docker's 64 MB /dev/shm makes Open MPI (UCX) die with SIGBUS
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ "ubuntu:22.04", "debian:12", "rockylinux:8", "rockylinux:9", "fedora:42",
+                 "opensuse/leap:15.6", "archlinux:latest" ]
+    steps:
+      - name: Prerequisites for checkout
+        run: |
+          if command -v apt-get >/dev/null; then apt-get update -q && apt-get install -y -q git sudo
+          elif command -v dnf >/dev/null; then dnf install -y -q git sudo which
+          elif command -v zypper >/dev/null; then zypper -n install git sudo tar gzip which
+          elif command -v pacman >/dev/null; then pacman -Sy --noconfirm git sudo which; fi
+      - uses: actions/checkout@v7
+      - name: Install dependencies, build and test
+        run: ./scripts/install.sh --test
+      - name: Run an example
+        run: |
+          export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          for d in /usr/lib64/openmpi/bin /usr/lib64/mpi/gcc/openmpi4/bin; do [ -d $d ] && export PATH=$d:$PATH; done
+          cd examples && OMP_NUM_THREADS=2 mpirun -np 2 --oversubscribe ../build/picsp3d two_stream.toml --steps 20 --output /tmp/ts
+
   sanitizers:
     name: AddressSanitizer + UBSan
     runs-on: ubuntu-24.04

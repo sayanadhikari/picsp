@@ -15,6 +15,27 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
 
+# oldest compilers tested: GCC 8.5 (RHEL 8) and Clang 11; GCC 7 has no C++20 mode
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8) OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11))
+  message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} is too old for C++20; need GCC >= 8 "
+                      "or Clang >= 11. openSUSE Leap: 'zypper install gcc13-c++' and -DCMAKE_CXX_COMPILER=g++-13. "
+                      "Delete the build directory before reconfiguring.")
+endif()
+
+# RHEL / Fedora / openSUSE install Open MPI outside PATH (normally added by 'module load');
+# look there when no MPI wrapper is on PATH and none was given
+if(NOT MPI_CXX_COMPILER AND NOT DEFINED ENV{MPI_HOME})
+  find_program(_mpicxx_on_path NAMES mpicxx mpic++)
+  if(NOT _mpicxx_on_path)
+    find_program(_mpicxx_sys NAMES mpicxx PATHS /usr/lib64/openmpi/bin /usr/lib64/mpi/gcc/openmpi4/bin
+                 /usr/lib64/mpich/bin NO_DEFAULT_PATH)
+    if(_mpicxx_sys)
+      set(MPI_CXX_COMPILER ${_mpicxx_sys} CACHE FILEPATH "MPI C++ compiler wrapper")
+      message(STATUS "Using ${_mpicxx_sys} (not on PATH; add its directory to PATH or 'module load' MPI to run)")
+    endif()
+  endif()
+endif()
 set(MPI_DETERMINE_LIBRARY_VERSION ON)   # fills MPI_CXX_LIBRARY_VERSION_STRING, checked below
 find_package(MPI REQUIRED COMPONENTS CXX)
 find_package(OpenMP REQUIRED COMPONENTS CXX)
@@ -49,6 +70,9 @@ list(REMOVE_ITEM PICSP_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
 add_library(picsp_core STATIC ${PICSP_SOURCES})
 target_include_directories(picsp_core PUBLIC ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/extern)
 target_link_libraries(picsp_core PUBLIC MPI::MPI_CXX OpenMP::OpenMP_CXX)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+  target_link_libraries(picsp_core PUBLIC stdc++fs)   # GCC 8 keeps std::filesystem in a separate library
+endif()
 target_compile_options(picsp_core PUBLIC
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wno-unused-parameter -Wno-sign-compare>
   $<$<CONFIG:Release>:-O3>)

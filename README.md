@@ -83,18 +83,47 @@ publication-quality figures, animations and 3D renderings.
 
 ## Building
 
-Requirements: a C++20 compiler, CMake ≥ 3.18, MPI and OpenMP. No other libraries are needed (the
-TOML parser is vendored in `extern/`).
+Requirements: a C++20 compiler (GCC ≥ 8 or Clang ≥ 11), CMake ≥ 3.18, MPI and OpenMP. No other
+libraries are needed (the TOML parser is vendored in `extern/`).
+
+The quickest way is the install script, which detects the distribution, installs the packages
+(with `sudo`), builds `build/picsp3d` and, with `--test`, runs the verification suite:
+
+```bash
+./scripts/install.sh --test            # add --python for the post-processing package
+./scripts/install.sh --no-deps         # build only: clusters, or packages already installed
+```
+
+Or by hand:
 
 ```bash
 sudo apt install build-essential cmake libopenmpi-dev openmpi-bin     # Debian / Ubuntu
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-ctest --test-dir build --output-on-failure                           # verification suite
+ctest --test-dir build --output-on-failure -j 8                      # verification suite
 ```
 
-CMake options: `PICSP_NATIVE` (default `ON`, compiles with `-march=native`) and `PICSP_TESTS`
-(default `ON`).
+Tested distributions (`scripts/install.sh --test` in clean containers, all 12 tests passing; the
+same matrix runs in CI):
+
+| Distribution | Compiler | MPI | Packages | Notes |
+|---|---|---|---|---|
+| Ubuntu 22.04, 24.04 | GCC 11, 13 | Open MPI 4.1 | `build-essential cmake libopenmpi-dev openmpi-bin` | |
+| Debian 12 | GCC 12 | Open MPI 4.1 | as Ubuntu | |
+| RHEL / Rocky / Alma 8 | GCC 8.5 | Open MPI 4.1 | `gcc-c++ cmake openmpi-devel` | `python3.11` for post-processing |
+| RHEL / Rocky / Alma 9 | GCC 11 | Open MPI 4.1 | `gcc-c++ cmake openmpi-devel` | |
+| Fedora 42 | GCC 15 | Open MPI 5 | `gcc-c++ cmake openmpi-devel` | |
+| openSUSE Leap 15.6 | GCC 13 | Open MPI 4.1 | `gcc13-c++ cmake openmpi4-devel` | default GCC 7 is too old: `-DCMAKE_CXX_COMPILER=g++-13` |
+| Arch Linux | GCC 16 | Open MPI 5 | `base-devel cmake openmpi` | |
+
+Clang 11 to 13 also build the code. On RHEL, Rocky, Alma, Fedora and openSUSE, Open MPI is
+installed outside `PATH`: CMake finds it there by itself, but to run, add it to `PATH`
+(`export PATH=/usr/lib64/openmpi/bin:$PATH`, on openSUSE `/usr/lib64/mpi/gcc/openmpi4/bin`) or use
+`module load mpi/openmpi-x86_64`. In Docker, start the container with `--shm-size=1g`: Open MPI's
+shared-memory transport fails with a bus error (SIGBUS) in the default 64 MB `/dev/shm`.
+
+CMake options: `PICSP_NATIVE` (default `ON`, compiles with `-march=native`; turn it off for a
+binary that has to run on other CPUs) and `PICSP_TESTS` (default `ON`).
 
 > **Several MPI installations.** Anaconda/conda, Spack and environment modules often put a second
 > MPI (typically MPICH) ahead of the system Open MPI on `PATH`. The code must be compiled and launched
@@ -501,7 +530,9 @@ python/picsp_post   post-processing package and the `mesh` CAD import tool
 tests/              verification suite (ctest) and Python tests (tests/python)
 examples/           production inputs, geometry generator, analysis scripts
 examples/features/  one example per feature with analysis
-docs/               input reference, numerical methods, logo, figures
+benchmarks/scaling/ strong- and weak-scaling benchmark, results and plots
+scripts/install.sh  dependency installation and build for common Linux distributions
+docs/               input reference, numerical methods, performance, logo, figures
 legacy/             original 2D PICSP code
 ```
 
