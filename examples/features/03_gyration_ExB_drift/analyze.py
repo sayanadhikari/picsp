@@ -1,6 +1,7 @@
 """Gyration and E x B drift: 3D trajectories and the measured drift velocity."""
+import os
 import numpy as np
-from _common import simulate, save, plt, style
+from _common import simulate, save, plt, style, out
 
 
 def simulate_example(d):
@@ -8,7 +9,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    t = np.genfromtxt(f"{d}/output/tracks.csv", delimiter=",", names=True)
+    t = np.genfromtxt(os.path.join(out(d), "tracks.csv"), delimiter=",", names=True)
     fig = plt.figure(figsize=(12, 4.8))
     ax = fig.add_subplot(1, 2, 1, projection="3d")
     ax2 = fig.add_subplot(1, 2, 2)

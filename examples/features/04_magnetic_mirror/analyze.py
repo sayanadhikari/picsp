@@ -1,7 +1,7 @@
 """Magnetic mirror: trapped fraction vs loss-cone theory, emptying of the loss cone in
 pitch-angle space, and an animation of electrons bouncing in the bottle."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, MU0
+from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, MU0, out
 
 
 def loop_B(z, a=0.25, I=2000.0, zc=0.0):
@@ -17,7 +17,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     t, N = h["time"], h["N_electron"]
     Bmin, Bmax = Bz_axis(0.0), Bz_axis(0.4)

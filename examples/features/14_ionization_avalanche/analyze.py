@@ -1,7 +1,7 @@
 """Ionisation avalanche: exponential electron multiplication and the electron energy
 distribution relative to the inelastic thresholds."""
 import numpy as np
-from _common import Run, simulate, save, plt, style
+from _common import Run, simulate, save, plt, style, out
 
 
 def simulate_example(d):
@@ -9,7 +9,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     t, Ne, Ni = h["time"], h["N_electron"], h["N_Ar+"]
     m = t > 0.35 * t[-1]

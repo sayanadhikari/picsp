@@ -1,6 +1,7 @@
 """Dipole trapping: 3D trajectories with field lines (pyvista) and the bounce/drift motion."""
+import os
 import numpy as np
-from _common import simulate, save, media, plt, style
+from _common import simulate, save, media, plt, style, out, screenshot
 
 
 def simulate_example(d):
@@ -14,7 +15,7 @@ def field_line(L, n=200):
 
 
 def analyze(d):
-    t = np.genfromtxt(f"{d}/output/tracks.csv", delimiter=",", names=True)
+    t = np.genfromtxt(os.path.join(out(d), "tracks.csv"), delimiter=",", names=True)
     import pyvista as pv
     p = pv.Plotter(off_screen=True, window_size=(1600, 1000))
     p.set_background("#0d1117", top="#1f2a38")
@@ -34,7 +35,7 @@ def analyze(d):
     p.camera_position = [(7.5, -10.5, 7.5), (0, 0, 0), (0, 0, 1)]
     p.add_text("protons trapped in a dipole field: gyration, bounce and drift", position="upper_left", font_size=12,
                color="#f0efec")
-    p.screenshot(media("05_dipole_trapping.png"))
+    screenshot(p, media("05_dipole_trapping.png"))
     p.close()
     # latitude and longitude vs time for the first particle
     m = (t["species"] == 0) & (t["index"] == 0)

@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 import numpy as np
-from _common import Run, simulate, save, media, plt, style
+from _common import Run, simulate, save, media, plt, style, out, screenshot
 from matplotlib.collections import PolyCollection
 from picsp_post.mesh import Mesh
 
@@ -30,7 +30,7 @@ def _draw(ax, tris, i, j, color):
 def analyze(d):
     raw = Mesh.load(os.path.join(d, "cad", "cubesat_mm.stl"))
     placed = raw.placed(units="mm", anchor="center", rotate=(0, 0, -30), center=(0, 0, 0))
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     g = r.fields(-1)
     o, sp, dims = np.asarray(g.origin), np.asarray(g.spacing), np.asarray(g.dimensions) - 1
     fig, axs = plt.subplots(1, 3, figsize=(17, 4.6))
@@ -73,5 +73,5 @@ def analyze(d):
                      window=(1500, 950), zoom=1.6, title="imported CAD mesh: surface potential and plasma potential")
     p.camera.azimuth = -40
     p.camera.elevation = 18
-    p.screenshot(media("16_mesh_import_render.png"))
+    screenshot(p, media("16_mesh_import_render.png"))
     p.close()

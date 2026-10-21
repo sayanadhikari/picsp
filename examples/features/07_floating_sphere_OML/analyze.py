@@ -1,7 +1,7 @@
 """Floating sphere: charging history vs orbit-motion-limited theory, radial potential and
 density profiles, and the potential map with field lines."""
 import numpy as np
-from _common import Run, simulate, save, plt, style, E, ME
+from _common import Run, simulate, save, plt, style, E, ME, out
 from picsp_post import plots
 
 
@@ -10,7 +10,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     R, n, Te, Ti, mi = 3.717e-3, 1e12, 1.0, 1.0, 100 * ME
     A = 4 * np.pi * R**2
@@ -53,5 +53,5 @@ def analyze(d):
     a.set_title("radial sheath structure")
     a.legend(loc="lower right")
     plots.plot_slice(r, "phi", "z", ax=axs[2], streamlines=True, title="potential and electric field lines")
-    fig.tight_layout()
+    fig.tight_layout(w_pad=3)
     save(fig, d, "07_floating_sphere.png")

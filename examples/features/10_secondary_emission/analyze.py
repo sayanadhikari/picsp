@@ -1,6 +1,6 @@
 """Secondary emission: floating potentials with and without SEE, secondary-electron cloud."""
 import numpy as np
-from _common import Run, simulate, save, plt, style
+from _common import Run, simulate, save, plt, style, out
 from picsp_post import plots
 
 
@@ -9,7 +9,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     t = h["time"] * 1e9
     print(f"final potentials: no SEE {h['V_plate_noSEE'][-50:].mean():.1f} V, with SEE {h['V_plate_SEE'][-50:].mean():.2f} V")

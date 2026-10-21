@@ -1,7 +1,7 @@
 """Sampled velocity distributions vs analytic forms."""
 import numpy as np
 from scipy.special import gamma as G
-from _common import Run, simulate, save, plt, style, E, ME
+from _common import Run, simulate, save, plt, style, E, ME, out
 
 
 def simulate_example(d):
@@ -9,7 +9,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     pd = r.particles(0)
     sid = np.asarray(pd.point_data["species"]).astype(int)
     V = np.asarray(pd.point_data["velocity"])

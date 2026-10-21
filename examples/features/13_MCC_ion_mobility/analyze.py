@@ -1,6 +1,6 @@
 """Ion mobility with charge exchange: drift velocity and distribution vs theory."""
 import numpy as np
-from _common import Run, simulate, save, plt, style, E, AMU
+from _common import Run, simulate, save, plt, style, E, AMU, out
 
 
 def simulate_example(d):
@@ -8,7 +8,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     M, Ef, n, sig = 39.95 * AMU, 1000.0, 3e21, 5e-19
     lam = 1 / (n * sig)

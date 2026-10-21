@@ -48,5 +48,7 @@ examples/geometry/*.stl
 benchmarks/scaling/results/*/work/
 gmon.out
 
+examples/features/*/input_hires.toml
+
 # Private manuscript (separate git repository synced with Overleaf)
 docs/paper/

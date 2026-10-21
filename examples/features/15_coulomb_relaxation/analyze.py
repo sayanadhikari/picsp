@@ -1,6 +1,6 @@
 """Coulomb collisions: e-i temperature relaxation and anisotropy relaxation vs theory."""
 import numpy as np
-from _common import Run, simulate, save, plt, style, E, ME, EPS0
+from _common import Run, simulate, save, plt, style, E, ME, EPS0, out
 
 
 def simulate_example(d):
@@ -32,7 +32,7 @@ def nu_T(Tpar, Tperp, n, lnL=10.0):
 
 
 def analyze(d):
-    h = Run(f"{d}/output").history()
+    h = Run(out(d)).history()
     t = h["time"]
     mi, n = 100 * ME, 1e20
     te, ti, tt = [h["T_electron"][0]], [h["T_ion"][0]], np.linspace(0, t[-1], 4000)

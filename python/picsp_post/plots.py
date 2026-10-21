@@ -174,7 +174,7 @@ def plot_slice(run: Run, name: str = "phi", axis: str = "z", pos=None, index: in
         k = np.argmin(np.abs(run.axes(index)[a] - p))
         e1 = np.take(Ev[..., rest[0]], k, axis=a)
         e2 = np.take(Ev[..., rest[1]], k, axis=a)
-        ax.streamplot(x1, x2, e1.T, e2.T, color=(1, 1, 1, 0.55), density=1.1, linewidth=0.7, arrowsize=0.7)
+        ax.streamplot(x1, x2, e1.T, e2.T, color=(0.15, 0.15, 0.15, 0.5), density=1.1, linewidth=0.6, arrowsize=0.7)
     ax.set_aspect("equal")
     ax.set_xlabel(f"{l1} [m]")
     ax.set_ylabel(f"{l2} [m]")

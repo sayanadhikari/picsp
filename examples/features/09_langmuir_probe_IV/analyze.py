@@ -1,6 +1,6 @@
 """Langmuir probe I-V characteristic and electron temperature from the retardation region."""
 import numpy as np
-from _common import Run, simulate, save, plt, style
+from _common import Run, simulate, save, plt, style, out
 
 
 def simulate_example(d):
@@ -8,7 +8,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    h = Run(f"{d}/output").history()
+    h = Run(out(d)).history()
     V = h["V_probe"]
     Ie = -h["I_probe_electron"]
     Ii = h["I_probe_ion"]
@@ -27,7 +27,7 @@ def analyze(d):
     a.plot(Vb, Ib * 1e6, "o-", ms=4, color=style.series_color(0))
     a.axhline(0, color=style.INK2, lw=0.8)
     a.axvline(0, color=style.INK2, lw=0.8, ls=":")
-    a.annotate("ion collection (OML)", (Vb[1], Ib[1] * 1e6), xytext=(Vb[1] + 0.5, Ib.max() * 0.4e6),
+    a.annotate("ion collection (OML)", (Vb[1], Ib[1] * 1e6), xytext=(Vb[1] + 2.5, Ib.max() * 0.85e6),
                arrowprops=dict(arrowstyle="->", color=style.INK2))
     a.set_xlabel("probe bias [V]")
     a.set_ylabel("probe current [µA]  (positive = ions in)")

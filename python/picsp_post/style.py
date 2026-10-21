@@ -1,4 +1,6 @@
 """Consistent figure style for PICSP3D plots."""
+import os
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -40,7 +42,7 @@ def apply():
         "legend.fontsize": 9,
         "font.family": "DejaVu Sans",
         "figure.dpi": 110,
-        "savefig.dpi": 160,
+        "savefig.dpi": int(os.environ.get("PICSP_FIG_DPI", 160)),
         "savefig.bbox": "tight",
         "image.cmap": CMAP_SEQ,
     })

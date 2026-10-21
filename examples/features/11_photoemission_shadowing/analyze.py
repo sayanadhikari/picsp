@@ -1,6 +1,6 @@
 """Photoemission: positive charging, photoelectron cloud and the shadow on the panel."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style
+from _common import Run, simulate, save, media, plt, style, out, screenshot
 from picsp_post import plots
 
 
@@ -9,7 +9,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     h = r.history()
     V = h["V_panel+mast"]
     print(f"floating potential {V[-50:].mean():.2f} V")
@@ -27,5 +27,5 @@ def analyze(d):
     p = render_scene(r, -1, None, surface_scalars="J_emit", slice_field=None, window=(1500, 1000), zoom=1.9,
                      title="photoelectron current density: the mast shadows the panel")
     p.camera_position = [(1.6, -2.4, 2.4), (0, 0, -0.1), (0, 0, 1)]
-    p.screenshot(media("11_photoemission_shadow.png"))
+    screenshot(p, media("11_photoemission_shadow.png"))
     p.close()

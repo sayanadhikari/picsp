@@ -1,7 +1,7 @@
 """Ion wake behind a sphere in mesothermal flow: animation of the ion density and the
 final density / potential maps."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb
+from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, out
 from picsp_post import plots
 
 
@@ -10,7 +10,7 @@ def simulate_example(d):
 
 
 def analyze(d):
-    r = Run(f"{d}/output")
+    r = Run(out(d))
     n0 = 1e12
     w = gif_writer(media("08_wake.gif"), fps=8)
     for i in range(len(r.series("fields"))):

@@ -7,6 +7,13 @@ Every example directory contains an `input.toml`, an `analyze.py` and a README. 
 
 Figures and animations are written to the example's `output/` directory and, for the
 documentation, to docs/media/.
+
+Environment overrides (used by make_paper_figures.py; the defaults reproduce the examples):
+  PICSP_INPUT, PICSP_OUTPUT_DIR   input file and output directory (input.toml, output)
+  PICSP_RANKS, PICSP_THREADS      MPI ranks and OpenMP threads per run (1, 2)
+  PICSP_MEDIA_DIR                 where published figures go (docs/media)
+  PICSP_FIG_DPI, PICSP_FIG_FORMATS  figure resolution and formats, e.g. 300 and png,pdf
+  PICSP_RENDER_SCALE              magnification of 3D renders (1)
 """
 import os
 import subprocess
@@ -29,6 +36,14 @@ AMU = 1.66053906660e-27
 EPS0 = 8.8541878128e-12
 MU0 = 1.25663706212e-6
 
+INPUT = os.environ.get("PICSP_INPUT", "input.toml")
+OUTPUT = os.environ.get("PICSP_OUTPUT_DIR", "output")
+
+
+def out(example_dir):
+    """The example's simulation output directory."""
+    return os.path.join(example_dir, OUTPUT)
+
 
 def exe():
     for c in (os.environ.get("PICSP3D"), os.path.join(ROOT, "build", "picsp3d")):
@@ -38,9 +53,12 @@ def exe():
 
 
 def simulate(example_dir, ranks=1, threads=2, extra=()):
-    """Run picsp3d on <example_dir>/input.toml (output in <example_dir>/output)."""
+    """Run picsp3d on <example_dir>/<INPUT> (output in <example_dir>/<OUTPUT>)."""
+    ranks = int(os.environ.get("PICSP_RANKS", ranks))
+    threads = int(os.environ.get("PICSP_THREADS", threads))
     env = dict(os.environ, OMP_NUM_THREADS=str(threads))
-    cmd = ["mpirun", "-np", str(ranks), "--bind-to", "none", exe(), "input.toml", "--output", "output", *extra]
+    mpirun = os.environ.get("MPIEXEC", "mpirun")
+    cmd = [mpirun, "-np", str(ranks), "--bind-to", "none", exe(), INPUT, "--output", OUTPUT, *extra]
     if os.geteuid() == 0:
         cmd.insert(1, "--allow-run-as-root")
     print("$", " ".join(cmd))
@@ -56,11 +74,18 @@ def media(name):
 
 
 def save(fig, example_dir, name, publish=True):
-    os.makedirs(os.path.join(example_dir, "output"), exist_ok=True)
-    fig.savefig(os.path.join(example_dir, "output", name))
+    os.makedirs(out(example_dir), exist_ok=True)
+    fig.savefig(os.path.join(out(example_dir), name))
     if publish:
-        fig.savefig(media(name))
+        stem, ext = os.path.splitext(name)
+        for fmt in os.environ.get("PICSP_FIG_FORMATS", ext.lstrip(".")).split(","):
+            fig.savefig(media(f"{stem}.{fmt.strip()}"))
     print("wrote", name)
+
+
+def screenshot(plotter, path):
+    """Save a pyvista render, magnified by PICSP_RENDER_SCALE."""
+    plotter.screenshot(path, scale=int(os.environ.get("PICSP_RENDER_SCALE", 1)))
 
 
 class _FrameWriter:
