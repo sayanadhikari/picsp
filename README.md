@@ -390,7 +390,7 @@ python3 run_example.py 04_magnetic_mirror --analyze-only
 | 09 | [Langmuir probe I-V](examples/features/09_langmuir_probe_IV) | swept bias, current collection | T_e = 2.21 eV from the retardation slope (input 2.0 eV), V_f = −2.45 V |
 | 10 | [Secondary emission](examples/features/10_secondary_emission) | Sternglass SEE, floating plates | −45 V and still charging without SEE, −0.4 V with SEE; current balance closes |
 | 11 | [Photoemission and shadowing](examples/features/11_photoemission_shadowing) | photoemission, ray-cast shadows, connected parts | charges positive to +2.6 V (saturating near 3 V); mast casts a photoemission shadow on the panel |
-| 12 | [Spacecraft from STL](examples/features/12_spacecraft_STL) | STL import, CSG, isolated probe, all surface physics | spacecraft floats at −1.53 V, isolated probe at −1.50 V; sunlit panels emit, shadowed faces collect |
+| 12 | [Spacecraft from STL](examples/features/12_spacecraft_STL) | STL import, CSG, isolated probe, all surface physics | spacecraft floats at −1.53 V, isolated probe at −1.53 V; sunlit panels emit, shadowed faces collect |
 | 13 | [Ion mobility](examples/features/13_MCC_ion_mobility) | MCC charge exchange | drift 1017 m/s vs theory 1012 m/s, half-Gaussian distribution |
 | 14 | [Ionisation avalanche](examples/features/14_ionization_avalanche) | ionisation, excitation, Lotz cross section | steady swarm, exponential multiplication ν_i = 1.4 × 10⁸ s⁻¹ |
 | 15 | [Coulomb relaxation](examples/features/15_coulomb_relaxation) | Takizuka-Abe collisions | e-i equilibration and isotropisation follow Spitzer / NRL rates |

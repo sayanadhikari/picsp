@@ -10,7 +10,7 @@ The full run takes about 6 minutes on 2 cores.
 
 ## Result
 
-The spacecraft floats at −1.53 V and the isolated probe at −1.50 V. Sunlit faces have a positive
+The spacecraft floats at −1.53 V and the isolated probe at −1.53 V. Sunlit faces have a positive
 net current density (photoemission exceeds collection), shadowed faces collect electrons, and an
 O⁺ wake with downstream focusing forms behind the body.
 
