@@ -67,10 +67,29 @@ void Field3D::init(const GridGeom& g, int ghosts) {
   v_.assign(std::size_t(n_[0]) * n_[1] * n_[2], 0.0);
 }
 
-void Field3D::fill(double val) { std::fill(v_.begin(), v_.end(), val); }
+// threaded: these run several times per Poisson iteration
+void Field3D::fill(double val) {
+  const std::size_t N = v_.size();
+  double* v = v_.data();
+#pragma omp parallel for simd schedule(static)
+  for (std::size_t p = 0; p < N; ++p) v[p] = val;
+}
+
+void Field3D::copy_from(const Field3D& o) {
+  if (v_.size() != o.v_.size()) {
+    v_ = o.v_;
+    return;
+  }
+  const std::size_t N = v_.size();
+  double* v = v_.data();
+  const double* s = o.v_.data();
+#pragma omp parallel for simd schedule(static)
+  for (std::size_t p = 0; p < N; ++p) v[p] = s[p];
+}
 
 // Visit a slab [p0, p0+np) along axis a (full extent on the other axes) as contiguous
-// x-rows: f(local index of row start, row length, running buffer offset).
+// x-rows: f(local index of row start, row length, running buffer offset). Rows touch disjoint
+// memory, so large slabs are visited in parallel (small coarse-grid slabs stay serial).
 namespace {
 template <typename F>
 inline void for_slab_rows(const std::array<int, 3>& n, int a, int p0, int np, F&& f) {
@@ -78,11 +97,13 @@ inline void for_slab_rows(const std::array<int, 3>& n, int a, int p0, int np, F&
   lo[a] = p0;
   hi[a] = p0 + np;
   const std::size_t len = std::size_t(hi[0] - lo[0]);
-  std::size_t c = 0;
+  const int nj = hi[1] - lo[1];
+  const std::size_t total = len * std::size_t(nj) * std::size_t(hi[2] - lo[2]);
+#pragma omp parallel for collapse(2) schedule(static) if (total > 16384)
   for (int k = lo[2]; k < hi[2]; ++k)
     for (int j = lo[1]; j < hi[1]; ++j) {
+      const std::size_t c = (std::size_t(k - lo[2]) * nj + std::size_t(j - lo[1])) * len;
       f(std::size_t(lo[0]) + std::size_t(n[0]) * (std::size_t(j) + std::size_t(n[1]) * k), len, c);
-      c += len;
     }
 }
 }  // namespace

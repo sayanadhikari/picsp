@@ -57,7 +57,7 @@ class Field3D {
   inline int own_hi(int a) const { return G_ + (g_->n1[a] - g_->n0[a]); }
 
   void fill(double val);
-  void copy_from(const Field3D& o) { v_ = o.v_; }
+  void copy_from(const Field3D& o);
 
   // Ghost exchange. halo_copy: owners -> ghosts. halo_add: ghost contributions summed
   // into owners (deposition), followed by an implicit halo_copy.

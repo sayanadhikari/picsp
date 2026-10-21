@@ -165,8 +165,12 @@ void PoissonSolver::fill_ghosts(Level& L, Field3D& x) {
 }
 
 void PoissonSolver::zero_fixed(Level& L, Field3D& x) {
-  for (std::size_t p = 0; p < x.total(); ++p)
-    if (L.fixed[p]) x[p] = 0.0;
+  const std::size_t N = x.total();
+  double* X = x.data();
+  const std::uint8_t* F = L.fixed.data();
+#pragma omp parallel for simd schedule(static)
+  for (std::size_t p = 0; p < N; ++p)
+    if (F[p]) X[p] = 0.0;
 }
 
 void PoissonSolver::apply(Level& L, Field3D& x, Field3D& y) {
@@ -351,19 +355,25 @@ void PoissonSolver::prolong_add(Level& C, Field3D& ec, Level& F, Field3D& uf) {
 
 void PoissonSolver::project_mean(Level& L, Field3D& b) {
   // remove the component along the null space (constant) for singular problems
-  double sb = 0, sw = 0;
+  if (L.wsum == 0) {  // the weights are fixed: sum them once
+    double sw = 0;
+    for (int k = 1; k <= L.own[2]; ++k)
+      for (int j = 1; j <= L.own[1]; ++j)
+        for (int i = 1; i <= L.own[0]; ++i) sw += L.wfac[0][i] * L.wfac[1][j] * L.wfac[2][k];
+    L.wsum = allreduce_sum(sw, L.geom.comm);
+  }
+  double sb = 0;
+#pragma omp parallel for collapse(2) reduction(+ : sb) schedule(static)
   for (int k = 1; k <= L.own[2]; ++k)
     for (int j = 1; j <= L.own[1]; ++j)
-      for (int i = 1; i <= L.own[0]; ++i) {
-        sb += b(i, j, k);
-        sw += L.wfac[0][i] * L.wfac[1][j] * L.wfac[2][k];
-      }
-  sb = allreduce_sum(sb, L.geom.comm);
-  sw = allreduce_sum(sw, L.geom.comm);
-  double m = sb / sw;
+      for (int i = 1; i <= L.own[0]; ++i) sb += b(i, j, k);
+  const double m = allreduce_sum(sb, L.geom.comm) / L.wsum;
+#pragma omp parallel for collapse(2) schedule(static)
   for (int k = 1; k <= L.own[2]; ++k)
-    for (int j = 1; j <= L.own[1]; ++j)
-      for (int i = 1; i <= L.own[0]; ++i) b(i, j, k) -= m * L.wfac[0][i] * L.wfac[1][j] * L.wfac[2][k];
+    for (int j = 1; j <= L.own[1]; ++j) {
+      const double mw = m * L.wfac[1][j] * L.wfac[2][k];
+      for (int i = 1; i <= L.own[0]; ++i) b(i, j, k) -= mw * L.wfac[0][i];
+    }
 }
 
 void PoissonSolver::vcycle(int l) {
@@ -390,7 +400,9 @@ void PoissonSolver::precondition(const Field3D& r, Field3D& z) {
   Level& L0 = L_[0];
   if (precond_ == 0) {  // Jacobi
     const double diag = 2 * (L0.c[0] + L0.c[1] + L0.c[2]);
-    for (std::size_t p = 0; p < z.total(); ++p) z[p] = L0.fixed[p] ? 0.0 : r[p] / diag;
+    const std::size_t N = z.total();
+#pragma omp parallel for simd schedule(static)
+    for (std::size_t p = 0; p < N; ++p) z[p] = L0.fixed[p] ? 0.0 : r[p] / diag;
     for (const CutNode& cn : L0.cut) {
       double d = cn.c[0] + cn.c[1] + cn.c[2] + cn.c[3] + cn.c[4] + cn.c[5];
       z[cn.idx] = r[cn.idx] / d;
@@ -409,6 +421,7 @@ SolveStats PoissonSolver::solve(Field3D& phi, const Field3D& rho, const Field3D&
   const auto& n = L0.u.size();
   const int d = phiG_ - 1;
   // x <- lift at fixed nodes, 0 elsewhere ; b <- W rho/eps0 - A(lift)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int k = 0; k < n[2]; ++k)
     for (int j = 0; j < n[1]; ++j)
       for (int i = 0; i < n[0]; ++i) {
@@ -416,6 +429,7 @@ SolveStats PoissonSolver::solve(Field3D& phi, const Field3D& rho, const Field3D&
         x_[p] = L0.fixed[p] ? lift(i + d, j + d, k + d) : 0.0;
       }
   apply(L0, x_, b_);
+#pragma omp parallel for collapse(2) schedule(static)
   for (int k = 1; k <= L0.own[2]; ++k)
     for (int j = 1; j <= L0.own[1]; ++j)
       for (int i = 1; i <= L0.own[0]; ++i) {
@@ -425,6 +439,7 @@ SolveStats PoissonSolver::solve(Field3D& phi, const Field3D& rho, const Field3D&
       }
   if (singular_) project_mean(L0, b_);
   // initial guess u = phi - lift (free nodes)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int k = 0; k < n[2]; ++k)
     for (int j = 0; j < n[1]; ++j)
       for (int i = 0; i < n[0]; ++i) {
@@ -446,6 +461,7 @@ SolveStats PoissonSolver::solve(Field3D& phi, const Field3D& rho, const Field3D&
   if (singular_) {
     // fix the additive constant: zero mean potential
     double s = 0, c = 0;
+#pragma omp parallel for collapse(2) reduction(+ : s, c) schedule(static)
     for (int k = 1; k <= L0.own[2]; ++k)
       for (int j = 1; j <= L0.own[1]; ++j)
         for (int i = 1; i <= L0.own[0]; ++i) {
@@ -454,10 +470,13 @@ SolveStats PoissonSolver::solve(Field3D& phi, const Field3D& rho, const Field3D&
           c += w;
         }
     double m = allreduce_sum(s, L0.geom.comm) / allreduce_sum(c, L0.geom.comm);
-    for (std::size_t p = 0; p < v_.total(); ++p) v_[p] -= m;
+    const std::size_t N = v_.total();
+#pragma omp parallel for simd schedule(static)
+    for (std::size_t p = 0; p < N; ++p) v_[p] -= m;
   }
   // phi = u + lift
   fill_ghosts(L0, v_);
+#pragma omp parallel for collapse(2) schedule(static)
   for (int k = 0; k < n[2]; ++k)
     for (int j = 0; j < n[1]; ++j)
       for (int i = 0; i < n[0]; ++i) {

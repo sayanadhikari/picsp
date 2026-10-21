@@ -53,6 +53,7 @@ class PoissonSolver {
     std::array<std::vector<double>, 3> wfac;  // Neumann weight factors per axis (local index)
     std::vector<double> iwfac0;                // 1 / wfac[0]
     std::array<double, 3> c;           // 1/dx^2
+    double wsum = 0;                   // global sum of the node weights (project_mean)
     Field3D u, f, r;                   // work arrays
     int own[3];
   };
