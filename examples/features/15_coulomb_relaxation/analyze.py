@@ -21,8 +21,8 @@ def spitzer(ma, mb, nb, Ta, Tb, lnL=10.0):
 
 
 def nu_T(Tpar, Tperp, n, lnL=10.0):
-    """Anisotropy relaxation rate of electrons (NRL formulary form with the arctan / artanh
-    branches assigned so that the bracket vanishes as (4/15) A^2 at isotropy)."""
+    """Anisotropy relaxation rate of electrons, NRL Plasma Formulary: arctan for A > 0,
+    artanh for A < 0; the bracket vanishes as (4/15) A^2 at isotropy (limit used for |A| -> 0)."""
     A = Tperp / Tpar - 1
     if abs(A) < 1e-6:
         return 2 * np.sqrt(np.pi) * E**4 / (4 * np.pi * EPS0) ** 2 * n * lnL / (np.sqrt(ME) * (Tpar * E) ** 1.5) * 4 / 15
