@@ -463,6 +463,17 @@ The `ctest` suite runs every test serially and on 4 MPI ranks:
 
 ## Performance notes
 
+<p align="center">
+  <img src="docs/media/scaling_strong.png" alt="Strong scaling on 72 cores" width="900">
+</p>
+
+On a four-socket Xeon Platinum 8354H node (72 cores), a 144³ grid with 96 M particles runs at
+5.3 s per step on one core and 0.16 s per step on 72 MPI ranks, a speed-up of 33. One MPI rank per
+core is the fastest layout; threads should never span sockets. The field solve and, for threaded
+ranks, the cell sort are what limit scaling. [docs/performance.md](docs/performance.md) has the
+strong- and weak-scaling results, a per-stage breakdown and advice on choosing ranks and threads;
+[`benchmarks/scaling`](benchmarks/scaling) reruns the benchmark on any machine.
+
 * Particles are stored as structure of arrays and sorted by cell periodically, so gather and
   deposition access memory contiguously; the push loop vectorises.
 * Deposition uses thread-private buffers reduced in parallel; halos are exchanged once per step.

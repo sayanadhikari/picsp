@@ -1,0 +1,33 @@
+{
+  "cpu": "Intel(R) Xeon(R) Platinum 8354H CPU @ 3.10GHz",
+  "sockets": 4,
+  "cores_per_socket": 18,
+  "kernel": "6.8.0-58-generic",
+  "mpi": "mpirun (Open MPI) 4.1.2",
+  "commit": "2ef114a",
+  "date": "2026-10-20",
+  "build": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+    "PICSP_FAST_MATH": "OFF",
+    "PICSP_NATIVE": "ON",
+    "compiler": "g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0"
+  },
+  "settings": {
+    "strong_cells": 144,
+    "weak_cells": 48,
+    "ppc": 16,
+    "steps": 40,
+    "repeats": 2,
+    "core_counts": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      18,
+      36,
+      72
+    ]
+  }
+}

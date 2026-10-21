@@ -45,3 +45,5 @@ python/*.egg-info/
 __pycache__/
 examples/geometry/*.stl
 !examples/geometry/cubesat_3u.stl
+benchmarks/scaling/results/*/work/
+gmon.out
