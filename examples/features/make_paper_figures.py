@@ -109,7 +109,7 @@ def main():
         return
     os.environ.update(PICSP_INPUT="input_hires.toml", PICSP_OUTPUT_DIR="output_hires", PICSP_MEDIA_DIR=args.media,
                       PICSP_FIG_DPI=str(args.dpi), PICSP_FIG_FORMATS=args.formats,
-                      PICSP_RENDER_SCALE=str(args.render_scale), MPIEXEC=args.mpirun)
+                      PICSP_RENDER_SCALE=str(args.render_scale), PICSP_STYLE="paper", MPIEXEC=args.mpirun)
     sys.path.insert(0, HERE)
     import run_example  # after the environment is set: _common reads it at import
     for n in names:

@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, out, screenshot
+from _common import Run, simulate, save, media, plt, style, out, render3d
 from matplotlib.collections import PolyCollection
 from picsp_post.mesh import Mesh
 
@@ -73,5 +73,5 @@ def analyze(d):
                      window=(1500, 950), zoom=1.6, title="imported CAD mesh: surface potential and plasma potential")
     p.camera.azimuth = -40
     p.camera.elevation = 18
-    screenshot(p, media("16_mesh_import_render.png"))
+    render3d(p, d, "16_mesh_import_render.png", width_mm=120, zoom=0.6)
     p.close()

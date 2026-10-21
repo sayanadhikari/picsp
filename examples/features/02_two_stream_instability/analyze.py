@@ -72,7 +72,7 @@ def analyze(d):
         ax.set_xlim(0, L * 1e3)
         ax.set_ylim(-2.6, 2.6)
         ax.set_xlabel("x [mm]")
-        ax.set_title(f"t = {tb[i]:.1f} / ω_b")
+        ax.text(0.97, 0.97, f"t = {tb[i]:.1f}/ω_b", transform=ax.transAxes, ha="right", va="top")
     np.atleast_1d(axs)[0].set_ylabel("v_x [10⁶ m/s]")
     fig.tight_layout()
     save(fig, d, "02_two_stream_phase.png")

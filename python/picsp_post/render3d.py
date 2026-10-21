@@ -59,7 +59,13 @@ def render_scene(run: Run, index: int = -1, out: str | None = None, surface_scal
         if surface_scalars and surface_scalars in surf.cell_data:
             data = np.asarray(surf.cell_data[surface_scalars])
             sb = dict(sbar, title=_SCALAR_TITLES.get(surface_scalars, surface_scalars), position_x=0.88, position_y=0.58)
-            if surface_scalars.startswith("J_"):
+            if surface_scalars.startswith("J_") and data.min() >= 0:
+                # one-signed currents (emission): sequential scale from zero
+                lim = clim or (np.percentile(data, 99.5) or 1e-30)
+                lim = lim if np.isscalar(lim) else lim[1]
+                p.add_mesh(surf, scalars=surface_scalars, cmap="YlOrRd", clim=(0, lim), smooth_shading=True,
+                           scalar_bar_args=sb, specular=0.3)
+            elif surface_scalars.startswith("J_"):
                 lim = clim or (np.percentile(np.abs(data), 98) or 1e-30)
                 lim = lim if np.isscalar(lim) else max(abs(lim[0]), abs(lim[1]))
                 p.add_mesh(surf, scalars=surface_scalars, cmap=style.CMAP_DIV, clim=(-lim, lim), smooth_shading=True,

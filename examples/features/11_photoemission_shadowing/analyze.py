@@ -1,6 +1,6 @@
 """Photoemission: positive charging, photoelectron cloud and the shadow on the panel."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, out, screenshot
+from _common import Run, simulate, save, media, plt, style, out, render3d
 from picsp_post import plots
 
 
@@ -24,8 +24,9 @@ def analyze(d):
     save(fig, d, "11_photoemission.png")
     import pyvista as pv
     from picsp_post.render3d import render_scene
+    # the camera sits inside the domain, so the paper render leaves the domain box out
     p = render_scene(r, -1, None, surface_scalars="J_emit", slice_field=None, window=(1500, 1000), zoom=1.9,
-                     title="photoelectron current density: the mast shadows the panel")
+                     show_box=not style.PAPER, title="photoelectron current density: the mast shadows the panel")
     p.camera_position = [(1.6, -2.4, 2.4), (0, 0, -0.1), (0, 0, 1)]
-    screenshot(p, media("11_photoemission_shadow.png"))
+    render3d(p, d, "11_photoemission_shadow.png", width_mm=120, zoom=0.85)
     p.close()

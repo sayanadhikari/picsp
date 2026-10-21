@@ -17,7 +17,7 @@ def analyze(d):
     fig, axs = plt.subplots(1, 4, figsize=(17, 4.0))
     # (a) Maxwellian vs kappa: 1D f(v_x) on a log scale
     a = axs[0]
-    for s, lab, col in ((0, "drifting Maxwellian", 0), (2, "kappa, κ = 2.5", 1)):
+    for s, lab, col in ((0, "Maxwellian", 0), (2, "κ = 2.5", 1)):
         v = V[sid == s, 0]
         h, e = np.histogram(v / 1e6, bins=120, range=(-3.5, 3.5), density=True)
         a.semilogy(0.5 * (e[1:] + e[:-1]), h, color=style.series_color(col), lw=1.6, label=lab)
@@ -28,11 +28,11 @@ def analyze(d):
     th2 = (2 * k - 3) / k * vt**2
     fk = G(k) / (np.sqrt(np.pi * k * th2) * G(k - 0.5)) * (1 + x * x / (k * th2)) ** (-k)  # 1D marginal
     a.semilogy(x / 1e6, 1e6 * fk, "--", color=style.INK, lw=1)
-    a.set_ylim(1e-4, 2)
+    a.set_ylim(1e-4, 60)
     a.set_xlabel("v_x [10⁶ m/s]")
     a.set_ylabel("f(v_x)")
     a.set_title("Maxwellian vs kappa tails")
-    a.legend(fontsize=8)
+    a.legend(loc="upper left", fontsize=8, handlelength=1.2)
     # (b) bi-Maxwellian, (c) ring: (v_perp, v_par) histograms
     for ax, s, title in ((axs[1], 1, "bi-Maxwellian  T∥ = 4 eV, T⊥ = 0.5 eV"), (axs[2], 3, "ring distribution")):
         v = V[sid == s]

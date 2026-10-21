@@ -14,6 +14,7 @@ Environment overrides (used by make_paper_figures.py; the defaults reproduce the
   PICSP_MEDIA_DIR                 where published figures go (docs/media)
   PICSP_FIG_DPI, PICSP_FIG_FORMATS  figure resolution and formats, e.g. 300 and png,pdf
   PICSP_RENDER_SCALE              magnification of 3D renders (1)
+  PICSP_STYLE=paper               journal figure style (see picsp_post.style)
 """
 import os
 import subprocess
@@ -73,7 +74,27 @@ def media(name):
     return os.path.join(d, name)
 
 
+def _record_titles(name, titles):
+    """Keep the panel titles removed by the journal style, for writing figure captions."""
+    import json
+    path = media("panel_titles.json")
+    try:
+        with open(path) as f:
+            db = json.load(f)
+    except (OSError, ValueError):
+        db = {}
+    db[os.path.splitext(name)[0]] = titles
+    with open(path, "w") as f:
+        json.dump(db, f, indent=1, ensure_ascii=False)
+    with open(media("panel_titles.md"), "w") as f:
+        f.write("# Panel titles removed from the paper figures (for the captions)\n\n")
+        for k in sorted(db):
+            f.write(f"## {k}\n\n" + "".join(f"- **{l or '-'}** {t}\n" for l, t in db[k]) + "\n")
+
+
 def save(fig, example_dir, name, publish=True):
+    if style.PAPER and publish:
+        _record_titles(name, style.journal_layout(fig))
     os.makedirs(out(example_dir), exist_ok=True)
     fig.savefig(os.path.join(out(example_dir), name))
     if publish:
@@ -86,6 +107,19 @@ def save(fig, example_dir, name, publish=True):
 def screenshot(plotter, path):
     """Save a pyvista render, magnified by PICSP_RENDER_SCALE."""
     plotter.screenshot(path, scale=int(os.environ.get("PICSP_RENDER_SCALE", 1)))
+
+
+def render3d(plotter, example_dir, name, width_mm=None, **kw):
+    """Publish a 3D scene: a pyvista screenshot, or in the journal style (PICSP_STYLE=paper) a
+    Blender render on white with matplotlib colour bars when Blender is available."""
+    from picsp_post import blender
+    if not (style.PAPER and blender.available()):
+        screenshot(plotter, media(name))
+        return
+    os.makedirs(out(example_dir), exist_ok=True)
+    raw = os.path.join(out(example_dir), os.path.splitext(name)[0] + "_blender.png")
+    fig = blender.render_figure(plotter, raw, width=(width_mm or 183) * style.MM, **kw)
+    save(fig, example_dir, name)
 
 
 class _FrameWriter:

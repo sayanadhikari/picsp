@@ -1,7 +1,7 @@
 """Dipole trapping: 3D trajectories with field lines (pyvista) and the bounce/drift motion."""
 import os
 import numpy as np
-from _common import simulate, save, media, plt, style, out, screenshot
+from _common import simulate, save, media, plt, style, out, render3d
 
 
 def simulate_example(d):
@@ -35,7 +35,7 @@ def analyze(d):
     p.camera_position = [(7.5, -10.5, 7.5), (0, 0, 0), (0, 0, 1)]
     p.add_text("protons trapped in a dipole field: gyration, bounce and drift", position="upper_left", font_size=12,
                color="#f0efec")
-    screenshot(p, media("05_dipole_trapping.png"))
+    render3d(p, d, "05_dipole_trapping.png", width_mm=150, bars=[])
     p.close()
     # latitude and longitude vs time for the first particle
     m = (t["species"] == 0) & (t["index"] == 0)

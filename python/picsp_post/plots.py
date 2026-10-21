@@ -174,7 +174,13 @@ def plot_slice(run: Run, name: str = "phi", axis: str = "z", pos=None, index: in
         k = np.argmin(np.abs(run.axes(index)[a] - p))
         e1 = np.take(Ev[..., rest[0]], k, axis=a)
         e2 = np.take(Ev[..., rest[1]], k, axis=a)
-        ax.streamplot(x1, x2, e1.T, e2.T, color=(0.15, 0.15, 0.15, 0.5), density=1.1, linewidth=0.6, arrowsize=0.7)
+        # line width follows |E|, so the noise-dominated weak-field region stays in the background
+        # and lines stop where the field is too weak to be distinguished from particle noise
+        mag = np.hypot(e1, e2).T
+        ref = np.percentile(mag, 98) or 1.0
+        lw = 0.15 + 0.85 * np.clip(mag / ref, 0, 1)
+        weak = mag < 0.04 * ref
+        ax.streamplot(x1, x2, np.ma.masked_where(weak, e1.T), np.ma.masked_where(weak, e2.T), color=(0.15, 0.15, 0.15, 0.6), density=1.0, linewidth=lw, arrowsize=0.5)
     ax.set_aspect("equal")
     ax.set_xlabel(f"{l1} [m]")
     ax.set_ylabel(f"{l2} [m]")

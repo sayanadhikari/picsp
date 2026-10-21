@@ -19,7 +19,7 @@ def analyze(d):
     a.semilogy(t * 1e9, Ne, color=style.series_color(0), label="electrons")
     a.semilogy(t * 1e9, np.maximum(Ni, 1), color=style.series_color(1), label="Ar⁺ created")
     a.semilogy(t[m] * 1e9, np.exp(np.polyval(np.polyfit(t[m], np.log(Ne[m]), 1), t[m])), "--", color=style.INK,
-               label=f"ν_i = {nu:.2e} s⁻¹")
+               label=f"ν_i = {nu / 1e8:.2f}×10⁸ s⁻¹")
     a.set_xlabel("time [ns]")
     a.set_ylabel("macro-particles")
     a.set_title("Townsend avalanche, E/N = 150 Td")
@@ -38,13 +38,13 @@ def analyze(d):
     c.semilogy(ec, hist / np.sqrt(ec), color=style.series_color(0), label="simulation")
     Tm = 2 / 3 * en.mean()
     c.semilogy(ec, 2 / np.sqrt(np.pi) * Tm**-1.5 * np.exp(-ec / Tm), "--", color=style.INK,
-               label=f"Maxwellian, same mean energy")
+               label="Maxwellian")
     for th, lab in ((11.55, "excitation"), (15.76, "ionisation")):
         c.axvline(th, color=style.INK2, ls=":", lw=1)
-        c.text(th + 0.4, 0.97, lab, rotation=90, va="top", color=style.INK2, fontsize=8, transform=c.get_xaxis_transform())
+        c.text(th + 0.4, 0.03, lab, rotation=90, va="bottom", color=style.INK2, fontsize=8, transform=c.get_xaxis_transform())
     c.set_xlabel("electron energy [eV]")
     c.set_ylabel("EEPF  f(ε)/√ε  [eV⁻³ᐟ²]")
     c.set_title("electron energy probability function")
-    c.legend(loc="lower left")
+    c.legend(loc="upper right")
     fig.tight_layout()
     save(fig, d, "14_ionization_avalanche.png")

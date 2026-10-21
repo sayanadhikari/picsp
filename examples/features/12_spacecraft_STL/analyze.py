@@ -1,6 +1,6 @@
 """3U CubeSat from STL: surface current map, plasma slices and the ion-wake movie."""
 import numpy as np
-from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, out, screenshot
+from _common import Run, simulate, save, media, plt, style, gif_writer, fig_to_rgb, out, render3d
 from picsp_post import plots
 
 
@@ -12,13 +12,13 @@ def analyze(d):
     r = Run(out(d))
     from picsp_post.render3d import render_scene
     p = render_scene(r, -1, None, surface_scalars="J_net", slice_field="n_O+", slice_normal="z",
-                     slice_origin=(0.04, 0, -0.03), window=(1800, 1100), zoom=2.0,
+                     slice_origin=(0.04, 0, -0.03), window=(1800, 1100), zoom=2.0, show_box=not style.PAPER,
                      title="3U CubeSat: net surface current density and O+ density (z = -3 cm)")
     p.camera.azimuth = -35
     p.camera.elevation = 10
-    screenshot(p, media("12_cubesat_render.png"))
+    render3d(p, d, "12_cubesat_render.png", width_mm=183, zoom=0.55)
     p.close()
-    fig, axs = plt.subplots(2, 2, figsize=(14, 9.6))
+    fig, axs = plt.subplots(2, 2, figsize=(14, 8.4))
     plots.plot_slice(r, "n_O+", "z", 0.03, -1, ax=axs[0, 0], title="O+ density, z = 3 cm (through the bus)")
     plots.plot_slice(r, "n_electron", "z", 0.03, -1, ax=axs[0, 1], title="electron density, z = 3 cm")
     plots.plot_slice(r, "phi", "y", 0.0, -1, ax=axs[1, 0], streamlines=True, title="potential, y = 0 (side view)")
