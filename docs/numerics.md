@@ -155,8 +155,11 @@ method at finite time step; the energy drift is at round-off level.
 3D Cartesian MPI decomposition (automatic factorisation minimising the halo surface). Fields have
 two ghost layers; deposition sums ghost contributions into owners, followed by ghost refresh.
 Particles migrate dimension by dimension with neighbour exchange. OpenMP threads share each rank's
-particles (static schedules, thread-private deposition buffers and random streams), so runs are
-reproducible for a fixed rank and thread count, and checkpoints restart bit-exactly.
+particles (static schedules, thread-private deposition buffers and random streams). With one
+thread per rank, runs are reproducible for a fixed rank count and checkpoints restart bit-exactly;
+with several threads, OpenMP sum reductions may combine partial sums in a run-dependent order,
+which perturbs results at the round-off level. The cell sort produces the same particle order for
+any thread count.
 
 ## Output
 

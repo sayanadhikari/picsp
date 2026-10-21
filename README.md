@@ -355,10 +355,12 @@ equilibration and isotropisation agree with the Spitzer and NRL rates (example 1
 
 The domain is split into a 3D Cartesian grid of MPI ranks (chosen automatically to minimise the
 halo surface, or given). Fields carry two ghost layers. Particles migrate dimension by dimension in
-a single neighbour exchange per axis while keeping their order, so runs are reproducible for a
-given rank and thread count, and restarts are bit-identical. Within a rank, OpenMP threads share
+a single neighbour exchange per axis while keeping their order. Within a rank, OpenMP threads share
 the particle arrays with static schedules, thread-private deposition buffers and independent
-random streams.
+random streams. With one thread per rank, runs are reproducible for a given rank count and
+restarts are bit-identical; with several threads, OpenMP sum reductions (dot products, energies)
+may combine partial sums in a different order from run to run, which changes results at the
+round-off level (2e-16 relative in the kinetic energy of the restart test).
 
 ## Feature examples
 
@@ -488,7 +490,7 @@ The `ctest` suite runs every test serially and on 4 MPI ranks:
 | Coulomb e-e and e-i temperature relaxation | within 10% of Spitzer at practical time steps, energy conserved to 1e-14 |
 | STL import | no sign errors on 20000 random points; overlapping shells handled |
 | Mesh placement (`units`, `anchor`, `fit`, `rotate`) | placement exact to round-off; area and volume of a meshed sphere within 1%; Python tool tests (`pytest tests/python`) |
-| Checkpoint / restart | bit-identical to an uninterrupted run |
+| Checkpoint / restart | bit-identical to an uninterrupted run with one thread per rank; round-off level (≤ 1e-9 checked) with threads |
 
 ## Performance notes
 

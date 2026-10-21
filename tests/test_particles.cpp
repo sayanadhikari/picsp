@@ -3,8 +3,15 @@
 //  2. E x B drift velocity
 //  3. migration across MPI ranks / periodic wrap conserves particles
 //  4. reflecting and absorbing walls
+//  5. cell sort: stable order, identical for any thread count
+#include <omp.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <numeric>
+#include <vector>
 
 #include "Simulation.hpp"
 #include "util/Constants.hpp"
@@ -171,6 +178,51 @@ int main(int argc, char** argv) {
          int(std::ceil((0.8 + 1.0) / (2e7 * 1e-9))));
     CHECK(reflected && !alive, "reflect then absorb");
     CHECK(std::abs(steps - 90) <= 2, "time of flight");
+  }
+  // ---------------- 4. cell sort: stable, and independent of the thread count ----------------
+  {
+    Config c = base(1.0, 16);
+    Simulation sim(c, MPI_COMM_WORLD);
+    sim.initialise();
+    const auto& d = sim.decomposition();
+    const int n[3] = {d.c1[0] - d.c0[0], d.c1[1] - d.c0[1], d.c1[2] - d.c0[2]};
+    const Vec3 lo = d.local_lo();
+    auto& p = sim.particles().species[0].p;
+    // ~50 particles per cell in random cells, kept away from cell faces so the reference
+    // cell index below cannot differ from the sort's by rounding; w carries the original index
+    const std::size_t np = std::size_t(50) * n[0] * n[1] * n[2];
+    std::vector<int> key(np);
+    std::uint64_t s = 12345 + world_rank();
+    auto rnd = [&s] { s = s * 6364136223846793005ULL + 1442695040888963407ULL; return double(s >> 11) * 0x1.0p-53; };
+    for (std::size_t i = 0; i < np; ++i) {
+      int ci[3];
+      double xyz[3];
+      for (int a = 0; a < 3; ++a) {
+        ci[a] = std::min(n[a] - 1, int(rnd() * n[a]));
+        xyz[a] = lo[a] + (ci[a] + 0.1 + 0.8 * rnd()) * c.dx[a];
+      }
+      key[i] = ci[0] + n[0] * (ci[1] + n[1] * ci[2]);
+      p.push({xyz[0], xyz[1], xyz[2]}, {double(i), 0, 0}, double(i));
+    }
+    std::vector<std::size_t> ref(np);
+    std::iota(ref.begin(), ref.end(), std::size_t(0));
+    std::stable_sort(ref.begin(), ref.end(), [&](std::size_t a, std::size_t b) { return key[a] < key[b]; });
+    const ParticleArray orig = p;
+    int bad = 0;
+    for (int t : {1, 3, 4, 7}) {
+      p = orig;
+      omp_set_num_threads(t);
+      sim.particles().sort();
+      for (std::size_t i = 0; i < np; ++i)
+        if (p.w[i] != double(ref[i]) || p.vx[i] != double(ref[i]) || p.x[i] != orig.x[ref[i]]) {
+          ++bad;
+          break;
+        }
+    }
+    omp_set_num_threads(1);
+    bad = int(allreduce_sum(double(bad), MPI_COMM_WORLD));
+    log0("[sort    ] %zu particles per rank, threads 1/3/4/7: %s\n", np, bad ? "MISMATCH" : "stable order, identical");
+    CHECK(bad == 0, "sort is stable and independent of the thread count");
   }
   log0(failures ? "test_particles: %d FAILURE(S)\n" : "test_particles: all checks passed\n", failures);
   MPI_Finalize();

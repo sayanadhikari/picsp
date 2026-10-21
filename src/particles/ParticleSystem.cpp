@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cmath>
 #include <functional>
+#include <memory>
 #include <numeric>
 
 #include <omp.h>
@@ -632,7 +633,9 @@ void ParticleSystem::sort() {
     ParticleArray& p = sp.p;
     const std::size_t np = p.size();
     if (np < 2) continue;
-    std::vector<std::uint32_t> cell(np);
+    // scratch is written before it is read: skip the (serial) zero fill of std::vector
+    std::unique_ptr<std::uint32_t[]> cell(new std::uint32_t[np]);
+    std::unique_ptr<std::size_t[]> perm(new std::size_t[np]);
 #pragma omp parallel for schedule(static)
     for (std::size_t i = 0; i < np; ++i) {
       int ci = std::clamp(int((p.x[i] - llo.x) * inv_dx_[0]), 0, nx - 1);
@@ -640,11 +643,48 @@ void ParticleSystem::sort() {
       int ck = std::clamp(int((p.z[i] - llo.z) * inv_dx_[2]), 0, nz - 1);
       cell[i] = std::uint32_t(ci + std::size_t(nx) * (cj + std::size_t(ny) * ck));
     }
-    std::vector<std::size_t> start(ncell + 1, 0);
-    for (std::size_t i = 0; i < np; ++i) start[cell[i] + 1]++;
-    std::partial_sum(start.begin(), start.end(), start.begin());
-    std::vector<std::size_t> perm(np);
-    for (std::size_t i = 0; i < np; ++i) perm[start[cell[i]]++] = i;
+    // Stable counting sort in parallel: each chunk of particles (contiguous, in order) gets a
+    // histogram; offsets run cell by cell and, within a cell, chunk by chunk, so every particle
+    // lands where the serial stable sort puts it, for any thread count. The chunk count is
+    // capped so the histograms take at most about two entries per particle.
+    const int nchunk = int(std::clamp<std::size_t>(2 * np / ncell, 1, std::size_t(omp_get_max_threads())));
+    std::unique_ptr<std::uint32_t[]> cnt(new std::uint32_t[std::size_t(nchunk) * ncell]);
+    auto chunk_lo = [&](int c) { return np * std::size_t(c) / std::size_t(nchunk); };
+#pragma omp parallel for schedule(static, 1) num_threads(nchunk)
+    for (int c = 0; c < nchunk; ++c) {
+      std::uint32_t* h = cnt.get() + std::size_t(c) * ncell;
+      std::fill(h, h + ncell, 0u);
+      for (std::size_t i = chunk_lo(c); i < chunk_lo(c + 1); ++i) ++h[cell[i]];
+    }
+    // column sums per cell, then a prefix sum over cells: cell_start[k]
+    std::unique_ptr<std::size_t[]> cell_start(new std::size_t[ncell + 1]);
+#pragma omp parallel for schedule(static)
+    for (std::size_t k = 0; k < ncell; ++k) {
+      std::size_t t = 0;
+      for (int c = 0; c < nchunk; ++c) t += cnt[std::size_t(c) * ncell + k];
+      cell_start[k + 1] = t;
+    }
+    cell_start[0] = 0;
+    std::partial_sum(cell_start.get(), cell_start.get() + ncell + 1, cell_start.get());
+    // counts -> each chunk's first slot within the cell (a cell holds < 2^32 particles)
+#pragma omp parallel for schedule(static)
+    for (std::size_t k = 0; k < ncell; ++k) {
+      std::uint32_t run = 0;
+      for (int c = 0; c < nchunk; ++c) {
+        std::uint32_t& e = cnt[std::size_t(c) * ncell + k];
+        const std::uint32_t n = e;
+        e = run;
+        run += n;
+      }
+    }
+#pragma omp parallel for schedule(static, 1) num_threads(nchunk)
+    for (int c = 0; c < nchunk; ++c) {
+      std::uint32_t* off = cnt.get() + std::size_t(c) * ncell;
+      for (std::size_t i = chunk_lo(c); i < chunk_lo(c + 1); ++i) {
+        const std::uint32_t k = cell[i];
+        perm[cell_start[k] + off[k]++] = i;
+      }
+    }
     std::vector<double> tmp(np);
     for (auto* arr : p.arrays()) {
 #pragma omp parallel for schedule(static)

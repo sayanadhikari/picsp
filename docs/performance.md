@@ -114,7 +114,7 @@ the grid (mean projection for periodic problems, masking of fixed nodes, field c
 pack and unpack and the set-up of the right-hand side) ran on one thread. They are now threaded.
 For a 128³ periodic grid on one socket, the field solve dropped from 223 ms to 73 ms per step with
 18 threads, and its 18-thread speed-up rose from 2.7 to 8.1. Single-thread performance and
-results are unchanged; restarts remain bit-identical.
+results are unchanged; with one thread per rank, restarts remain bit-identical.
 
 ## Known limitations and next steps
 
