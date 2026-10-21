@@ -38,8 +38,10 @@ Three ways of using the cores are compared:
   OpenMP only up to 18 cores);
 * **OpenMP only**: a single rank whose threads span all sockets.
 
-The machine is shared; each point is the faster of two runs. Points repeated in a separate
-session agreed to within 3–8 %.
+The machine is shared; each point is the faster of two runs, taken while the machine was otherwise
+idle. The MPI-only points, which the sort change below does not affect, reproduced an earlier sweep
+to within 1–5 % (159 vs 160 ms at 72 cores); the single-core reference differed by 6 % between the
+two sessions (5.26 vs 5.57 s), which shifts speed-ups but not absolute times.
 
 ## Strong scaling
 
@@ -48,15 +50,16 @@ session agreed to within 3–8 %.
 | cores | MPI only | | hybrid | | OpenMP only | |
 |---:|---:|---:|---:|---:|---:|---:|
 | | ms/step | speed-up | ms/step | speed-up | ms/step | speed-up |
-| 1 | 5263 | 1.0 | 5263 | 1.0 | 5263 | 1.0 |
-| 8 | 807 | 6.5 | 1111 | 4.7 | 1111 | 4.7 |
-| 18 | 475 | 11.1 | 771 | 6.8 | 771 | 6.8 |
-| 36 | 267 | 19.7 | 495 | 10.6 | 675 | 7.8 |
-| 72 | **159** | **33.1** | 293 | 18.0 | 702 | 7.5 |
+| 1 | 5572 | 1.0 | 5572 | 1.0 | 5572 | 1.0 |
+| 8 | 816 | 6.8 | 854 | 6.5 | 854 | 6.5 |
+| 18 | 494 | 11.3 | 516 | 10.8 | 516 | 10.8 |
+| 36 | 262 | 21.3 | 375 | 14.9 | 535 | 10.4 |
+| 72 | **160** | **34.8** | 249 | 22.4 | 520 | 10.7 |
 
-One core advances a particle by one step in 55 ns, including its share of the field solve. With one
-MPI rank per core the code reaches a speed-up of 33 on 72 cores (46 % efficiency); a step with
-96 M particles takes 0.16 s.
+One core advances a particle by one step in 58 ns, including its share of the field solve. With one
+MPI rank per core the code reaches a speed-up of 35 on 72 cores (48 % efficiency); a step with
+96 M particles takes 0.16 s. Within one socket the layouts are close: one rank of 18 threads is 4 %
+slower than 18 MPI ranks.
 
 ## Where the time goes
 
@@ -72,34 +75,34 @@ scaling they would all have the height of the 1-core bar.
   ranks) and a larger coarsest grid that is smoothed rather than solved. The CG iteration count
   stays at 6–7, so convergence is not the issue; the coarse-level work and the global reductions
   per iteration are.
-* **Sort.** The periodic cell sort is a counting sort whose histogram and scatter passes run on one
-  thread per rank. With MPI only, every rank sorts its own particles and the cost shrinks with the
-  rank count. Within a threaded rank it barely shrinks: with one rank of 18 threads, sorting takes
-  353 ms of a 771 ms step. This was the main reason the hybrid layout trailed MPI only; the sort
-  is now threaded (see [Parallel cell sort](#parallel-cell-sort-after-these-measurements)).
-* **Migrate** (moving particles between ranks) grows with the number of rank boundaries but stays
-  at or below 15 % of the step.
+* **Sort.** The periodic cell sort is threaded (see [Parallel cell sort](#parallel-cell-sort)); it
+  now scales in both layouts and takes 4–8 % of the step.
+* **Across sockets, hybrid ranks** spend more time than MPI-only ranks in migration (54 vs 23 ms
+  per step at 72 cores), deposition (48 vs 25 ms) and the field solve (97 vs 76 ms). In the
+  migration, finding the particles that leave a rank is threaded, but their boundary handling,
+  removal, packing and unpacking run on one thread per rank; the threaded deposition sums one
+  buffer per thread over the whole subdomain. Both cost more when a rank is large.
 
 ## Weak scaling
 
 ![Weak scaling](media/scaling_weak.png)
 
-With a fixed 48³ cells and 3.5 M particles per core, the MPI-only time per step rises from 159 ms
-on one core to 371 ms on 72 cores (43 % weak-scaling efficiency). The increase has three parts:
+With a fixed 48³ cells and 3.5 M particles per core, the MPI-only time per step rises from 169 ms
+on one core to 372 ms on 72 cores (45 % weak-scaling efficiency). The increase has three parts:
 
 * **Filling a socket** (8 → 18 cores): push and deposit per core rise by about 25 % (push 82 →
-  102 ms) as the cores of a socket share its memory bandwidth, which no layout can avoid. Across
-  sockets the push stays nearly flat (102 → 109 ms), as each socket brings its own memory channels.
-* **Field solve**: 27 → 122 ms, for the reasons above.
-* **Rank boundaries**: migration grows from 40 to 68 ms and deposition (which includes the halo
-  exchange of the charge density) from 53 to 68 ms between 18 and 72 cores.
+  105 ms) as the cores of a socket share its memory bandwidth, which no layout can avoid. Across
+  sockets the push stays flat (105 → 106 ms), as each socket brings its own memory channels.
+* **Field solve**: 29 → 121 ms, for the reasons above.
+* **Rank boundaries**: migration grows from 41 to 67 ms and deposition (which includes the halo
+  exchange of the charge density) from 55 to 69 ms between 18 and 72 cores.
 
 ## Choosing ranks and threads
 
-* **Prefer one MPI rank per core.** In the measurements above it is 1.8 times faster than one
-  rank per socket with threads, and 4.4 times faster than a single rank on all cores. With the
-  threaded sort, one rank of 18 threads on a socket is about 5 % slower than 18 MPI ranks, so threads are
-  now a reasonable choice when fewer ranks are wanted (memory per rank, fewer halo cells).
+* **Prefer one MPI rank per core across sockets.** At 72 cores it is 1.6 times faster than one rank
+  per socket with threads (160 vs 249 ms), and 3.3 times faster than a single rank on all cores.
+  Within one socket, threads are a reasonable choice (4 % slower than MPI ranks) when fewer ranks
+  are wanted, for example to reduce memory per rank or the number of halo cells.
 * **Never let one rank's threads span sockets.** The OpenMP-only curve stops improving beyond one
   socket (36 and 72 threads are no faster than 18) because threads read memory attached to other
   sockets. If you use threads, use at least one rank per NUMA domain
@@ -110,36 +113,41 @@ on one core to 371 ms on 72 cores (43 % weak-scaling efficiency). The increase h
   at each level. A grid such as 144³ (divisible by 2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 36, 48, 72)
   keeps 3 to 5 levels for any rank count used here; the start-up log prints the number of levels.
 
-## Solver threading (this release)
+## Solver threading
 
-The measurements above include a change to the multigrid solver: several per-iteration passes over
-the grid (mean projection for periodic problems, masking of fixed nodes, field copies, the halo
-pack and unpack and the set-up of the right-hand side) ran on one thread. They are now threaded.
-For a 128³ periodic grid on one socket, the field solve dropped from 223 ms to 73 ms per step with
-18 threads, and its 18-thread speed-up rose from 2.7 to 8.1. Single-thread performance and
-results are unchanged; with one thread per rank, restarts remain bit-identical.
+Several per-iteration passes of the multigrid solver over the grid (mean projection for periodic
+problems, masking of fixed nodes, field copies, the halo pack and unpack and the set-up of the
+right-hand side) used to run on one thread. They are now threaded. For a 128³ periodic grid on one
+socket, the field solve dropped from 223 ms to 73 ms per step with 18 threads, and its 18-thread
+speed-up rose from 2.7 to 8.1. Single-thread performance and results are unchanged; with one thread
+per rank, restarts remain bit-identical.
 
-## Parallel cell sort (after these measurements)
+## Parallel cell sort
 
-The figures above were measured before the cell sort was threaded. The sort is now a parallel
-stable counting sort: every chunk of particles gets its own histogram, and the write offsets run
-cell by cell and, within a cell, chunk by chunk, so the particle order is exactly the one the
-serial sort produced, for any thread count (checked in `test_particles`). Measured on one socket
-of the same machine (same 144³ strong-scaling problem; the 18 MPI-rank reference reproduced the
-earlier value to within 2 %):
+The cell sort is a parallel stable counting sort: every chunk of particles gets its own histogram,
+and the write offsets run cell by cell and, within a cell, chunk by chunk, so the particle order is
+exactly the one the serial sort produced, for any thread count (checked in `test_particles`).
+Before, its histogram and scatter passes ran on one thread per rank.
 
-| one rank | sort before | sort after | step before | step after |
+![Sort before and after](media/scaling_before_after.png)
+
+Dotted lines: the sweep before the change (commit 2ef114a); solid lines: after (0c14a06).
+
+| strong scaling, 144³ cells | sort before | sort after | step before | step after |
 |---|---:|---:|---:|---:|
-| 8 threads | 380 ms | 136 ms | 1111 ms | 844 ms |
-| 16 threads | 365 ms | 90 ms | 809 ms | 525 ms |
-| 18 threads | 353 ms | 85 ms | 771 ms | 508 ms |
-| *18 MPI ranks (reference)* | *39 ms* | *38 ms* | *475 ms* | *483 ms* |
+| 1 rank × 18 threads | 353 ms | 87 ms | 771 ms | 516 ms |
+| hybrid, 2 × 18 | 158 ms | 42 ms | 495 ms | 375 ms |
+| hybrid, 4 × 18 | 70 ms | 20 ms | 293 ms | 249 ms |
+| OpenMP only, 72 threads | 360 ms | 82 ms | 702 ms | 520 ms |
+| *MPI only, 72 ranks (unaffected)* | *7 ms* | *7 ms* | *159 ms* | *160 ms* |
 
-Times are per step; the sort runs every 20 steps and its cost is averaged over all steps. The
-multi-socket points of that run were taken while other jobs loaded the machine and are not shown;
-the figures will be regenerated from a full sweep on a quiet machine.
+Times are per step; the sort runs every 20 steps and its cost is averaged over all steps. In weak
+scaling the hybrid layout on 72 cores went from 771 to 605 ms per step.
 
 ## Known limitations and next steps
 
 * Agglomerate the coarse multigrid levels onto fewer ranks so that the hierarchy no longer becomes
   shallower as ranks are added.
+* Thread the boundary handling, packing and unpacking of migrating particles, and sum the per-thread deposition
+  buffers over the touched region only, to close the remaining gap between hybrid and MPI-only
+  ranks across sockets.

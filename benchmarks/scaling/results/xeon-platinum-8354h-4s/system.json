@@ -4,8 +4,8 @@
   "cores_per_socket": 18,
   "kernel": "6.8.0-58-generic",
   "mpi": "mpirun (Open MPI) 4.1.2",
-  "commit": "2ef114a",
-  "date": "2026-10-20",
+  "commit": "0c14a06",
+  "date": "2026-10-21",
   "build": {
     "CMAKE_BUILD_TYPE": "Release",
     "CMAKE_CXX_COMPILER": "/usr/bin/g++",
