@@ -75,7 +75,8 @@ scaling they would all have the height of the 1-core bar.
 * **Sort.** The periodic cell sort is a counting sort whose histogram and scatter passes run on one
   thread per rank. With MPI only, every rank sorts its own particles and the cost shrinks with the
   rank count. Within a threaded rank it barely shrinks: with one rank of 18 threads, sorting takes
-  353 ms of a 771 ms step. This is the main reason the hybrid layout trails MPI only.
+  353 ms of a 771 ms step. This was the main reason the hybrid layout trailed MPI only; the sort
+  is now threaded (see [Parallel cell sort](#parallel-cell-sort-after-these-measurements)).
 * **Migrate** (moving particles between ranks) grows with the number of rank boundaries but stays
   at or below 15 % of the step.
 
@@ -95,8 +96,10 @@ on one core to 371 ms on 72 cores (43 % weak-scaling efficiency). The increase h
 
 ## Choosing ranks and threads
 
-* **Prefer one MPI rank per core.** On this machine it is 1.8 times faster than one rank per
-  socket with threads, and 4.4 times faster than a single rank on all cores.
+* **Prefer one MPI rank per core.** In the measurements above it is 1.8 times faster than one
+  rank per socket with threads, and 4.4 times faster than a single rank on all cores. With the
+  threaded sort, one rank of 18 threads on a socket is about 5 % slower than 18 MPI ranks, so threads are
+  now a reasonable choice when fewer ranks are wanted (memory per rank, fewer halo cells).
 * **Never let one rank's threads span sockets.** The OpenMP-only curve stops improving beyond one
   socket (36 and 72 threads are no faster than 18) because threads read memory attached to other
   sockets. If you use threads, use at least one rank per NUMA domain
@@ -116,10 +119,27 @@ For a 128³ periodic grid on one socket, the field solve dropped from 223 ms to 
 18 threads, and its 18-thread speed-up rose from 2.7 to 8.1. Single-thread performance and
 results are unchanged; with one thread per rank, restarts remain bit-identical.
 
+## Parallel cell sort (after these measurements)
+
+The figures above were measured before the cell sort was threaded. The sort is now a parallel
+stable counting sort: every chunk of particles gets its own histogram, and the write offsets run
+cell by cell and, within a cell, chunk by chunk, so the particle order is exactly the one the
+serial sort produced, for any thread count (checked in `test_particles`). Measured on one socket
+of the same machine (same 144³ strong-scaling problem; the 18 MPI-rank reference reproduced the
+earlier value to within 2 %):
+
+| one rank | sort before | sort after | step before | step after |
+|---|---:|---:|---:|---:|
+| 8 threads | 380 ms | 136 ms | 1111 ms | 844 ms |
+| 16 threads | 365 ms | 90 ms | 809 ms | 525 ms |
+| 18 threads | 353 ms | 85 ms | 771 ms | 508 ms |
+| *18 MPI ranks (reference)* | *39 ms* | *38 ms* | *475 ms* | *483 ms* |
+
+Times are per step; the sort runs every 20 steps and its cost is averaged over all steps. The
+multi-socket points of that run were taken while other jobs loaded the machine and are not shown;
+the figures will be regenerated from a full sweep on a quiet machine.
+
 ## Known limitations and next steps
 
-* Thread the cell sort (per-thread histograms, combined in thread order so the particle order and
-  thus reproducibility are unchanged). This is the largest remaining gap between the hybrid and
-  MPI-only layouts.
 * Agglomerate the coarse multigrid levels onto fewer ranks so that the hierarchy no longer becomes
   shallower as ranks are added.

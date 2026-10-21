@@ -6,7 +6,8 @@
 
 Writes scaling_strong.png (speed-up and parallel efficiency), scaling_breakdown.png (cost per
 particle-step and core by stage: flat bars mean perfect scaling), scaling_weak.png and, when a
-before_<commit>/ subdirectory with an earlier strong-scaling run exists, scaling_before_after.png.
+before_<commit>/ subdirectory with an earlier strong-scaling run exists, scaling_before_after.png
+(whole step, and the stage that changed most).
 """
 from __future__ import annotations
 
@@ -180,8 +181,12 @@ def before_after(after, before, tag, system, out, dpi):
     a, b = by_mode(after), by_mode(before)
     per_socket = system.get("cores_per_socket", 18)
     cores = sorted({r["cores"] for r in after})
+    # second panel: the stage whose total time changed most between the two runs
+    def total(rows, key):
+        return sum(r[key] for r in rows if r[key] != "")
+    stage = max(STAGES, key=lambda s: abs(np.log((total(after, s[0]) + 1e-9) / (total(before, s[0]) + 1e-9))))
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
-    for ax, key, title in ((axes[0], "ms_per_step", "whole step"), (axes[1], "t_field_solve", "field solve")):
+    for ax, key, title in ((axes[0], "ms_per_step", "whole step"), (axes[1], stage[0], stage[1])):
         for m, (label, col, mk) in MODES.items():
             if m in a and m in b:
                 ax.plot([r["cores"] for r in b[m]], [r[key] for r in b[m]], color=col, ls=":", marker=mk, mfc="none")
@@ -189,10 +194,9 @@ def before_after(after, before, tag, system, out, dpi):
         core_axis(ax, cores, per_socket)
         ax.set_yscale("log")
         ax.set_ylabel("time per step [ms]")
-        ax.set_title(f"Strong scaling, {title}: before (dotted, {tag}) and after (solid)")
-        ax.title.set_fontsize(10.5)
+        ax.set_title(f"Strong scaling, {title}")
     axes[0].legend(loc="upper right")
-    fig.suptitle(subtitle(system), fontsize=9, color=style.INK2, y=0.995)
+    fig.suptitle(f"Before (dotted, {tag}) and after (solid)  |  " + subtitle(system), fontsize=9, color=style.INK2, y=0.995)
     fig.tight_layout()
     fig.savefig(os.path.join(out, "scaling_before_after.png"), dpi=dpi)
     plt.close(fig)

@@ -500,8 +500,9 @@ The `ctest` suite runs every test serially and on 4 MPI ranks:
 
 On a four-socket Xeon Platinum 8354H node (72 cores), a 144³ grid with 96 M particles runs at
 5.3 s per step on one core and 0.16 s per step on 72 MPI ranks, a speed-up of 33. One MPI rank per
-core is the fastest layout; threads should never span sockets. The field solve and, for threaded
-ranks, the cell sort are what limit scaling. [docs/performance.md](docs/performance.md) has the
+core was the fastest layout in this sweep, and threads should never span sockets. The field solve
+limits scaling; the cell sort, which held back threaded ranks, has since been parallelised (one
+rank of 18 threads is now about 5 % slower than 18 MPI ranks). [docs/performance.md](docs/performance.md) has the
 strong- and weak-scaling results, a per-stage breakdown and advice on choosing ranks and threads;
 [`benchmarks/scaling`](benchmarks/scaling) reruns the benchmark on any machine.
 
