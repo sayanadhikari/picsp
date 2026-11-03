@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use PICSP3D in your work, please cite it as below."
+type: software
+title: "PICSP3D: a parallel three-dimensional electrostatic particle-in-cell code for plasma-object interaction"
+version: 3.0.0
+date-released: 2026-11-03
+license: MIT
+repository-code: "https://github.com/sayanadhikari/picsp"
+abstract: >-
+  PICSP3D is an open-source 3D3V electrostatic particle-in-cell code for plasma-object
+  interaction. Objects of arbitrary shape, from analytic primitives or CAD (STL), are embedded
+  in a uniform grid with second-order cut-cell boundaries and charged self-consistently as
+  floating or biased conductors. It includes secondary electron emission, photoemission with
+  self-shadowing, static uniform and spatially varying magnetic fields, Monte Carlo collisions
+  with a neutral background and binary Coulomb collisions, and is parallelised with MPI and
+  OpenMP.
+keywords:
+  - particle-in-cell
+  - plasma simulation
+  - spacecraft charging
+  - plasma-object interaction
+  - embedded boundaries
+  - Monte Carlo collisions
+  - MPI
+  - OpenMP
+authors:
+  - family-names: Adhikari
+    given-names: Sayan
+    orcid: "https://orcid.org/0000-0002-9316-3292"
+    affiliation: "Institute for Energy Technology, Kjeller, Norway"
+  - family-names: Moulick
+    given-names: Rakesh
+    orcid: "https://orcid.org/0000-0002-0520-8674"
+    affiliation: "Institute for Plasma Research, Sonapur, Assam, India; Homi Bhabha National Institute, Mumbai, India"
+  - family-names: Mishra
+    given-names: Rinku
+    orcid: "https://orcid.org/0000-0002-2426-9894"
+    affiliation: "University of Oslo, Oslo, Norway"

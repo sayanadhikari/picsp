@@ -44,6 +44,7 @@ publication-quality figures, animations and 3D renderings.
 * [Performance notes](#performance-notes)
 * [Code layout](#code-layout)
 * [Limitations and roadmap](#limitations-and-roadmap)
+* [Citing](#citing)
 
 ## Capabilities at a glance
 
@@ -548,6 +549,13 @@ legacy/             original 2D PICSP code
 * Static domain decomposition, no dynamic load balancing yet.
 * Objects must lie inside the domain on periodic axes (no periodic images of objects).
 * Neutral gas is a uniform background (no neutral transport or depletion).
+
+## Citing
+
+If you use PICSP3D in your work, please cite the software release (archived on Zenodo; the DOI
+of every version is listed on the record) and the code paper once it is published. GitHub's
+"Cite this repository" button gives the reference in APA and BibTeX from
+[`CITATION.cff`](CITATION.cff).
 
 ## License
 

@@ -1,0 +1,56 @@
+{
+  "title": "PICSP3D: a parallel three-dimensional electrostatic particle-in-cell code for plasma-object interaction",
+  "upload_type": "software",
+  "version": "3.0.0",
+  "description": "<p>PICSP3D is an open-source, three-dimensional, three-velocity (3D3V) electrostatic particle-in-cell code for plasma-object interaction, such as spacecraft and probe charging, sheaths and wakes, Langmuir probes, dust grains, electrodes, magnetised plasma devices and gas discharges.</p><p>Objects of arbitrary shape are embedded in a uniform Cartesian grid as signed distance functions, built from analytic primitives with constructive solid geometry or imported from CAD (STL) with generalised winding numbers. The Poisson equation is solved with a multigrid-preconditioned conjugate gradient method and second-order Shortley-Weller cut cells; floating and biased conductors are charged self-consistently through a capacitance matrix. The code includes surface processes (absorption, secondary electron emission, photoemission with self-shadowing), uniform and spatially varying static magnetic fields (dipoles, current loops, solenoids, mirrors, wires) with a Boris pusher, Monte Carlo collisions with a neutral background (elastic, charge exchange, excitation, ionisation) and binary Coulomb collisions.</p><p>The solver is written in C++20 and parallelised with MPI domain decomposition and OpenMP threads; output is parallel VTK. A Python package, picsp_post, provides post-processing, figures, animations, Blender renders and a CAD import tool. The release contains the test suite, sixteen documented example cases with analysis scripts, the scaling benchmark and its results.</p>",
+  "creators": [
+    {
+      "name": "Adhikari, Sayan",
+      "affiliation": "Department of Computational Materials Processing, Institute for Energy Technology, Kjeller, Norway",
+      "orcid": "0000-0002-9316-3292"
+    },
+    {
+      "name": "Moulick, Rakesh",
+      "affiliation": "Centre of Plasma Physics, Institute for Plasma Research, Sonapur, Assam, India; Homi Bhabha National Institute, Mumbai, India",
+      "orcid": "0000-0002-0520-8674"
+    },
+    {
+      "name": "Mishra, Rinku",
+      "affiliation": "Department of Physics, University of Oslo, Oslo, Norway",
+      "orcid": "0000-0002-2426-9894"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Sharma, Gunjan",
+      "type": "Other"
+    },
+    {
+      "name": "Mukherjee, Rupak",
+      "type": "Other"
+    }
+  ],
+  "keywords": [
+    "particle-in-cell",
+    "plasma simulation",
+    "electrostatic PIC",
+    "spacecraft charging",
+    "plasma-object interaction",
+    "embedded boundaries",
+    "Monte Carlo collisions",
+    "MPI",
+    "OpenMP",
+    "C++"
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/sayanadhikari/picsp",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ]
+}
