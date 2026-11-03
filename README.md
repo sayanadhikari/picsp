@@ -7,6 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/sayanadhikari/picsp/actions/workflows/ci.yml"><img src="https://github.com/sayanadhikari/picsp/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://doi.org/10.5281/zenodo.23932321"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23932321.svg" alt="DOI"></a>
 </p>
 
 <p align="center">
@@ -552,10 +553,27 @@ legacy/             original 2D PICSP code
 
 ## Citing
 
-If you use PICSP3D in your work, please cite the software release (archived on Zenodo; the DOI
-of every version is listed on the record) and the code paper once it is published. GitHub's
-"Cite this repository" button gives the reference in APA and BibTeX from
-[`CITATION.cff`](CITATION.cff).
+If you use PICSP3D in your work, please cite the software release and the code paper once it is
+published. Version 3.0.0 is archived on Zenodo:
+
+> S. Adhikari, R. Moulick, R. Mishra, *PICSP3D: a parallel three-dimensional electrostatic
+> particle-in-cell code for plasma-object interaction*, version 3.0.0, Zenodo (2026).
+> [doi:10.5281/zenodo.23932321](https://doi.org/10.5281/zenodo.23932321)
+
+```bibtex
+@software{PICSP3D_v300,
+  author    = {Adhikari, Sayan and Moulick, Rakesh and Mishra, Rinku},
+  title     = {{PICSP3D}: a parallel three-dimensional electrostatic particle-in-cell code
+               for plasma-object interaction},
+  version   = {3.0.0},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.23932321},
+  url       = {https://doi.org/10.5281/zenodo.23932321}
+}
+```
+
+GitHub's "Cite this repository" button gives the same reference from [`CITATION.cff`](CITATION.cff).
 
 ## License
 

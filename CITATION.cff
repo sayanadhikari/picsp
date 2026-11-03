@@ -5,6 +5,11 @@ title: "PICSP3D: a parallel three-dimensional electrostatic particle-in-cell cod
 version: 3.0.0
 date-released: 2026-11-03
 license: MIT
+doi: 10.5281/zenodo.23932321
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23932321
+    description: "Zenodo archive of version 3.0.0"
 repository-code: "https://github.com/sayanadhikari/picsp"
 abstract: >-
   PICSP3D is an open-source 3D3V electrostatic particle-in-cell code for plasma-object
